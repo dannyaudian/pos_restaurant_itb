@@ -1,12 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
-    name='restaurant_pos_itb',
-    version='1.0.0',
-    description='Core POS module for restaurant operations',
-    author='PT. Innovasi Terbaik Bangsa',
-    packages=find_packages(),
-    include_package_data=True,
+    name="pos_restaurant_itb",
+    version="1.0.0",
+    description="POS Restaurant App",
+    author="PT. Innovasi Terbaik Bangsa",
+    packages=["pos_restaurant_itb"],  # HARUS SAMA dengan nama folder modul Python kamu
     zip_safe=False,
-    install_requires=['frappe']
+    include_package_data=True,
+    install_requires=[],
 )
+
