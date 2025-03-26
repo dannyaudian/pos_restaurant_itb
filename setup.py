@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='restaurant_pos_core',
+    name='restaurant_pos_itb',
     version='1.0.0',
     description='Core POS module for restaurant operations',
     author='PT. Innovasi Terbaik Bangsa',
