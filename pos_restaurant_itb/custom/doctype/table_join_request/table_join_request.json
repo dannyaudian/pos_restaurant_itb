@@ -1,0 +1,34 @@
+{
+  "doctype": "DocType",
+  "name": "Table Join Request",
+  "module": "Restaurant POS Core",
+  "custom": 1,
+  "fields": [
+    {
+      "fieldname": "main_table",
+      "fieldtype": "Data",
+      "label": "Main Table",
+      "reqd": 1
+    },
+    {
+      "fieldname": "joined_tables",
+      "fieldtype": "Table",
+      "label": "Joined Tables",
+      "options": "Joined Table Entry"
+    },
+    {
+      "fieldname": "created_by",
+      "fieldtype": "Link",
+      "label": "Created By",
+      "options": "User"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Waiter",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

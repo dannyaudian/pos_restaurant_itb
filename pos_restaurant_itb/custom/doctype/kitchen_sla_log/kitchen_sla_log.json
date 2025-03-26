@@ -1,0 +1,30 @@
+{
+  "doctype": "DocType",
+  "name": "Kitchen SLA Log",
+  "autoname": "naming_series:",
+  "fields": [
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "options": "Item"
+    },
+    {
+      "fieldname": "kot_reference",
+      "fieldtype": "Link",
+      "options": "KOT"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "options": "Queued\nCooking\nReady"
+    },
+    {
+      "fieldname": "start_time",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "end_time",
+      "fieldtype": "Datetime"
+    }
+  ]
+}

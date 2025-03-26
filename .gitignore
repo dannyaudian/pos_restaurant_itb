@@ -1,0 +1,16 @@
+
+*.pyc
+__pycache__/
+*.swp
+*.swo
+*.DS_Store
+.env
+node_modules/
+dist/
+*.log
+*.bak
+*.sqlite3
+public/js/dist/
+*.tar.gz
+*.zip
+sites/

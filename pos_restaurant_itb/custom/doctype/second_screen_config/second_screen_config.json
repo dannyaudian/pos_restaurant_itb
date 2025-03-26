@@ -1,0 +1,37 @@
+{
+  "doctype": "DocType",
+  "name": "Second Screen Config",
+  "module": "Restaurant POS Core",
+  "custom": 1,
+  "fields": [
+    {
+      "fieldname": "pos_profile",
+      "fieldtype": "Link",
+      "label": "POS Profile",
+      "options": "POS Profile"
+    },
+    {
+      "fieldname": "is_enabled",
+      "fieldtype": "Check",
+      "label": "Enable Second Screen"
+    },
+    {
+      "fieldname": "branding_logo",
+      "fieldtype": "Attach Image",
+      "label": "Branding Logo"
+    },
+    {
+      "fieldname": "footer_text",
+      "fieldtype": "Data",
+      "label": "Footer Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

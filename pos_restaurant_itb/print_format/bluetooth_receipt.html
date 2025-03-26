@@ -1,0 +1,13 @@
+<div style="font-size: 10px; font-family: monospace;">
+  <center><b>{{ company }}</b></center>
+  <p>No: {{ doc.sales_invoice }}</p>
+  <p>Customer: {{ doc.customer }}</p>
+  <p>Table: {{ doc.table }}</p>
+  <ul>
+  {% for item in doc.pos_order_items %}
+    <li>{{ item.item_name }} x{{ item.qty }} - {{ item.amount }}</li>
+  {% endfor %}
+  </ul>
+  <p>Total: {{ doc.total_amount }}</p>
+  <center>-- Terima Kasih --</center>
+</div>

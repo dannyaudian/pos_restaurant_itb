@@ -1,0 +1,13 @@
+<div>
+  <h2>Kitchen Order Ticket (KOT)</h2>
+  <p><strong>Table:</strong> {{ doc.table }}</p>
+  <p><strong>Order ID:</strong> {{ doc.order_id }}</p>
+  <hr>
+  <ul>
+  {% for item in doc.pos_order_items %}
+    <li>{{ item.item_code }} - {{ item.item_name }} x{{ item.qty }} {% if item.note %} ({{ item.note }}) {% endif %}</li>
+  {% endfor %}
+  </ul>
+  <hr>
+  <p>Printed on: {{ frappe.utils.now_datetime() }}</p>
+</div>
