@@ -24,9 +24,9 @@ def update_kot_item_status(order, item_code, status):
     if updated:
         doc.save()
         frappe.db.commit()
-        from restaurant_pos_core.hooks.sla_log_hook import log_kitchen_sla
+        from restaurant_pos_itb.hooks.sla_log_hook import log_kitchen_sla
         log_kitchen_sla(item)
-        from restaurant_pos_core.event.update_kot_status import update_pos_order_status
+        from restaurant_pos_itb.event.update_kot_status import update_pos_order_status
         update_pos_order_status(doc)
         doc.save()
         return {"status": "success", "message": f"{item_code} updated to {status}"}
