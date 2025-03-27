@@ -1,6 +1,7 @@
 {
   "doctype": "DocType",
   "name": "POS Order",
+  "module": "POS Restaurant",
   "autoname": "field:order_id",
   "fields": [
     {
