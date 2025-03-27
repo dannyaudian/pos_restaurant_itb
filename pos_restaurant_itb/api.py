@@ -1,5 +1,5 @@
 import frappe
-from restaurant_pos_core.utils.print_templates import render_kot_template, render_thermal_receipt
+from restaurant_pos_itb.utils.print_templates import render_kot_template, render_thermal_receipt
 
 @frappe.whitelist()
 def print_kot(name):
