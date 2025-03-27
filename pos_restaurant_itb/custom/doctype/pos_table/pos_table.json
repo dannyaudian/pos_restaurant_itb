@@ -1,6 +1,7 @@
 {
   "doctype": "DocType",
   "name": "POS Table",
+  "module": "POS Restaurant",
   "autoname": "field:table_id",
   "fields": [
     {
