@@ -42,7 +42,7 @@ frappe.pages['pos'].on_page_load = function(wrapper) {
 
       frm.add_custom_button("Print Struk", () => {
         frappe.call({
-          method: "restaurant_pos_core.itb.print_receipt",
+          method: "restaurant_pos_itb.print_receipt",
           args: { name: frm.doc.name },
           callback: function(r) {
             if (r.message) {
