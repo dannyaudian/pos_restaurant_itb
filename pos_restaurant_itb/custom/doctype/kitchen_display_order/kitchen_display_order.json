@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "Kitchen Display Order",
-  "module": "Restaurant POS Core",
+  "module": "POS Restaurant",
   "custom": 1,
   "fields": [
     {
