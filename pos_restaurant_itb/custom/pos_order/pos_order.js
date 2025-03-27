@@ -2,7 +2,7 @@ frappe.ui.form.on('POS Order', {
     refresh: function(frm) {
         frm.add_custom_button(__('Print KOT'), function() {
             frappe.call({
-                method: 'restaurant_pos_core.api.print_kot',
+                method: 'restaurant_pos_itb.api.print_kot',
                 args: { name: frm.doc.name },
                 callback: function(r) {
                     if (r.message) {
@@ -16,7 +16,7 @@ frappe.ui.form.on('POS Order', {
 
         frm.add_custom_button(__('Print Receipt'), function() {
             frappe.call({
-                method: 'restaurant_pos_core.api.print_receipt',
+                method: 'restaurant_pos_itb.api.print_receipt',
                 args: { name: frm.doc.name },
                 callback: function(r) {
                     if (r.message) {
