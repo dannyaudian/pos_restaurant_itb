@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "Kitchen SLA Log",
-  "module": "pos_restaurant_itb",
+  "module": "POS Restaurant",
   "autoname": "naming_series:",
   "fields": [
     {
