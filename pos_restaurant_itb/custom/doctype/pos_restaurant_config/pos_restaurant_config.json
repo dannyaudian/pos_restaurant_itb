@@ -1,6 +1,7 @@
 {
   "doctype": "DocType",
   "name": "POS Restaurant Config",
+  "module": "POS Restaurant",
   "autoname": "name",
   "fields": [
     {
