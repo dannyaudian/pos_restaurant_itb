@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "KOT Item",
-  "module": "Restaurant POS Core",
+  "module": "POS Restaurant",
   "istable": 1,
   "custom": 1,
   "fields": [
