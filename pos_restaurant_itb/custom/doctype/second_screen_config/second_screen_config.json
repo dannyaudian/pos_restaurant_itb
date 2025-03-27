@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "Second Screen Config",
-  "module": "POS Restaurant",
+  "module": "pos_restaurant_itb",
   "custom": 1,
   "fields": [
     {
