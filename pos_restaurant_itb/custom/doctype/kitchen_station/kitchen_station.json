@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "Kitchen Station",
-  "module": "POS Restaurant",
+  "module": "pos_restaurant_itb",
   "autoname": "field:station_name",
   "fields": [
     {
