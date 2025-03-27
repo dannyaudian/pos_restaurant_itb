@@ -1,7 +1,7 @@
 {
   "doctype": "DocType",
   "name": "POS Order Item",
-  "module": "POS Restaurant",
+  "module": "pos_restaurant_itb",
   "autoname": "naming_series:",
   "fields": [
     {
