@@ -1,1 +1,1 @@
-POS Restaurant
+pos_restaurant_itb
