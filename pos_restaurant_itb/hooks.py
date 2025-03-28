@@ -5,4 +5,4 @@ app_description = "Restaurant POS Module"
 app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 
-fixtures = ["Custom Script", "Custom Field", "Property Setter", "Print Format", "Doctype"]
+fixtures = ["Custom Script", "Custom Field", "Property Setter", "Print Format", "Doctype", "Module Def"]
