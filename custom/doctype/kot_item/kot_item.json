@@ -1,0 +1,40 @@
+{
+  "doctype": "DocType",
+  "name": "KOT Item",
+  "module": "POS Restaurant",
+  "istable": 1,
+  "custom": 1,
+  "fields": [
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "label": "Item Code",
+      "options": "Item",
+      "reqd": 1
+    },
+    {
+      "fieldname": "item_name",
+      "fieldtype": "Data",
+      "label": "Item Name"
+    },
+    {
+      "fieldname": "qty",
+      "fieldtype": "Float",
+      "label": "Quantity",
+      "default": 1
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Notes"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Waiter",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

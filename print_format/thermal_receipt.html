@@ -1,0 +1,16 @@
+<div style="font-family: monospace; font-size: 12px;">
+  <center><h3>{{ company }}</h3></center>
+  <p>Invoice: {{ doc.sales_invoice }}</p>
+  <p>Customer: {{ doc.customer }}</p>
+  <p>Table: {{ doc.table }}</p>
+  <hr>
+  <ul>
+  {% for item in doc.pos_order_items %}
+    <li>{{ item.item_name }} x{{ item.qty }} - {{ item.amount }}</li>
+  {% endfor %}
+  </ul>
+  <hr>
+  <p>Total: {{ doc.total_amount }}</p>
+  <p>Status: {{ doc.status }}</p>
+  <center>Terima kasih!</center>
+</div>

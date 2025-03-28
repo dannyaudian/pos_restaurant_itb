@@ -1,0 +1,54 @@
+{
+  "doctype": "DocType",
+  "name": "KOT",
+  "module": "POS Restaurant",
+  "custom": 1,
+  "fields": [
+    {
+      "fieldname": "kot_id",
+      "fieldtype": "Data",
+      "label": "KOT ID",
+      "reqd": 1
+    },
+    {
+      "fieldname": "table_number",
+      "fieldtype": "Data",
+      "label": "Table Number",
+      "reqd": 1
+    },
+    {
+      "fieldname": "order_time",
+      "fieldtype": "Datetime",
+      "label": "Order Time",
+      "reqd": 1
+    },
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Table",
+      "label": "Items",
+      "options": "KOT Item"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "New\nIn Progress\nReady\nServed",
+      "default": "New"
+    },
+    {
+      "fieldname": "waiter",
+      "fieldtype": "Link",
+      "label": "Waiter",
+      "options": "Employee"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "Waiter",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1
+    }
+  ]
+}

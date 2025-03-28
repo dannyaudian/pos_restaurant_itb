@@ -1,0 +1,16 @@
+[
+  {
+    "doctype": "Module Def",
+    "module_name": "POS Restaurant",
+    "app_name": "pos_restaurant_itb",
+    "app": "pos_restaurant_itb",
+    "custom": 1,
+    "restrict_to_domain": null,
+    "owner": "Administrator",
+    "modified_by": "Administrator",
+    "creation": "2024-01-01 00:00:00.000000",
+    "modified": "2024-01-01 00:00:00.000000",
+    "idx": 0,
+    "flags": {}
+  }
+]
