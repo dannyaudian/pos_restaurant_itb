@@ -49,12 +49,20 @@ class POSOrder(Document):
             frappe.msgprint(f"🧾 {item.item_name or item.item_code}: {qty} x {rate} = {item.amount}")
 
             # 🔄 Dynamic Attributes processing (jika child table digunakan)
-            if hasattr(item, "dynamic_attributes"):
+        for item in self.pos_order_items:
+            if not hasattr(item, "dynamic_attributes") or not item.dynamic_attributes:
+                frappe.msgprint(f"Item {item.item_name} tidak memiliki dynamic attributes.")
+                continue
+
+            try:
                 for attr in item.dynamic_attributes:
-                    info = f"- {attr.attribute_type}: {attr.attribute_value}"
+                    info = f"{attr.attribute_name} = {attr.attribute_value}"
                     if getattr(attr, "item_code", None):
                         info += f" → Linked Item: {attr.item_code}"
-                    frappe.msgprint(f"⚙️ Dynamic Attribute: {info}")
+                    frappe.msgprint(f"✔️ Dynamic Attribute: {info}")
+            except Exception as e:
+                frappe.msgprint(f"❌ Gagal parsing dynamic attributes: {e}")
+
 
         self.total_amount = total
         frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
