@@ -1,6 +1,8 @@
 import frappe
+from frappe import whitelist  # opsional, kalau kamu mau pakai `@whitelist` singkat
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
 
+@frappe.whitelist()
 def get_new_order_id(branch):
     if not branch:
         frappe.throw("Branch is required")
@@ -13,6 +15,7 @@ def get_new_order_id(branch):
     count = frappe.db.count("POS Order", {"branch": branch}) + 1
     return f"POS-{branch_code}-{count:05d}"
 
+@frappe.whitelist()
 def update_kot_item_status(order, item_code, status):
     doc = frappe.get_doc("POS Order", order)
     updated = False
