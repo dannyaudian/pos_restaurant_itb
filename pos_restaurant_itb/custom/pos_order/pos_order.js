@@ -1,13 +1,13 @@
 frappe.ui.form.on('POS Order', {
-    table: function(frm) {
+    table: function (frm) {
         if (frm.doc.table) {
-            frappe.db.get_value('POS Table', frm.doc.table, 'branch', function(r) {
+            frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
                 if (r && r.branch) {
                     frm.set_value('branch', r.branch);
                     frappe.call({
                         method: "pos_restaurant_itb.api.get_new_order_id",
                         args: { branch: r.branch },
-                        callback: function(res) {
+                        callback: function (res) {
                             if (res && res.message) {
                                 frm.set_value("order_id", res.message);
                             }
@@ -18,12 +18,12 @@ frappe.ui.form.on('POS Order', {
         }
     },
 
-    refresh: function(frm) {
-        frm.add_custom_button(__('Print KOT'), function() {
+    refresh: function (frm) {
+        frm.add_custom_button(__('Print KOT'), function () {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_kot',
                 args: { name: frm.doc.name },
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message) {
                         const win = window.open();
                         win.document.write(r.message);
@@ -33,11 +33,11 @@ frappe.ui.form.on('POS Order', {
             });
         }, __("Actions"));
 
-        frm.add_custom_button(__('Print Receipt'), function() {
+        frm.add_custom_button(__('Print Receipt'), function () {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_receipt',
                 args: { name: frm.doc.name },
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message) {
                         const win = window.open();
                         win.document.write(r.message);
@@ -48,8 +48,8 @@ frappe.ui.form.on('POS Order', {
         }, __("Actions"));
     },
 
-    onload: function(frm) {
-        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function(doc, cdt, cdn) {
+    onload: function (frm) {
+        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function (doc, cdt, cdn) {
             return {
                 filters: {
                     variant_of: ["is", "not set"],
@@ -62,19 +62,17 @@ frappe.ui.form.on('POS Order', {
 });
 
 frappe.ui.form.on('POS Order Item', {
-    item_code: function(frm, cdt, cdn) {
+    item_code: function (frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        // Cek apakah item ini template
-        frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
+        // Jika item adalah template, kosongkan dynamic attributes dan buka grid
+        frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
 
-                // Kosongkan child table attribute
-                frappe.model.set_value(cdt, cdn, "pos_dynamic_attribute", []);
+                frappe.model.set_value(cdt, cdn, "dynamic_attributes", []);
 
-                // Tampilkan inline form grid
                 const grid = frm.fields_dict["pos_order_items"].grid;
                 const grid_row = grid.grid_rows_by_docname[row.name];
                 if (grid_row && grid_row.toggle_view) {
@@ -96,7 +94,7 @@ frappe.ui.form.on('POS Order Item', {
                 fields: ["price_list_rate"],
                 limit_page_length: 1
             },
-            callback: function(res) {
+            callback: function (res) {
                 const rate = (res.message?.[0]?.price_list_rate) || 0;
                 frappe.model.set_value(cdt, cdn, 'rate', rate);
                 if (rate === 0) {
@@ -109,11 +107,11 @@ frappe.ui.form.on('POS Order Item', {
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total,
 
-    pos_dynamic_attribute: function(frm, cdt, cdn) {
+    dynamic_attributes: function (frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-        if (!row.item_code || !row.pos_dynamic_attribute?.length) return;
+        if (!row.item_code || !row.dynamic_attributes?.length) return;
 
-        const attributes = row.pos_dynamic_attribute.map(attr => ({
+        const attributes = row.dynamic_attributes.map(attr => ({
             attribute_name: attr.attribute_name,
             attribute_value: attr.attribute_value
         }));
@@ -126,7 +124,7 @@ frappe.ui.form.on('POS Order Item', {
                 template: row.item_code,
                 attributes: attributes
             },
-            callback: function(r) {
+            callback: function (r) {
                 if (r.message) {
                     frappe.model.set_value(cdt, cdn, 'item_code', r.message.item_code);
                     frappe.model.set_value(cdt, cdn, 'item_name', r.message.item_name);
@@ -143,11 +141,11 @@ frappe.ui.form.on('POS Order Item', {
 });
 
 frappe.ui.form.on('POS Dynamic Attribute', {
-    attribute_value: function(frm, cdt, cdn) {
+    attribute_value: function (frm, cdt, cdn) {
         const parent_row = frm.fields_dict["pos_order_items"].grid.get_selected_children()?.[0];
         if (!parent_row || !parent_row.item_code) return;
 
-        const attributes = parent_row.pos_dynamic_attribute?.map(attr => ({
+        const attributes = parent_row.dynamic_attributes?.map(attr => ({
             attribute_name: attr.attribute_name,
             attribute_value: attr.attribute_value
         })) || [];
@@ -160,7 +158,7 @@ frappe.ui.form.on('POS Dynamic Attribute', {
                 template: parent_row.item_code,
                 attributes: attributes
             },
-            callback: function(r) {
+            callback: function (r) {
                 if (r.message) {
                     frappe.model.set_value(parent_row.doctype, parent_row.name, "item_code", r.message.item_code);
                     frappe.model.set_value(parent_row.doctype, parent_row.name, "item_name", r.message.item_name);
