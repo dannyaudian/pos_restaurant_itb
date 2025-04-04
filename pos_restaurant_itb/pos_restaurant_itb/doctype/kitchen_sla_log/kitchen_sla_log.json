@@ -1,0 +1,18 @@
+{
+  "doctype": "DocType",
+  "name": "Kitchen Sla Log",
+  "module": "pos_restaurant_itb",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 1,
+  "fields": [],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

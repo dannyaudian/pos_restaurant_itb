@@ -1,0 +1,42 @@
+{
+  "doctype": "DocType",
+  "name": "POS Table",
+  "module": "pos_restaurant_itb",
+  "modified": "2025-02-03 09:32:53.273373",
+  "modified_by": "Administrator",
+  "owner": "Administrator",
+  "fields": [
+    {
+      "fieldname": "table_id",
+      "label": "Table ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 0,
+      "in_list_view": 1,
+      "translatable": 0
+    },
+    {
+      "fieldname": "branch",
+      "label": "Branch",
+      "fieldtype": "Link",
+      "options": "Branch",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "is_active",
+      "label": "Is Active",
+      "fieldtype": "Check",
+      "default": "1"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

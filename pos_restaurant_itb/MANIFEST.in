@@ -1,0 +1,6 @@
+include pos_restaurant_itb/*.py
+recursive-include pos_restaurant_itb/**/*.py
+recursive-include pos_restaurant_itb/**/*.json
+recursive-include pos_restaurant_itb/**/*.html
+recursive-include pos_restaurant_itb/**/*.js
+recursive-include pos_restaurant_itb/**/*.css

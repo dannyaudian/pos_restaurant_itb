@@ -1,0 +1,15 @@
+{
+  "doctype": "DocType",
+  "name": "Second Screen Config",
+  "module": "pos_restaurant_itb",
+  "custom": 0,
+  "fields": [],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    }
+  ]
+}

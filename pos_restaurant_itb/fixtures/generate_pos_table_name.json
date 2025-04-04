@@ -1,0 +1,9 @@
+{
+  "doctype": "Server Script",
+  "name": "autoname_pos_table",
+  "script_type": "DocType Event",
+  "reference_doctype": "POS Table",
+  "disabled": 0,
+  "event": "before_insert",
+  "script": "if not doc.table_id:\n    frappe.throw(\"Table ID is required.\")\n\nif not doc.branch:\n    frappe.throw(\"Branch is required.\")\n\nbranch_code = frappe.db.get_value(\"Branch\", doc.branch, \"branch_code\")\nif not branch_code:\n    frappe.throw(f\"Branch Code not found for Branch: {doc.branch}\")\n\nexisting = frappe.db.exists(\"POS Table\", {\n    \"table_id\": doc.table_id,\n    \"branch\": doc.branch,\n    \"name\": [\"!=\", doc.name]\n})\n\nif existing:\n    frappe.throw(f\"Table ID '{doc.table_id}' already exists in Branch '{doc.branch}'.\")\n\ndoc.name = f\"{doc.table_id}__{branch_code}\""
+}

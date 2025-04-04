@@ -1,0 +1,11 @@
+[
+    {
+      "name": "kot_autoname",
+      "doctype": "Custom Script",
+      "dt": "KOT",
+      "script_type": "Client",
+      "enabled": 1,
+      "script": "// Autoname KOT berdasarkan branch code\nfrappe.ui.form.on('KOT', {\n  validate(frm) {\n    if (!frm.doc.branch) {\n      frappe.msgprint(__('Branch is required to generate KOT ID.'));\n      return;\n    }\n\n    frappe.call({\n      method: 'frappe.client.get_value',\n      args: {\n        doctype: 'Branch',\n        filters: { name: frm.doc.branch },\n        fieldname: 'branch_code'\n      },\n      callback(r) {\n        if (r.message && r.message.branch_code) {\n          let branch_code = r.message.branch_code.trim().toUpperCase();\n          if (branch_code.length < 3) {\n            frappe.msgprint(__('Branch must have a valid 3-character code.'));\n            return;\n          }\n\n          frappe.call({\n            method: 'frappe.client.get_count',\n            args: {\n              doctype: 'KOT',\n              filters: { branch: frm.doc.branch }\n            },\n            callback(res) {\n              const count = res.message + 1;\n              frm.set_value('kot_id', `KOT-${branch_code}-${String(count).padStart(4, '0')}`);\n              frm.set_value('name', frm.doc.kot_id);\n            }\n          });\n        }\n      }\n    });\n  }\n});"
+    }
+  ]
+  

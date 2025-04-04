@@ -1,0 +1,15 @@
+{
+  "doctype": "DocType",
+  "name": "Joined Table Entry",
+  "module": "pos_restaurant_itb",
+  "istable": 1,
+  "custom": 0,
+  "fields": [],
+  "permissions": [
+    {
+      "role": "Waiter",
+      "read": 1,
+      "write": 1
+    }
+  ]
+}

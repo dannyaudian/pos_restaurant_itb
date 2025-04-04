@@ -1,0 +1,102 @@
+{
+  "doctype": "DocType",
+  "name": "POS Order Item",
+  "module": "pos_restaurant_itb",
+  "custom": 0,
+  "istable": 1,
+  "editable_grid": 1,
+  "autoname": "autoincrement",
+  "fields": [
+    {
+      "fieldname": "item_code",
+      "label": "Item Code",
+      "fieldtype": "Link",
+      "options": "Item",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item_name",
+      "label": "Item Name",
+      "fieldtype": "Data",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "qty",
+      "label": "Qty",
+      "fieldtype": "Float",
+      "default": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "rate",
+      "label": "Rate",
+      "fieldtype": "Currency"
+    },
+    {
+      "fieldname": "amount",
+      "label": "Amount",
+      "fieldtype": "Currency"
+    },
+    {
+      "fieldname": "note",
+      "label": "Note",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "kot_status",
+      "label": "KOT Status",
+      "fieldtype": "Select",
+      "options": "Queued\nCooking\nReady"
+    },
+    {
+      "fieldname": "kot_last_update",
+      "label": "KOT Last Update",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "dynamic_attributes",
+      "label": "Dynamic Attributes",
+      "fieldtype": "Code"
+    },
+    {
+      "fieldname": "sent_to_kitchen",
+      "label": "Sent to Kitchen",
+      "fieldtype": "Check",
+      "default": "0",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "order_id",
+      "label": "Order ID",
+      "fieldtype": "Data",
+      "fetch_from": "parent.order_id",
+      "read_only": 1
+    },
+    {
+      "fieldname": "branch",
+      "label": "Branch",
+      "fieldtype": "Link",
+      "options": "Branch",
+      "fetch_from": "parent.branch",
+      "read_only": 1
+    },
+    {
+      "fieldname": "kot_id",
+      "label": "KOT ID",
+      "fieldtype": "Link",
+      "options": "KOT",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+[
+    {
+      "name": "kot_status_update",
+      "doctype": "Custom Script",
+      "dt": "KOT",
+      "script_type": "Client",
+      "enabled": 1,
+      "script": "// Update status KOT dari kot_items\nfrappe.ui.form.on('KOT', {\n  validate(frm) {\n    const statuses = (frm.doc.kot_items || []).map(d => d.kot_status).filter(Boolean);\n\n    if (!statuses.length) {\n      frm.set_value('status', 'New');\n    } else if (statuses.every(s => s === 'Served')) {\n      frm.set_value('status', 'Served');\n    } else if (statuses.every(s => s === 'Ready')) {\n      frm.set_value('status', 'Ready');\n    } else if (statuses.some(s => s === 'Cooking')) {\n      frm.set_value('status', 'In Progress');\n    } else {\n      frm.set_value('status', 'New');\n    }\n  }\n});"
+    }
+  ]
+  

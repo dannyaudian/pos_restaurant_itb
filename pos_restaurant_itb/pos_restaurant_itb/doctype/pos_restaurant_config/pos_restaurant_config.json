@@ -1,0 +1,41 @@
+{
+    "name": "POS Restaurant Config",
+    "doctype": "DocType",
+    "module": "pos_restaurant_itb",
+    "fields": [
+       {
+           "fieldname": "pos_profile",
+           "fieldtype": "Link",
+           "options": "POS Profile",
+           "label": "POS Profile",
+           "reqd": 1
+       },
+       {
+           "fieldname": "enable_kot_printing",
+           "fieldtype": "Check",
+           "label": "Enable KOT Printing"
+       },
+       {
+           "fieldname": "enable_customer_display",
+           "fieldtype": "Check",
+           "label": "Enable Customer Display"
+       },
+       {
+           "fieldname": "default_kitchen_station",
+           "fieldtype": "Link",
+           "options": "Kitchen Station",
+           "label": "Default Kitchen Station"
+       },
+       {
+           "fieldname": "receipt_template",
+           "fieldtype": "Select",
+           "options": "Thermal\nBluetooth",
+           "label": "Receipt Template"
+       },
+       {
+           "fieldname": "enable_qris_payment",
+           "fieldtype": "Check",
+           "label": "Enable QRIS Payment"
+       }
+    ]
+}
