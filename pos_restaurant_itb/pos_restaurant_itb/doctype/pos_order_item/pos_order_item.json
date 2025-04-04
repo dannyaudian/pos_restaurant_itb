@@ -18,8 +18,7 @@
     {
       "fieldname": "item_name",
       "label": "Item Name",
-      "fieldtype": "Link",
-      "options": "item_code",
+      "fieldtype": "Data",
       "fetch_from": "item_code.item_name",
       "read_only": 1,
       "in_list_view": 1
