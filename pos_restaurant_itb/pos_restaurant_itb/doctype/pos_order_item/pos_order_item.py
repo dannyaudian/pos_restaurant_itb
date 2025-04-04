@@ -16,10 +16,9 @@ class POSOrderItem(Document):
         self.amount = (self.rate or 0) * (self.qty or 0)
         frappe.msgprint(f"💰 Amount dihitung ulang: {self.amount}")
 
-        # Load nested dynamic attributes jika ada
-        self.load_children()
+        # Validasi Dynamic Attributes (jika ada)
         if not self.dynamic_attributes:
-            frappe.msgprint(f"⚠️ Item {self.item_name} tidak memiliki dynamic attributes.")
+            frappe.msgprint(f"⚠️ Item {self.item_name or self.item_code} tidak memiliki dynamic attributes.")
             return
 
         try:
