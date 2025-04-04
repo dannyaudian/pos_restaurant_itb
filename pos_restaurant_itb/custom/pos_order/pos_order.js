@@ -66,15 +66,24 @@ frappe.ui.form.on('POS Order Item', {
         const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        // Cek apakah item punya variant
+        // Cek apakah item ini template
         frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
-                frappe.model.set_value(cdt, cdn, "dynamic_attributes", []);
+
+                // Kosongkan child table attribute
+                frappe.model.set_value(cdt, cdn, "pos_dynamic_attribute", []);
+
+                // Tampilkan inline form grid
+                const grid = frm.fields_dict["pos_order_items"].grid;
+                const grid_row = grid.grid_rows_by_docname[row.name];
+                if (grid_row && grid_row.toggle_view) {
+                    grid_row.toggle_view(true);
+                }
             }
         });
 
-        // Ambil harga
+        // Ambil harga dari Price List
         const price_list = frm.doc.selling_price_list || 'Standard Selling';
         frappe.call({
             method: "frappe.client.get_list",
@@ -100,14 +109,16 @@ frappe.ui.form.on('POS Order Item', {
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total,
 
-    dynamic_attributes: function(frm, cdt, cdn) {
+    pos_dynamic_attribute: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
-        if (!row.item_code || !row.dynamic_attributes?.length) return;
+        if (!row.item_code || !row.pos_dynamic_attribute?.length) return;
 
-        const attributes = row.dynamic_attributes.map(attr => ({
+        const attributes = row.pos_dynamic_attribute.map(attr => ({
             attribute_name: attr.attribute_name,
             attribute_value: attr.attribute_value
         }));
+
+        if (!attributes.length) return;
 
         frappe.call({
             method: "pos_restaurant_itb.api.resolve_variant",
@@ -136,10 +147,10 @@ frappe.ui.form.on('POS Dynamic Attribute', {
         const parent_row = frm.fields_dict["pos_order_items"].grid.get_selected_children()?.[0];
         if (!parent_row || !parent_row.item_code) return;
 
-        const attributes = parent_row.dynamic_attributes.map(attr => ({
+        const attributes = parent_row.pos_dynamic_attribute?.map(attr => ({
             attribute_name: attr.attribute_name,
             attribute_value: attr.attribute_value
-        }));
+        })) || [];
 
         if (!attributes.length) return;
 
