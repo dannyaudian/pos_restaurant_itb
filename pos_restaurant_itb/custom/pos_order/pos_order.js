@@ -94,33 +94,34 @@ frappe.ui.form.on('POS Order Item', {
         update_item_amount_and_total(frm, cdt, cdn);
     }
 });
-frappe.ui.form.on('POS Order Item', {
-    dynamic_attributes: function(frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
+frappe.ui.form.on('POS Dynamic Attribute', {
+    attribute_value: function(frm, cdt, cdn) {
+        const row = frappe.get_doc(cdt, cdn);
 
-        if (!row.item_code || !row.dynamic_attributes || row.dynamic_attributes.length === 0) {
-            return;
-        }
+        // Ambil parent row POS Order Item dari child table yang sedang aktif
+        const parent_row = frm.fields_dict["pos_order_items"].grid.get_selected_children()[0];
 
-        // Ambil atribut dari child table
-        const attributes = row.dynamic_attributes.map(attr => ({
+        if (!parent_row || !parent_row.item_code) return;
+
+        // Kumpulkan semua attribute yang dipilih
+        const attributes = (parent_row.dynamic_attributes || []).map(attr => ({
             attribute_name: attr.attribute_name,
             attribute_value: attr.attribute_value
         }));
 
+        if (attributes.length === 0) return;
+
+        // Panggil API untuk resolve varian
         frappe.call({
             method: "pos_restaurant_itb.api.resolve_variant",
             args: {
-                template: row.item_code,
+                template: parent_row.item_code,
                 attributes: attributes
             },
-            callback: function(res) {
-                if (res.message) {
-                    frappe.model.set_value(cdt, cdn, "item_code", res.message);
-                    frappe.show_alert({
-                        message: `🔄 Item diganti dengan variant: ${res.message}`,
-                        indicator: 'green'
-                    });
+            callback: function (r) {
+                if (r.message) {
+                    frappe.model.set_value(parent_row.doctype, parent_row.name, "item_code", r.message);
+                    frappe.msgprint(`✅ Item diganti dengan varian: ${r.message}`);
                 }
             }
         });
@@ -137,6 +138,40 @@ frappe.ui.form.on('POS Order', {
                 }
             };
         };
+    }
+});
+frappe.ui.form.on('POS Order Item', {
+    dynamic_attributes: function(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (!row.item_code || !row.dynamic_attributes || row.dynamic_attributes.length === 0) {
+            return;
+        }
+
+        const attributes = row.dynamic_attributes.map(attr => ({
+            attribute_name: attr.attribute_name,
+            attribute_value: attr.attribute_value
+        }));
+
+        frappe.call({
+            method: "pos_restaurant_itb.api.resolve_variant",
+            args: {
+                template: row.item_code,
+                attributes: attributes
+            },
+            callback: function(r) {
+                if (r.message) {
+                    frappe.model.set_value(cdt, cdn, 'item_code', r.message.item_code);
+                    frappe.model.set_value(cdt, cdn, 'item_name', r.message.item_name);
+                    frappe.model.set_value(cdt, cdn, 'rate', r.message.rate);
+
+                    frappe.show_alert({
+                        message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
+                        indicator: 'green'
+                    });
+                }
+            }
+        });
     }
 });
 
