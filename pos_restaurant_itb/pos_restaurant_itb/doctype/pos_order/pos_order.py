@@ -33,7 +33,6 @@ class POSOrder(Document):
         item_statuses = []
 
         for item in self.pos_order_items:
-            item.load_children()
             item.validate()  # Trigger validate() POSOrderItem
 
             total += item.amount
