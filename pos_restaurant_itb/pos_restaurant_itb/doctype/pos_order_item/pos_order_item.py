@@ -3,29 +3,46 @@ from frappe.model.document import Document
 
 class POSOrderItem(Document):
     def validate(self):
-        # Pastikan item name ada
+        # 🚨 Pastikan item_name ada
         if not self.item_name:
             frappe.throw("Item name is required.")
 
-        # Ambil rate dari Item jika kosong
+        # 📦 Ambil rate dari Price List (default: Standard Selling)
         if not self.rate and self.item_code:
-            self.rate = frappe.db.get_value("Item", self.item_code, "standard_rate") or 0
-            frappe.msgprint(f"📌 Rate otomatis diisi dari Item: {self.rate}")
+            price_list = frappe.db.get_single_value("Selling Settings", "selling_price_list") or "Standard Selling"
 
-        # Hitung amount otomatis
+            rate = frappe.db.get_value("Item Price", {
+                "item_code": self.item_code,
+                "price_list": price_list
+            }, "price_list_rate")
+
+            if rate is None:
+                rate = frappe.db.get_value("Item", self.item_code, "standard_rate") or 0
+                frappe.msgprint(f"📌 Harga *fallback* dari Item: {rate}")
+            else:
+                frappe.msgprint(f"📌 Harga dari Price List *{price_list}*: {rate}")
+
+            self.rate = rate
+
+        # 💰 Hitung amount otomatis
         self.amount = (self.rate or 0) * (self.qty or 0)
-        frappe.msgprint(f"💰 Amount dihitung ulang: {self.amount}")
+        frappe.msgprint(f"💰 Total Amount = {self.qty or 0} x {self.rate or 0} = {self.amount}")
 
-        # Validasi Dynamic Attributes (jika ada)
-        if not self.dynamic_attributes:
-            frappe.msgprint(f"⚠️ Item {self.item_name or self.item_code} tidak memiliki dynamic attributes.")
-            return
+     # 🧩 Validasi Dynamic Attributes (jika ada)
+    def resolve_item_variant(template_item, dynamic_attributes):
+        # Buat dict attribute untuk pencocokan
+        attr_dict = {attr.attribute_name: attr.attribute_value for attr in dynamic_attributes}
 
-        try:
-            for attr in self.dynamic_attributes:
-                info = f"{attr.attribute_name} = {attr.attribute_value}"
-                if getattr(attr, "item_code", None):
-                    info += f" → Linked Item: {attr.item_code}"
-                frappe.msgprint(f"✔️ Dynamic Attribute: {info}")
-        except Exception as e:
-            frappe.msgprint(f"❌ Gagal parsing dynamic attributes: {e}")
+        # Cari variant dari template_item yang cocok
+        variants = frappe.get_all("Item", filters={"variant_of": template_item}, fields=["name"])
+        for v in variants:
+            match = True
+            variant_attrs = frappe.get_all("Item Variant Attribute", filters={"parent": v.name}, fields=["attribute", "attribute_value"])
+            for va in variant_attrs:
+                if attr_dict.get(va.attribute) != va.attribute_value:
+                    match = False
+                    break
+            if match:
+                return v.name
+        return None
+
