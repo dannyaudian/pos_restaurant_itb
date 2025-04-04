@@ -66,8 +66,16 @@ frappe.ui.form.on('POS Order Item', {
         const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        const price_list = frm.doc.selling_price_list || 'Standard Selling';
+        // Cek apakah item punya variant
+        frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
+            if (r && r.has_variants) {
+                frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
+                frappe.model.set_value(cdt, cdn, "dynamic_attributes", []);
+            }
+        });
 
+        // Ambil harga
+        const price_list = frm.doc.selling_price_list || 'Standard Selling';
         frappe.call({
             method: "frappe.client.get_list",
             args: {
