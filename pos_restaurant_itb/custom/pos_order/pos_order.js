@@ -60,28 +60,28 @@ frappe.ui.form.on('POS Order', {
         };
     }
 });
-
 frappe.ui.form.on('POS Order Item', {
-    item_code: function (frm, cdt, cdn) {
+    item_code: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        // Jika item adalah template, kosongkan dynamic attributes dan buka grid
-        frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
+        frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
 
-                frappe.model.set_value(cdt, cdn, "dynamic_attributes", []);
+                // Bersihkan child table secara aman
+                frappe.model.clear_table(row, 'pos_dynamic_attribute');
+                frm.refresh_field('pos_order_items');
 
-                const grid = frm.fields_dict["pos_order_items"].grid;
-                const grid_row = grid.grid_rows_by_docname[row.name];
+                // Tampilkan grid inline
+                const grid_row = frm.fields_dict.pos_order_items.grid.grid_rows_by_docname[row.name];
                 if (grid_row && grid_row.toggle_view) {
                     grid_row.toggle_view(true);
                 }
             }
         });
 
-        // Ambil harga dari Price List
+        // Ambil harga
         const price_list = frm.doc.selling_price_list || 'Standard Selling';
         frappe.call({
             method: "frappe.client.get_list",
@@ -94,7 +94,7 @@ frappe.ui.form.on('POS Order Item', {
                 fields: ["price_list_rate"],
                 limit_page_length: 1
             },
-            callback: function (res) {
+            callback: function(res) {
                 const rate = (res.message?.[0]?.price_list_rate) || 0;
                 frappe.model.set_value(cdt, cdn, 'rate', rate);
                 if (rate === 0) {
@@ -107,69 +107,50 @@ frappe.ui.form.on('POS Order Item', {
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total,
 
-    dynamic_attributes: function (frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
-        if (!row.item_code || !row.dynamic_attributes?.length) return;
-
-        const attributes = row.dynamic_attributes.map(attr => ({
-            attribute_name: attr.attribute_name,
-            attribute_value: attr.attribute_value
-        }));
-
-        if (!attributes.length) return;
-
-        frappe.call({
-            method: "pos_restaurant_itb.api.resolve_variant",
-            args: {
-                template: row.item_code,
-                attributes: attributes
-            },
-            callback: function (r) {
-                if (r.message) {
-                    frappe.model.set_value(cdt, cdn, 'item_code', r.message.item_code);
-                    frappe.model.set_value(cdt, cdn, 'item_name', r.message.item_name);
-                    frappe.model.set_value(cdt, cdn, 'rate', r.message.rate);
-
-                    frappe.show_alert({
-                        message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
-                        indicator: 'green'
-                    });
-                }
-            }
-        });
+    pos_dynamic_attribute: function(frm, cdt, cdn) {
+        resolve_variant_if_ready(frm, cdt, cdn);
     }
 });
 
 frappe.ui.form.on('POS Dynamic Attribute', {
-    attribute_value: function (frm, cdt, cdn) {
+    attribute_value: function(frm, cdt, cdn) {
         const parent_row = frm.fields_dict["pos_order_items"].grid.get_selected_children()?.[0];
         if (!parent_row || !parent_row.item_code) return;
-
-        const attributes = parent_row.dynamic_attributes?.map(attr => ({
-            attribute_name: attr.attribute_name,
-            attribute_value: attr.attribute_value
-        })) || [];
-
-        if (!attributes.length) return;
-
-        frappe.call({
-            method: "pos_restaurant_itb.api.resolve_variant",
-            args: {
-                template: parent_row.item_code,
-                attributes: attributes
-            },
-            callback: function (r) {
-                if (r.message) {
-                    frappe.model.set_value(parent_row.doctype, parent_row.name, "item_code", r.message.item_code);
-                    frappe.model.set_value(parent_row.doctype, parent_row.name, "item_name", r.message.item_name);
-                    frappe.model.set_value(parent_row.doctype, parent_row.name, "rate", r.message.rate);
-
-                    frappe.show_alert(`✅ Diganti dengan Variant: ${r.message.item_name}`);
-                }
-            }
-        });
+        resolve_variant_if_ready(frm, parent_row.doctype, parent_row.name);
     }
 });
+
+function resolve_variant_if_ready(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+    if (!row.item_code || !row.pos_dynamic_attribute?.length) return;
+
+    const attributes = row.pos_dynamic_attribute.map(attr => ({
+        attribute_name: attr.attribute_name,
+        attribute_value: attr.attribute_value
+    }));
+
+    if (!attributes.length) return;
+
+    frappe.call({
+        method: "pos_restaurant_itb.api.resolve_variant",
+        args: {
+            template: row.item_code,
+            attributes: attributes
+        },
+        callback: function(r) {
+            if (r.message) {
+                frappe.model.set_value(cdt, cdn, 'item_code', r.message.item_code);
+                frappe.model.set_value(cdt, cdn, 'item_name', r.message.item_name);
+                frappe.model.set_value(cdt, cdn, 'rate', r.message.rate);
+
+                frappe.show_alert({
+                    message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
+                    indicator: 'green'
+                });
+            }
+        }
+    });
+}
 
 function update_item_amount_and_total(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
