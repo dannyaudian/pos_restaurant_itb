@@ -131,9 +131,13 @@ frappe.ui.form.on('POS Order', {
         frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function(doc, cdt, cdn) {
             return {
                 filters: {
-                    variant_of: null  // Hanya tampilkan item yang bukan varian
+                    variant_of: ["is", "not set"],
+                    is_sales_item: 1,
+                    disabled: 0
                 }
             };
         };
     }
 });
+
+
