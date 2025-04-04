@@ -21,12 +21,6 @@ class POSOrder(Document):
         self.name = self.order_id
 
     def validate(self):
-        """
-        Validasi dan update:
-        - Total amount (qty * rate)
-        - Status berdasarkan kot_status
-        - Optional: parsing dynamic attributes per item
-        """
         frappe.msgprint("🔍 Validating POS Order...")
 
         if not self.pos_order_items:
@@ -39,30 +33,11 @@ class POSOrder(Document):
         item_statuses = []
 
         for item in self.pos_order_items:
-            # Hitung amount
-            qty = item.qty or 0
-            rate = item.rate or 0
-            item.amount = qty * rate
+            item.load_children()
+            item.validate()  # Trigger validate() POSOrderItem
+
             total += item.amount
-
             item_statuses.append(item.kot_status or "Draft")
-            frappe.msgprint(f"🧾 {item.item_name or item.item_code}: {qty} x {rate} = {item.amount}")
-
-            # 🔄 Dynamic Attributes processing (jika child table digunakan)
-        for item in self.pos_order_items:
-            if not hasattr(item, "dynamic_attributes") or not item.dynamic_attributes:
-                frappe.msgprint(f"Item {item.item_name} tidak memiliki dynamic attributes.")
-                continue
-
-            try:
-                for attr in item.dynamic_attributes:
-                    info = f"{attr.attribute_name} = {attr.attribute_value}"
-                    if getattr(attr, "item_code", None):
-                        info += f" → Linked Item: {attr.item_code}"
-                    frappe.msgprint(f"✔️ Dynamic Attribute: {info}")
-            except Exception as e:
-                frappe.msgprint(f"❌ Gagal parsing dynamic attributes: {e}")
-
 
         self.total_amount = total
         frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")

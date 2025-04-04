@@ -9,7 +9,8 @@ fixtures = [
     "Client Script",
     "Server Script",
     "Custom Field",
-    "Property Setter"
+    "Property Setter",
+    "Doctype"
 ]
 
 doctype_js = {
