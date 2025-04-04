@@ -1,0 +1,1 @@
+from .pos_dynamic_attribute import POSDynamicAttribute

@@ -4,45 +4,68 @@ from frappe.model.document import Document
 
 class POSOrder(Document):
     def autoname(self):
-     if not self.branch:
-        frappe.throw(_("Branch is required to generate Order ID."))
+        if not self.branch:
+            frappe.throw(_("Branch is required to generate Order ID."))
 
-     branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
-     if not branch_code:
-        frappe.throw(_("Branch must have a valid Branch Code."))
+        branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
+        if not branch_code:
+            frappe.throw(_("Branch must have a valid Branch Code."))
 
-     branch_code = branch_code.strip().upper()
+        branch_code = branch_code.strip().upper()
 
-     if not self.order_id:
-        count = frappe.db.count("POS Order", {"branch": self.branch}) + 1
-        self.order_id = f"POS-{branch_code}-{count:05d}"
-        frappe.msgprint(f"Generated Order ID: {self.order_id}")
+        if not self.order_id:
+            count = frappe.db.count("POS Order", {"branch": self.branch}) + 1
+            self.order_id = f"POS-{branch_code}-{count:05d}"
+            frappe.msgprint(f"✅ Generated Order ID: {self.order_id}")
 
-     self.name = self.order_id
+        self.name = self.order_id
 
     def validate(self):
         """
-        Update status otomatis berdasarkan isian dan proses:
-        - Jika belum ada item: tetap Draft
-        - Jika ada item tapi belum diproses dapur: In Progress
-        - Jika semua item sudah Ready: Ready for Billing
+        Validasi dan update:
+        - Total amount (qty * rate)
+        - Status berdasarkan kot_status
+        - Optional: parsing dynamic attributes per item
         """
-        frappe.msgprint("Running validate() on POS Order...")
+        frappe.msgprint("🔍 Validating POS Order...")
 
         if not self.pos_order_items:
             self.status = "Draft"
-            frappe.msgprint("Status set to Draft (no items).")
+            self.total_amount = 0
+            frappe.msgprint("📭 No items. Status: Draft, Amount: 0")
             return
 
-        item_statuses = [d.kot_status for d in self.pos_order_items if d.kot_status]
-        frappe.msgprint(f"Detected item statuses: {item_statuses}")
+        total = 0
+        item_statuses = []
 
+        for item in self.pos_order_items:
+            # Hitung amount
+            qty = item.qty or 0
+            rate = item.rate or 0
+            item.amount = qty * rate
+            total += item.amount
+
+            item_statuses.append(item.kot_status or "Draft")
+            frappe.msgprint(f"🧾 {item.item_name or item.item_code}: {qty} x {rate} = {item.amount}")
+
+            # 🔄 Dynamic Attributes processing (jika child table digunakan)
+            if hasattr(item, "dynamic_attributes"):
+                for attr in item.dynamic_attributes:
+                    info = f"- {attr.attribute_type}: {attr.attribute_value}"
+                    if getattr(attr, "item_code", None):
+                        info += f" → Linked Item: {attr.item_code}"
+                    frappe.msgprint(f"⚙️ Dynamic Attribute: {info}")
+
+        self.total_amount = total
+        frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
+
+        # Status logic
         if all(s == "Ready" for s in item_statuses):
             self.status = "Ready for Billing"
-            frappe.msgprint("Status set to Ready for Billing.")
+            frappe.msgprint("✅ Status: Ready for Billing")
         elif any(s in ["Cooking", "Queued"] for s in item_statuses):
             self.status = "In Progress"
-            frappe.msgprint("Status set to In Progress.")
+            frappe.msgprint("⏳ Status: In Progress")
         else:
             self.status = "Draft"
-            frappe.msgprint("Fallback status: Draft.")
+            frappe.msgprint("📄 Status fallback: Draft")

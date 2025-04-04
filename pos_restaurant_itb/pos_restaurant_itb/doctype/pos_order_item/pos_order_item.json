@@ -57,7 +57,8 @@
     {
       "fieldname": "dynamic_attributes",
       "label": "Dynamic Attributes",
-      "fieldtype": "Code"
+      "fieldtype": "Table",
+      "options": "POS Dynamic Attribute"
     },
     {
       "fieldname": "sent_to_kitchen",
@@ -88,7 +89,14 @@
       "fieldtype": "Link",
       "options": "KOT",
       "read_only": 1
-    }
+    },
+    {
+      "fieldname": "resolved_dynamic_items",
+      "label": "Resolved Dynamic Items",
+      "fieldtype": "Table",
+      "options": "Item",
+      "read_only": 1
+    }    
   ],
   "permissions": [
     {
