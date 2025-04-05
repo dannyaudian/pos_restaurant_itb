@@ -49,7 +49,7 @@ frappe.ui.form.on('POS Order', {
     },
 
     onload: function (frm) {
-        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function (doc, cdt, cdn) {
+        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function () {
             return {
                 filters: {
                     variant_of: ["is", "not set"],
@@ -70,13 +70,12 @@ frappe.ui.form.on('POS Order Item', {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
 
+                // ✅ Gunakan dynamic_attributes (bukan pos_dynamic_attribute!)
                 frappe.model.clear_table(row, 'dynamic_attributes');
                 frm.refresh_field('pos_order_items');
 
                 const grid_row = frm.fields_dict.pos_order_items.grid.grid_rows_by_docname[row.name];
-                if (grid_row && grid_row.toggle_view) {
-                    grid_row.toggle_view(true);
-                }
+                if (grid_row?.toggle_view) grid_row.toggle_view(true);
             }
         });
 
