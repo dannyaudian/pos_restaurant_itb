@@ -54,26 +54,17 @@ frappe.ui.form.on('POS Order', {
         // 📛 Filter meja berdasarkan ketersediaan (via API)
         frm.set_query("table", () => {
             if (!frm.doc.branch) {
-                frappe.msgprint("Pilih cabang terlebih dahulu.");
-                return { filters: { name: ["=", ""] } };
+              frappe.msgprint("Pilih cabang terlebih dahulu.");
+              return { filters: { name: ["=", ""] } };
             }
-
+          
             return {
-                query: () => {
-                    return frappe.call({
-                        method: "pos_restaurant_itb.api.get_available_tables",
-                        args: { branch: frm.doc.branch },
-                        callback: function (r) {
-                            if (r.message && r.message.length > 0) {
-                                frm.fields_dict.table.df.options = r.message.map(row => row.name);
-                                frm.refresh_field("table");
-                            }
-                        }
-                    });
-                }
+              filters: [
+                ["POS Table", "branch", "=", frm.doc.branch],
+                ["POS Table", "is_active", "=", 1]
+              ]
             };
-        });
-
+          });
         // 🧾 Filter item template saja
         frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
             filters: {
