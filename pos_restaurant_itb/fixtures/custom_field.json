@@ -8,6 +8,7 @@
     "options": "Branch",
     "insert_after": "name",
     "reqd": 1,
+    "permlevel": 0,
     "name": "POS_Profile-branch"
   },
   {
@@ -18,6 +19,7 @@
     "fieldtype": "Check",
     "insert_after": "branch",
     "reqd": 0,
+    "permlevel": 0,
     "name": "POS_Profile-is_restaurant_pos"
   },
   {
@@ -31,6 +33,6 @@
     "in_list_view": 1,
     "translatable": 0,
     "description": "Kode unik untuk identifikasi cabang, contoh: JKT-R1",
-    "name": "Branch-branch_code"
-  }
-]
+    "name": "Branch-branch_code",
+    "permlevel": 0
+  }]

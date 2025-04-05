@@ -8,34 +8,40 @@
            "fieldtype": "Link",
            "options": "POS Profile",
            "label": "POS Profile",
+           "permlevel": 0,
            "reqd": 1
        },
        {
            "fieldname": "enable_kot_printing",
            "fieldtype": "Check",
+           "permlevel": 0,
            "label": "Enable KOT Printing"
        },
        {
            "fieldname": "enable_customer_display",
            "fieldtype": "Check",
+           "permlevel": 0,
            "label": "Enable Customer Display"
        },
        {
            "fieldname": "default_kitchen_station",
            "fieldtype": "Link",
            "options": "Kitchen Station",
+           "permlevel": 0,
            "label": "Default Kitchen Station"
        },
        {
            "fieldname": "receipt_template",
            "fieldtype": "Select",
            "options": "Thermal\nBluetooth",
+           "permlevel": 0,
            "label": "Receipt Template"
        },
        {
            "fieldname": "enable_qris_payment",
            "fieldtype": "Check",
-           "label": "Enable QRIS Payment"
-       }
-    ]
+           "permlevel": 0,
+           "label": "Enable QRIS Payment",
+      "permlevel": 0
+       }    ]
 }

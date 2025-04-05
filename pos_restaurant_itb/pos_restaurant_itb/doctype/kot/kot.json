@@ -12,6 +12,7 @@
       "label": "POS Order",
       "fieldtype": "Link",
       "options": "POS Order",
+      "permlevel": 0,
       "reqd": 1
     },
     {
@@ -19,6 +20,7 @@
       "label": "Table",
       "fieldtype": "Link",
       "options": "POS Table",
+      "permlevel": 0,
       "fetch_from": "pos_order.table"
     },
     {
@@ -26,18 +28,21 @@
       "label": "Branch",
       "fieldtype": "Link",
       "options": "Branch",
+      "permlevel": 0,
       "fetch_from": "pos_order.branch"
     },
     {
       "fieldname": "kot_time",
       "label": "KOT Time",
       "fieldtype": "Datetime",
+      "permlevel": 0,
       "default": "now"
     },
     {
       "fieldname": "kot_items",
       "label": "Items",
       "fieldtype": "Table",
+      "permlevel": 0,
       "options": "KOT Item"
     },
     {
@@ -45,15 +50,16 @@
       "label": "Status",
       "fieldtype": "Select",
       "options": "New\nIn Progress\nReady\nServed",
+      "permlevel": 0,
       "default": "New"
     },
     {
       "fieldname": "waiter",
       "label": "Waiter",
       "fieldtype": "Link",
-      "options": "Employee"
-    }
-  ],
+      "options": "Employee",
+      "permlevel": 0
+    }  ],
   "permissions": [
     {
       "role": "System Manager",

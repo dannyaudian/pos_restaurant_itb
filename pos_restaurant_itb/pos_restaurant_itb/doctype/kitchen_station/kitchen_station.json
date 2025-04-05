@@ -10,20 +10,22 @@
       "fieldname": "station_name",
       "label": "Station Name",
       "fieldtype": "Data",
+      "permlevel": 0,
       "reqd": 1
     },
     {
       "fieldname": "assigned_printer",
       "label": "Assigned Printer",
+      "permlevel": 0,
       "fieldtype": "Data"
     },
     {
       "fieldname": "item_group",
       "label": "Item Group",
       "fieldtype": "Link",
-      "options": "Item Group"
-    }
-  ],
+      "options": "Item Group",
+      "permlevel": 0
+    }  ],
   "permissions": [
     {
       "role": "System Manager",

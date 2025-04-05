@@ -19,6 +19,7 @@
       "label": "Table",
       "fieldtype": "Link",
       "options": "POS Table",
+      "permlevel": 0,
       "in_list_view": 1
     },
     {
@@ -26,35 +27,41 @@
       "label": "Branch",
       "fieldtype": "Link",
       "options": "Branch",
+      "permlevel": 0,
       "reqd": 1
     },
     {
       "fieldname": "order_type",
       "label": "Order Type",
       "fieldtype": "Select",
+      "permlevel": 0,
       "options": "Dine In\nTakeaway\nDelivery"
     },
     {
       "fieldname": "customer",
       "label": "Customer",
       "fieldtype": "Link",
+      "permlevel": 0,
       "options": "Customer"
     },
     {
       "fieldname": "pos_order_items",
       "label": "Items",
       "fieldtype": "Table",
+      "permlevel": 0,
       "options": "POS Order Item"
     },
     {
       "fieldname": "total_amount",
       "label": "Total Amount",
+      "permlevel": 0,
       "fieldtype": "Currency"
     },
     {
       "fieldname": "status",
       "label": "Status",
       "fieldtype": "Select",
+      "permlevel": 0,
       "options": "Draft\nSubmitted\nIn Progress\nReady for Billing\nPaid\nCancelled",
       "default": "Draft"
     },
@@ -62,9 +69,9 @@
       "fieldname": "sales_invoice",
       "label": "Sales Invoice",
       "fieldtype": "Link",
-      "options": "Sales Invoice"
-    }
-  ],
+      "options": "Sales Invoice",
+      "permlevel": 0
+    }  ],
   "permissions": [
     {
       "role": "System Manager",

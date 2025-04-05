@@ -13,12 +13,14 @@
       "fieldtype": "Link",
       "options": "Item",
       "reqd": 1,
+      "permlevel": 0,
       "in_list_view": 1
     },
     {
       "fieldname": "item_name",
       "label": "Item Name",
       "fieldtype": "Data",
+      "permlevel": 0,
       "in_list_view": 1
     },
     {
@@ -26,27 +28,32 @@
       "label": "Qty",
       "fieldtype": "Float",
       "default": 1,
+      "permlevel": 0,
       "reqd": 1
     },
     {
       "fieldname": "note",
       "label": "Note",
+      "permlevel": 0,
       "fieldtype": "Small Text"
     },
     {
       "fieldname": "kot_status",
       "label": "KOT Status",
       "fieldtype": "Select",
+      "permlevel": 0,
       "options": "Queued\nCooking\nReady\nServed"
     },
     {
       "fieldname": "kot_last_update",
       "label": "KOT Last Update",
+      "permlevel": 0,
       "fieldtype": "Datetime"
     },
     {
       "fieldname": "dynamic_attributes",
       "label": "Dynamic Attributes",
+      "permlevel": 0,
       "fieldtype": "Code"
     },
     {
@@ -54,6 +61,7 @@
       "label": "Waiter",
       "fieldtype": "Data",
       "read_only": 1,
+      "permlevel": 0,
       "description": "Otomatis terisi dari user yang menginput item"
     },
     {
@@ -61,6 +69,7 @@
       "label": "Order ID",
       "fieldtype": "Data",
       "fetch_from": "parent.pos_order",
+      "permlevel": 0,
       "read_only": 1
     },
     {
@@ -69,9 +78,9 @@
       "fieldtype": "Link",
       "options": "Branch",
       "fetch_from": "parent.branch",
-      "read_only": 1
-    }
-  ],
+      "read_only": 1,
+      "permlevel": 0
+    }  ],
   "permissions": [
     {
       "role": "System Manager",
