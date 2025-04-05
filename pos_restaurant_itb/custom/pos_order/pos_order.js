@@ -60,6 +60,7 @@ frappe.ui.form.on('POS Order', {
         };
     }
 });
+
 frappe.ui.form.on('POS Order Item', {
     item_code: function(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
@@ -68,12 +69,9 @@ frappe.ui.form.on('POS Order Item', {
         frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
-
-                // Bersihkan child table secara aman
                 frappe.model.clear_table(row, 'pos_dynamic_attribute');
                 frm.refresh_field('pos_order_items');
 
-                // Tampilkan grid inline
                 const grid_row = frm.fields_dict.pos_order_items.grid.grid_rows_by_docname[row.name];
                 if (grid_row && grid_row.toggle_view) {
                     grid_row.toggle_view(true);
@@ -81,7 +79,6 @@ frappe.ui.form.on('POS Order Item', {
             }
         });
 
-        // Ambil harga
         const price_list = frm.doc.selling_price_list || 'Standard Selling';
         frappe.call({
             method: "frappe.client.get_list",
