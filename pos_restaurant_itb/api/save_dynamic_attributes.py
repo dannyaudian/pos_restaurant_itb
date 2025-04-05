@@ -2,7 +2,7 @@ import frappe
 import json
 from frappe import _
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True))
 def save_dynamic_attributes(parent_pos_order_item, attributes):
     """
     Simpan atribut sebagai child table langsung via update doc (bukan via get_doc().save())
