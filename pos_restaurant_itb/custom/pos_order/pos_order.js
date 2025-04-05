@@ -69,7 +69,8 @@ frappe.ui.form.on('POS Order Item', {
         frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
             if (r && r.has_variants) {
                 frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
-                frappe.model.clear_table(row, 'pos_dynamic_attribute');
+
+                frappe.model.clear_table(row, 'dynamic_attributes');
                 frm.refresh_field('pos_order_items');
 
                 const grid_row = frm.fields_dict.pos_order_items.grid.grid_rows_by_docname[row.name];
@@ -104,7 +105,7 @@ frappe.ui.form.on('POS Order Item', {
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total,
 
-    pos_dynamic_attribute: function(frm, cdt, cdn) {
+    dynamic_attributes: function(frm, cdt, cdn) {
         resolve_variant_if_ready(frm, cdt, cdn);
     }
 });
@@ -119,9 +120,9 @@ frappe.ui.form.on('POS Dynamic Attribute', {
 
 function resolve_variant_if_ready(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
-    if (!row.item_code || !row.pos_dynamic_attribute?.length) return;
+    if (!row.item_code || !row.dynamic_attributes?.length) return;
 
-    const attributes = row.pos_dynamic_attribute.map(attr => ({
+    const attributes = row.dynamic_attributes.map(attr => ({
         attribute_name: attr.attribute_name,
         attribute_value: attr.attribute_value
     }));
