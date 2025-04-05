@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
+from frappe.utils import now_datetime
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+
 
 @frappe.whitelist()
 def update_kot_item_status(order, item_code, status):
@@ -17,7 +19,7 @@ def update_kot_item_status(order, item_code, status):
     for item in doc.pos_order_items:
         if item.item_code == item_code and not item.cancelled:
             item.kot_status = status
-            item.kot_last_update = frappe.utils.now_datetime()
+            item.kot_last_update = now_datetime()
             kot_id = item.kot_id
             updated = True
             break
@@ -28,7 +30,7 @@ def update_kot_item_status(order, item_code, status):
     doc.save(ignore_permissions=True)
     frappe.db.commit()
 
-    # Update KDS status jika ada kot_id
+    # Update status di Kitchen Display Order (jika ada)
     if kot_id:
         kds_name = frappe.db.get_value("Kitchen Display Order", {"kot_id": kot_id})
         if kds_name:
@@ -67,3 +69,45 @@ def get_new_order_id(branch):
     new_order_id = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
     return new_order_id
+
+
+@frappe.whitelist()
+def create_kds_from_kot(kot_id):
+    """
+    Membuat Kitchen Display Order berdasarkan KOT ID.
+    Mengisi otomatis semua informasi dan item_list dari KOT Item.
+    """
+    if not kot_id:
+        frappe.throw(_("KOT ID wajib diisi."))
+
+    # Cek apakah sudah ada KDS sebelumnya
+    existing = frappe.db.exists("Kitchen Display Order", {"kot_id": kot_id})
+    if existing:
+        return existing
+
+    kot = frappe.get_doc("KOT", kot_id)
+    kds = frappe.new_doc("Kitchen Display Order")
+    kds.kot_id = kot.name
+    kds.table_number = kot.table
+    kds.branch = kot.branch
+    kds.status = "New"
+    kds.last_updated = now_datetime()
+
+    for item in kot.kot_items:
+        if item.cancelled:
+            continue
+        kds.append("item_list", {
+            "item_code": item.item_code,
+            "item_name": item.item_name,
+            "kot_status": item.kot_status,
+            "kot_last_update": item.kot_last_update,
+            "attribute_summary": item.dynamic_attributes,
+            "note": item.note,
+            "cancelled": item.cancelled,
+            "cancellation_note": item.cancellation_note
+        })
+
+    kds.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return kds.name
