@@ -38,6 +38,13 @@
       "label": "Extra Price",
       "fieldtype": "Currency",
       "permlevel": 0
+    },
+    {
+      "fieldname": "parent_pos_order_item",
+      "label": "POS Order Item",
+      "fieldtype": "Link",
+      "options": "POS Order Item",
+      "reqd": 1
     }  ],
   "permissions": [
     {

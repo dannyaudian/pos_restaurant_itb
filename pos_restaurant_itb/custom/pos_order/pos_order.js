@@ -68,14 +68,44 @@ frappe.ui.form.on('POS Order Item', {
 
         frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
             if (r && r.has_variants) {
-                frappe.show_alert("🧩 Item ini punya varian. Silakan pilih atribut.");
+                frappe.call({
+                    method: "pos_restaurant_itb.api.get_attributes_for_item",
+                    args: { template: row.item_code },
+                    callback: function(res) {
+                        if (!res.message) return;
 
-                // ✅ Gunakan dynamic_attributes (bukan pos_dynamic_attribute!)
-                frappe.model.clear_table(row, 'dynamic_attributes');
-                frm.refresh_field('pos_order_items');
+                        const attributes = res.message;
+                        const fields = attributes.map(attr => ({
+                            label: attr.attribute,
+                            fieldname: attr.attribute,
+                            fieldtype: "Select",
+                            options: attr.values.join("\n"),
+                            reqd: 1
+                        }));
 
-                const grid_row = frm.fields_dict.pos_order_items.grid.grid_rows_by_docname[row.name];
-                if (grid_row?.toggle_view) grid_row.toggle_view(true);
+                        let d = new frappe.ui.Dialog({
+                            title: 'Pilih Atribut',
+                            fields: fields,
+                            primary_action_label: 'Simpan',
+                            primary_action(values) {
+                                frappe.call({
+                                    method: "pos_restaurant_itb.api.save_dynamic_attributes",
+                                    args: {
+                                        parent_pos_order_item: row.name,
+                                        attributes: values
+                                    },
+                                    callback: function(save_res) {
+                                        frappe.show_alert("✔️ Atribut disimpan.");
+                                        resolve_variant_after_save(frm, row, values);
+                                        d.hide();
+                                    }
+                                });
+                            }
+                        });
+
+                        d.show();
+                    }
+                });
             }
         });
 
@@ -103,43 +133,25 @@ frappe.ui.form.on('POS Order Item', {
 
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total,
-
-    dynamic_attributes: function(frm, cdt, cdn) {
-        resolve_variant_if_ready(frm, cdt, cdn);
-    }
 });
 
-frappe.ui.form.on('POS Dynamic Attribute', {
-    attribute_value: function(frm, cdt, cdn) {
-        const parent_row = frm.fields_dict["pos_order_items"].grid.get_selected_children()?.[0];
-        if (!parent_row || !parent_row.item_code) return;
-        resolve_variant_if_ready(frm, parent_row.doctype, parent_row.name);
-    }
-});
-
-function resolve_variant_if_ready(frm, cdt, cdn) {
-    const row = locals[cdt][cdn];
-    if (!row.item_code || !row.dynamic_attributes?.length) return;
-
-    console.log("🧪 ATTR:", row.dynamic_attributes);
-    const attributes = row.dynamic_attributes.map(attr => ({
-        attribute_name: attr.attribute_name,
-        attribute_value: attr.attribute_value
+function resolve_variant_after_save(frm, row, attributes) {
+    const attr_array = Object.keys(attributes).map(key => ({
+        attribute_name: key,
+        attribute_value: attributes[key]
     }));
-
-    if (!attributes.length) return;
 
     frappe.call({
         method: "pos_restaurant_itb.api.resolve_variant",
         args: {
             template: row.item_code,
-            attributes: attributes
+            attributes: attr_array
         },
         callback: function(r) {
             if (r.message) {
-                frappe.model.set_value(cdt, cdn, 'item_code', r.message.item_code);
-                frappe.model.set_value(cdt, cdn, 'item_name', r.message.item_name);
-                frappe.model.set_value(cdt, cdn, 'rate', r.message.rate);
+                frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.item_code);
+                frappe.model.set_value(row.doctype, row.name, 'item_name', r.message.item_name);
+                frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
 
                 frappe.show_alert({
                     message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
