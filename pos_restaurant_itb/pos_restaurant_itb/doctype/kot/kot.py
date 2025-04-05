@@ -6,9 +6,14 @@ from frappe import _
 
 class KOT(Document):
     def autoname(self):
-        # Format: KOT-YYYYMMDD-####
+        # Format: KOT-YYYYMMDD-BRANCHCODE-####
         today = frappe.utils.now().strftime("%Y%m%d")
-        prefix = f"KOT-{today}"
+
+        # Ambil branch code
+        branch_code = frappe.db.get_value("Branch", self.branch, "branch_code") or "XXX"
+        branch_code = branch_code.strip().upper()
+
+        prefix = f"KOT-{today}-{branch_code}"
 
         last = frappe.db.sql(
             """SELECT name FROM `tabKOT`
@@ -47,13 +52,15 @@ class KOT(Document):
                             "waiter": get_waiter_from_user(frappe.session.user)
                         })
 
+        # Tetapkan waiter jika belum
         if not self.waiter:
             self.waiter = get_waiter_from_user(frappe.session.user)
 
         if not self.kot_items:
             frappe.throw(_("Tidak ada item KOT yang valid untuk dibuat."))
 
+
 def get_waiter_from_user(user_id):
-    # Ambil nama Employee dari user_id
+    # Jika user punya Employee, ambil nama-nya
     emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name")
-    return emp or user_id
+    return emp or user_id  # fallback ke user_id jika bukan karyawan (misal System Manager)

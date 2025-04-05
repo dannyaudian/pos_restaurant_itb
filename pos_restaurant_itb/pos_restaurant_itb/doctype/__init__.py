@@ -1,3 +1,5 @@
+# pos_restaurant_itb/pos_restaurant_itb/doctype/__init__.py
+
 from __future__ import unicode_literals
 
 def safe_import(module_path, class_name):
@@ -20,7 +22,8 @@ controllers = [
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_dynamic_attribute.pos_dynamic_attribute", "POSDynamicAttribute"),
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_station_setup.kitchen_station_setup", "KitchenStationSetup"),
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.printer_mapping_pos_restaurant.printer_mapping_pos_restaurant", "PrinterMappingPOSRestaurant"),
-    ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_station.kitchen_station", "KitchenStation")
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_station.kitchen_station", "KitchenStation"),
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_display_order.kitchen_display_order", "KitchenDisplayOrder")
 ]
 
 for module_path, class_name in controllers:
