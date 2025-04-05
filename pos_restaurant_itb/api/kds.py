@@ -1,4 +1,4 @@
-# pos_restaurant_itb/api/kds_handler.py
+# pos_restaurant_itb/api/kds.py
 
 import frappe
 from frappe import _
@@ -8,21 +8,18 @@ from frappe.utils import now_datetime
 @frappe.whitelist()
 def create_kds_from_kot(kot_id):
     """
-    Buat Kitchen Display Order (KDS) otomatis dari KOT.
-    Akan mengambil semua item dari KOT dan copy ke KDS.
+    Create Kitchen Display Order (KDS) from a given KOT ID.
+    Manual backup version, only used if automatic creation fails.
     """
     if not kot_id:
         frappe.throw(_("KOT ID wajib diisi."))
 
-    kot = frappe.get_doc("KOT", kot_id)
+    # Cek apakah KDS sudah dibuat sebelumnya
+    existing = frappe.db.exists("Kitchen Display Order", {"kot_id": kot_id})
+    if existing:
+        return existing
 
-    # Cegah duplikasi
-    if frappe.db.exists("Kitchen Display Order", {"kot_id": kot.name}):
-        return {
-            "status": "warning",
-            "message": _(f"KDS untuk {kot.name} sudah ada."),
-            "kds_name": frappe.db.get_value("Kitchen Display Order", {"kot_id": kot.name})
-        }
+    kot = frappe.get_doc("KOT", kot_id)
 
     kds = frappe.new_doc("Kitchen Display Order")
     kds.kot_id = kot.name
@@ -46,8 +43,4 @@ def create_kds_from_kot(kot_id):
     kds.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    return {
-        "status": "success",
-        "message": _(f"✅ KDS berhasil dibuat dari KOT {kot.name}"),
-        "kds_name": kds.name
-    }
+    return kds.name

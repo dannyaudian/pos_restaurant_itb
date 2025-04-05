@@ -4,7 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import now
 from pos_restaurant_itb.pos_restaurant_itb.doctype.kot.kot import get_waiter_from_user
-from pos_restaurant_itb.api.kitchen_station_core import create_kitchen_station_items_from_kot
+from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_from_kot
+
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id):
