@@ -49,6 +49,7 @@
       "label": "Items",
       "fieldtype": "Table",
       "permlevel": 0,
+      "columns": 3,
       "options": "POS Order Item"
     },
     {
@@ -62,8 +63,15 @@
       "label": "Status",
       "fieldtype": "Select",
       "permlevel": 0,
-      "options": "Draft\nSubmitted\nIn Progress\nReady for Billing\nPaid\nCancelled",
+      "options": "Draft\nIn Progress\nReady for Billing\nPaid\nCancelled",
       "default": "Draft"
+    },
+    {
+      "fieldname": "final_billed",
+      "label": "Final Billed",
+      "fieldtype": "Check",
+      "default": "0",
+      "permlevel": 0
     },
     {
       "fieldname": "sales_invoice",

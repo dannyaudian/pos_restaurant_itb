@@ -42,7 +42,21 @@
       "label": "KOT Status",
       "fieldtype": "Select",
       "permlevel": 0,
-      "options": "Queued\nCooking\nReady\nServed"
+      "options": "Queued\nCooking\nReady\nServed\nCancelled"
+    },
+    {
+      "fieldname": "cancelled",
+      "label": "Cancelled",
+      "fieldtype": "Check",
+      "default": "0",
+      "in_list_view": 1,
+      "permlevel": 0
+    },
+    {
+      "fieldname": "cancellation_note",
+      "label": "Cancellation Note",
+      "fieldtype": "Small Text",
+      "permlevel": 0
     },
     {
       "fieldname": "kot_last_update",

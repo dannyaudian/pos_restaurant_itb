@@ -10,7 +10,6 @@ def safe_import(module_path, class_name):
         import frappe
         frappe.logger().error(f"Error importing {class_name} from {module_path}: {e}")
 
-# List Doctype dan lokasi module
 controllers = [
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_order_item.pos_order_item", "POSOrderItem"),
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_table.pos_table", "POSTable"),
@@ -18,9 +17,11 @@ controllers = [
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.kot_item.kot_item", "KOTItem"),
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.kot.kot", "KOT"),
     ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_order.pos_order", "POSOrder"),
-    ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_dynamic_attribute.pos_dynamic_attribute", "POSDynamicAttribute")
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.pos_dynamic_attribute.pos_dynamic_attribute", "POSDynamicAttribute"),
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_station_setup.kitchen_station_setup", "KitchenStationSetup"),
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.printer_mapping_pos_restaurant.printer_mapping_pos_restaurant", "PrinterMappingPOSRestaurant"),
+    ("pos_restaurant_itb.pos_restaurant_itb.doctype.kitchen_station.kitchen_station", "KitchenStation")
 ]
 
-# Jalankan safe_import untuk masing-masing
 for module_path, class_name in controllers:
     safe_import(module_path, class_name)

@@ -1,0 +1,54 @@
+{
+    "doctype": "DocType",
+    "name": "Kitchen Station Setup",
+    "module": "pos_restaurant_itb",
+    "custom": 0,
+    "istable": 0,
+    "editable_grid": 1,
+    "fields": [
+      {
+        "fieldname": "station_name",
+        "label": "Station Name",
+        "fieldtype": "Data",
+        "reqd": 1
+      },
+      {
+        "fieldname": "branch",
+        "label": "Branch",
+        "fieldtype": "Link",
+        "options": "Branch",
+        "reqd": 1
+      },
+      {
+        "fieldname": "item_group",
+        "label": "Item Group",
+        "fieldtype": "Link",
+        "options": "Item Group",
+        "reqd": 1
+      },
+      {
+        "fieldname": "printer_list",
+        "label": "Assigned Printers",
+        "fieldtype": "Table",
+        "options": "Printer Mapping POS Restaurant",
+        "reqd": 0
+      },
+      {
+        "fieldname": "print_format",
+        "label": "Print Format",
+        "fieldtype": "Link",
+        "options": "Print Format",
+        "reqd": 0
+      }
+    ],
+    "permissions": [
+      {
+        "role": "System Manager",
+        "read": 1,
+        "write": 1,
+        "create": 1,
+        "delete": 1
+      }
+    ]
+  }
+  

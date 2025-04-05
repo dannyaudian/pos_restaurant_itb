@@ -21,33 +21,31 @@ class POSOrder(Document):
         self.name = self.order_id
 
     def validate(self):
-        frappe.msgprint("🔍 Validating POS Order...")
-
         if not self.pos_order_items:
             self.status = "Draft"
             self.total_amount = 0
-            frappe.msgprint("📭 No items. Status: Draft, Amount: 0")
+            frappe.msgprint("📭 Order kosong. Status: Draft, Total: 0")
             return
 
         total = 0
         item_statuses = []
 
         for item in self.pos_order_items:
-            item.validate()  # Trigger validate() POSOrderItem
-
+            item.validate()
             total += item.amount
             item_statuses.append(item.kot_status or "Draft")
 
         self.total_amount = total
-        frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
 
-        # Status logic
+        # Tentukan status berdasarkan status item
+        new_status = "Draft"
         if all(s == "Ready" for s in item_statuses):
-            self.status = "Ready for Billing"
-            frappe.msgprint("✅ Status: Ready for Billing")
+            new_status = "Ready for Billing"
         elif any(s in ["Cooking", "Queued"] for s in item_statuses):
-            self.status = "In Progress"
-            frappe.msgprint("⏳ Status: In Progress")
-        else:
-            self.status = "Draft"
-            frappe.msgprint("📄 Status fallback: Draft")
+            new_status = "In Progress"
+
+        if self.status != new_status:
+            self.status = new_status
+            frappe.msgprint(f"🔁 Status updated to: {self.status}")
+
+        frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")

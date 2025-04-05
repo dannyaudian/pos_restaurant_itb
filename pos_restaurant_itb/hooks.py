@@ -10,11 +10,17 @@ fixtures = [
     "Server Script",
     "Custom Field",
     "Property Setter",
-    "Doctype"
+    "Doctype",
+    "Role",
+    "Custom DocPerm"
 ]
 
 doctype_js = {
-    "POS Order": "custom/pos_order/pos_order.js",
+    "POS Order": [
+        "custom/pos_order/pos_order.js",
+        "custom/pos_order/pos_order_buttons.js",
+        "custom/pos_order/pos_order_list.js"
+    ],
     "POS Invoice": "custom/pos_invoice/pos_invoice.js",
     "POS Profile": "custom/pos_profile/pos_profile.js"
 }
