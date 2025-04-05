@@ -3,7 +3,7 @@
 import frappe
 from frappe import _
 from frappe.utils import now
-from pos_restaurant_itb.doctype.kot.kot import get_waiter_from_user
+from pos_restaurant_itb.pos_restaurant_itb.doctype.kot.kot import get_waiter_from_user
 from pos_restaurant_itb.api.kitchen_station_core import create_kitchen_station_items_from_kot
 
 @frappe.whitelist()

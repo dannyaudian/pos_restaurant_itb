@@ -53,7 +53,7 @@ def create_kitchen_station_items_from_kot(kot_id):
             doc.attribute_summary = attribute_summary
             doc.note = item.note
             doc.kot_status = "Queued"
-            doc.kot_last_update = now_datetime()
+            doc.kot_last_update = now_datetime().isoformat()
             doc.cancelled = 0
             doc.cancellation_note = ""
             doc.insert(ignore_permissions=True)
