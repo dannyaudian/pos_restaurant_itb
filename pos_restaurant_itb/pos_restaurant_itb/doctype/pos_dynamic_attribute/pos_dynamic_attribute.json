@@ -37,7 +37,7 @@
       "fieldname": "extra_price",
       "label": "Extra Price",
       "fieldtype": "Currency",
-      "permlevel": 0,
+      "permlevel": 0
     }  ],
   "permissions": [
     {
