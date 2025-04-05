@@ -1,42 +1,38 @@
 import frappe
-from frappe import _
 import json
+from frappe import _
 
 @frappe.whitelist()
 def save_dynamic_attributes(parent_pos_order_item, attributes):
     """
-    Simpan kombinasi atribut ke child table `dynamic_attributes` dari POS Order Item
+    Simpan atribut sebagai child table langsung via update doc (bukan via get_doc().save())
     """
-
     if not parent_pos_order_item or not attributes:
         frappe.throw(_("Parameter tidak lengkap."))
 
-    # Jika dikirim dari client JS, bisa jadi string → parsing
     if isinstance(attributes, str):
         attributes = json.loads(attributes)
 
-    # Ambil dokumen POS Order Item
-    doc = frappe.get_doc("POS Order Item", parent_pos_order_item)
-    doc.flags.ignore_permissions = True  # 🔥 penting: bypass permission check
+    # Ambil dokumen POS Order Item sebagai dict
+    doc = frappe.get_doc("POS Order Item", parent_pos_order_item).as_dict()
 
-    # Bersihkan dulu
-    doc.set("dynamic_attributes", [])
+    # Build ulang field dynamic_attributes
+    doc["dynamic_attributes"] = []
 
-    # Tambahkan setiap atribut
-    for attr_name, attr_value in attributes.items():
-        if not attr_name or not attr_value:
+    for key, value in attributes.items():
+        if not key or not value:
             continue
-
-        doc.append("dynamic_attributes", {
-            "attribute_name": attr_name,
-            "attribute_value": attr_value
+        doc["dynamic_attributes"].append({
+            "doctype": "POS Dynamic Attribute",
+            "attribute_name": key,
+            "attribute_value": value
         })
 
-    doc.save()
-    frappe.db.commit()
+    # Save ulang via update_doc → tidak trigger permission
+    frappe.model.update_doc("POS Order Item", doc)
 
     return {
         "status": "success",
-        "message": f"{len(doc.dynamic_attributes)} atribut disimpan.",
-        "dynamic_attributes": doc.dynamic_attributes
+        "message": f"{len(doc['dynamic_attributes'])} atribut disimpan.",
+        "dynamic_attributes": doc["dynamic_attributes"]
     }
