@@ -46,6 +46,13 @@
       "fieldtype": "Currency"
     },
     {
+      "fieldname": "attribute_summary",
+      "label": "Attributes",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "in_list_view": 1
+    },    
+    {
       "fieldname": "note",
       "label": "Note",
       "permlevel": 0,
@@ -97,6 +104,13 @@
       "options": "KOT",
       "permlevel": 0,
       "read_only": 1
+    },
+    {
+      "fieldname": "dynamic_attributes",
+      "label": "Dynamic Attributes",
+      "fieldtype": "Table",
+      "options": "POS Dynamic Attribute",
+      "permlevel": 0
     },
     {
       "fieldname": "resolved_dynamic_items",

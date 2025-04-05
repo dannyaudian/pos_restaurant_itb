@@ -2,13 +2,13 @@ frappe.ui.form.on('POS Order', {
     table: function (frm) {
         if (frm.doc.table) {
             frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
-                if (r && r.branch) {
+                if (r?.branch) {
                     frm.set_value('branch', r.branch);
                     frappe.call({
                         method: "pos_restaurant_itb.api.get_new_order_id",
                         args: { branch: r.branch },
                         callback: function (res) {
-                            if (res && res.message) {
+                            if (res?.message) {
                                 frm.set_value("order_id", res.message);
                             }
                         }
@@ -19,7 +19,7 @@ frappe.ui.form.on('POS Order', {
     },
 
     refresh: function (frm) {
-        frm.add_custom_button(__('Print KOT'), function () {
+        frm.add_custom_button(__('Print KOT'), () => {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_kot',
                 args: { name: frm.doc.name },
@@ -33,7 +33,7 @@ frappe.ui.form.on('POS Order', {
             });
         }, __("Actions"));
 
-        frm.add_custom_button(__('Print Receipt'), function () {
+        frm.add_custom_button(__('Print Receipt'), () => {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_receipt',
                 args: { name: frm.doc.name },
@@ -49,33 +49,30 @@ frappe.ui.form.on('POS Order', {
     },
 
     onload: function (frm) {
-        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = function () {
-            return {
-                filters: {
-                    variant_of: ["is", "not set"],
-                    is_sales_item: 1,
-                    disabled: 0
-                }
-            };
-        };
+        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
+            filters: {
+                variant_of: ["is", "not set"],
+                is_sales_item: 1,
+                disabled: 0
+            }
+        });
     }
 });
 
 frappe.ui.form.on('POS Order Item', {
-    item_code: function(frm, cdt, cdn) {
+    item_code: function (frm, cdt, cdn) {
         const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        frappe.db.get_value("Item", row.item_code, "has_variants", function(r) {
-            if (r && r.has_variants) {
+        frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
+            if (r?.has_variants) {
                 frappe.call({
                     method: "pos_restaurant_itb.api.get_attributes_for_item",
                     args: { item_code: row.item_code },
-                    callback: function(res) {
+                    callback: function (res) {
                         if (!res.message) return;
 
-                        const attributes = res.message;
-                        const fields = attributes.map(attr => ({
+                        const fields = res.message.map(attr => ({
                             label: attr.attribute,
                             fieldname: attr.attribute,
                             fieldtype: "Select",
@@ -83,23 +80,25 @@ frappe.ui.form.on('POS Order Item', {
                             reqd: 1
                         }));
 
-                        let d = new frappe.ui.Dialog({
+                        const d = new frappe.ui.Dialog({
                             title: 'Pilih Atribut',
                             fields: fields,
                             primary_action_label: 'Simpan',
                             primary_action(values) {
-                                frappe.call({
-                                    method: "pos_restaurant_itb.api.save_dynamic_attributes",
-                                    args: {
-                                        parent_pos_order_item: row.name,
-                                        attributes: values
-                                    },
-                                    callback: function(save_res) {
-                                        frappe.show_alert("✔️ Atribut disimpan.");
-                                        resolve_variant_after_save(frm, row, values);
-                                        d.hide();
-                                    }
-                                });
+                                const item_row = locals[row.doctype][row.name];
+                                item_row.dynamic_attributes = [];
+
+                                for (const [key, value] of Object.entries(values)) {
+                                    item_row.dynamic_attributes.push({
+                                        attribute_name: key,
+                                        attribute_value: value
+                                    });
+                                }
+
+                                frm.refresh_field("pos_order_items");
+                                frappe.show_alert("✔️ Atribut ditambahkan.");
+                                resolve_variant_after_save(frm, row, values);
+                                d.hide();
                             }
                         });
 
@@ -109,6 +108,7 @@ frappe.ui.form.on('POS Order Item', {
             }
         });
 
+        // Update harga
         const price_list = frm.doc.selling_price_list || 'Standard Selling';
         frappe.call({
             method: "frappe.client.get_list",
@@ -121,8 +121,8 @@ frappe.ui.form.on('POS Order Item', {
                 fields: ["price_list_rate"],
                 limit_page_length: 1
             },
-            callback: function(res) {
-                const rate = (res.message?.[0]?.price_list_rate) || 0;
+            callback: function (res) {
+                const rate = res.message?.[0]?.price_list_rate || 0;
                 frappe.model.set_value(cdt, cdn, 'rate', rate);
                 if (rate === 0) {
                     frappe.msgprint(__('Harga tidak ditemukan di Price List: ' + price_list));
@@ -132,13 +132,13 @@ frappe.ui.form.on('POS Order Item', {
     },
 
     qty: update_item_amount_and_total,
-    rate: update_item_amount_and_total,
+    rate: update_item_amount_and_total
 });
 
 function resolve_variant_after_save(frm, row, attributes) {
-    const attr_array = Object.keys(attributes).map(key => ({
+    const attr_array = Object.entries(attributes).map(([key, value]) => ({
         attribute_name: key,
-        attribute_value: attributes[key]
+        attribute_value: value
     }));
 
     frappe.call({
@@ -147,7 +147,7 @@ function resolve_variant_after_save(frm, row, attributes) {
             template: row.item_code,
             attributes: attr_array
         },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message) {
                 frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.item_code);
                 frappe.model.set_value(row.doctype, row.name, 'item_name', r.message.item_name);
