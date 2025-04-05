@@ -1,22 +1,13 @@
-import frappe
-import json
-from frappe import _
-
 @frappe.whitelist()
 def save_dynamic_attributes(parent_pos_order_item, attributes):
-    """
-    Simpan atribut sebagai child table langsung via update doc (bukan via get_doc().save())
-    """
     if not parent_pos_order_item or not attributes:
         frappe.throw(_("Parameter tidak lengkap."))
 
     if isinstance(attributes, str):
         attributes = json.loads(attributes)
 
-    # Ambil dokumen POS Order Item sebagai dict
     doc = frappe.get_doc("POS Order Item", parent_pos_order_item).as_dict()
 
-    # Build ulang field dynamic_attributes
     doc["dynamic_attributes"] = []
 
     for key, value in attributes.items():
@@ -28,8 +19,8 @@ def save_dynamic_attributes(parent_pos_order_item, attributes):
             "attribute_value": value
         })
 
-    # Save ulang via update_doc → tidak trigger permission
-    frappe.model.update_doc("POS Order Item", doc)
+    # Tambahkan ignore_permissions
+    frappe.model.update_doc("POS Order Item", doc, ignore_permissions=True)
 
     return {
         "status": "success",
