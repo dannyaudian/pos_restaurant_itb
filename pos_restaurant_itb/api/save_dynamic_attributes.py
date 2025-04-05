@@ -11,35 +11,28 @@ def save_dynamic_attributes(parent_pos_order_item, attributes):
     if not parent_pos_order_item or not attributes:
         frappe.throw(_("Parameter tidak lengkap."))
 
-    # Parsing jika input JSON string
+    # Jika dikirim dari client JS, bisa jadi string → parsing
     if isinstance(attributes, str):
         attributes = json.loads(attributes)
 
-    # Ubah dari dict flat (dari dialog) → array of {attribute_name, attribute_value}
-    if isinstance(attributes, dict):
-        attributes = [
-            {"attribute_name": key, "attribute_value": val}
-            for key, val in attributes.items()
-            if key and val
-        ]
-
-    if not attributes:
-        frappe.throw(_("Tidak ada atribut yang valid untuk disimpan."))
-
     # Ambil dokumen POS Order Item
     doc = frappe.get_doc("POS Order Item", parent_pos_order_item)
+    doc.flags.ignore_permissions = True  # 🔥 penting: bypass permission check
 
-    # Bersihkan sebelumnya
+    # Bersihkan dulu
     doc.set("dynamic_attributes", [])
 
-    # Tambahkan semua atribut baru
-    for attr in attributes:
+    # Tambahkan setiap atribut
+    for attr_name, attr_value in attributes.items():
+        if not attr_name or not attr_value:
+            continue
+
         doc.append("dynamic_attributes", {
-            "attribute_name": attr["attribute_name"],
-            "attribute_value": attr["attribute_value"]
+            "attribute_name": attr_name,
+            "attribute_value": attr_value
         })
 
-    doc.save(ignore_permissions=True)
+    doc.save()
     frappe.db.commit()
 
     return {
