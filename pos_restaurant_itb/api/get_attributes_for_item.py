@@ -2,10 +2,13 @@ import frappe
 from frappe import _
 
 @frappe.whitelist()
-def get_attributes_for_item(item_code):
+def get_attributes_for_item(item_code=None, template=None):
     """
-    Mengambil daftar atribut dari item template untuk ditampilkan ke user
+    Mengambil daftar atribut dari item template untuk ditampilkan ke user.
+    Bisa pakai parameter 'item_code' atau 'template'.
     """
+    item_code = item_code or template
+
     if not item_code:
         frappe.throw(_("Item tidak boleh kosong."))
 
