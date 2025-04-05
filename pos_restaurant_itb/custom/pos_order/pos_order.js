@@ -70,7 +70,7 @@ frappe.ui.form.on('POS Order Item', {
             if (r && r.has_variants) {
                 frappe.call({
                     method: "pos_restaurant_itb.api.get_attributes_for_item",
-                    args: { template: row.item_code },
+                    args: { item_code: row.item_code },
                     callback: function(res) {
                         if (!res.message) return;
 
@@ -79,7 +79,7 @@ frappe.ui.form.on('POS Order Item', {
                             label: attr.attribute,
                             fieldname: attr.attribute,
                             fieldtype: "Select",
-                            options: attr.values.join("\n"),
+                            options: (attr.values || []).join("\n"),
                             reqd: 1
                         }));
 
