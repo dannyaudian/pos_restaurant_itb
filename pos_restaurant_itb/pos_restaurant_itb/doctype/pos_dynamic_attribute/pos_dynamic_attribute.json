@@ -13,7 +13,8 @@
       "fieldtype": "Link",
       "options": "Item Attribute",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "permlevel": 0
     },
     {
       "fieldname": "attribute_value",
@@ -21,7 +22,8 @@
       "fieldtype": "Link",
       "options": "Item Attribute Value",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "permlevel": 0
     },
     {
       "fieldname": "item_code",

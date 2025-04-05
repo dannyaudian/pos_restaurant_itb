@@ -121,6 +121,7 @@ function resolve_variant_if_ready(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
     if (!row.item_code || !row.dynamic_attributes?.length) return;
 
+    console.log("🧪 ATTR:", row.dynamic_attributes);
     const attributes = row.dynamic_attributes.map(attr => ({
         attribute_name: attr.attribute_name,
         attribute_value: attr.attribute_value
