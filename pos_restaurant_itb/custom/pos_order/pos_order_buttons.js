@@ -1,43 +1,28 @@
 frappe.ui.form.on('POS Order', {
     refresh(frm) {
-        // Tombol "Kirim ke Dapur" saat Draft
-        if (frm.doc.docstatus === 0 && frm.doc.status === "Draft") {
+        const isDraft = frm.doc.docstatus === 0;
+        const status = frm.doc.status;
+
+        // 🔘 Tombol: Kirim ke Dapur (saat Draft)
+        if (isDraft && status === "Draft") {
             frm.add_custom_button(__('Kirim ke Dapur'), () => {
-                frappe.call({
-                    method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
-                    args: { pos_order_id: frm.doc.name },
-                    callback: function (r) {
-                        if (r.message) {
-                            frappe.show_alert("✅ Pesanan dikirim ke dapur.");
-                            frm.reload_doc();
-                        }
-                    }
-                });
+                sendToKitchen(frm);
             }, __("Actions"));
         }
 
-        // Tombol "Kirim Tambahan ke Dapur" saat In Progress
-        if (frm.doc.docstatus === 0 && frm.doc.status === "In Progress") {
+        // 🔘 Tombol: Kirim Tambahan ke Dapur (saat In Progress)
+        if (isDraft && status === "In Progress") {
             frm.add_custom_button(__('Kirim Tambahan ke Dapur'), () => {
-                frappe.call({
-                    method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
-                    args: { pos_order_id: frm.doc.name },
-                    callback: function (r) {
-                        if (r.message) {
-                            frappe.show_alert("✅ Item tambahan dikirim ke dapur.");
-                            frm.reload_doc();
-                        }
-                    }
-                });
+                sendToKitchen(frm);
             }, __("Actions"));
         }
 
-        // Tombol Print KOT
+        // 🔘 Tombol: Print KOT
         frm.add_custom_button(__('Print KOT'), () => {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_kot',
                 args: { name: frm.doc.name },
-                callback: function (r) {
+                callback(r) {
                     if (r.message) {
                         const win = window.open();
                         win.document.write(r.message);
@@ -47,12 +32,12 @@ frappe.ui.form.on('POS Order', {
             });
         }, __("Actions"));
 
-        // Tombol Print Receipt
+        // 🔘 Tombol: Print Receipt
         frm.add_custom_button(__('Print Receipt'), () => {
             frappe.call({
                 method: 'pos_restaurant_itb.api.print_receipt',
                 args: { name: frm.doc.name },
-                callback: function (r) {
+                callback(r) {
                     if (r.message) {
                         const win = window.open();
                         win.document.write(r.message);
@@ -62,8 +47,8 @@ frappe.ui.form.on('POS Order', {
             });
         }, __("Actions"));
 
-        // Tombol Cancel Item (per baris)
-        frm.fields_dict.pos_order_items.grid.add_custom_button(__('Cancel Item'), function () {
+        // ❌ Tombol: Cancel Item per baris
+        frm.fields_dict.pos_order_items.grid.add_custom_button(__('Cancel Item'), () => {
             const selected = frm.fields_dict.pos_order_items.grid.get_selected();
             if (!selected.length) {
                 frappe.msgprint("Pilih item terlebih dahulu.");
@@ -72,14 +57,12 @@ frappe.ui.form.on('POS Order', {
 
             const row = selected[0];
             frappe.prompt(
-                [
-                    {
-                        label: 'Alasan Pembatalan',
-                        fieldname: 'cancellation_note',
-                        fieldtype: 'Small Text',
-                        reqd: 1
-                    }
-                ],
+                [{
+                    label: 'Alasan Pembatalan',
+                    fieldname: 'cancellation_note',
+                    fieldtype: 'Small Text',
+                    reqd: 1
+                }],
                 (values) => {
                     frappe.call({
                         method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
@@ -87,7 +70,7 @@ frappe.ui.form.on('POS Order', {
                             item_name: row.name,
                             reason: values.cancellation_note
                         },
-                        callback: function (res) {
+                        callback(res) {
                             if (res.message) {
                                 frappe.show_alert(res.message);
                                 frm.reload_doc();
@@ -100,9 +83,10 @@ frappe.ui.form.on('POS Order', {
             );
         });
 
-        // Tombol Mark as Served per baris
-        if (["In Progress", "Ready for Billing"].includes(frm.doc.status)) {
-            frm.fields_dict.pos_order_items.grid.add_custom_button(__('Mark as Served'), function () {
+        // ✅ Tombol: Mark as Served (per item dan semua)
+        if (["In Progress", "Ready for Billing"].includes(status)) {
+            // Per item
+            frm.fields_dict.pos_order_items.grid.add_custom_button(__('Mark as Served'), () => {
                 const selected = frm.fields_dict.pos_order_items.grid.get_selected();
                 if (!selected.length) {
                     frappe.msgprint("Pilih item terlebih dahulu.");
@@ -117,7 +101,7 @@ frappe.ui.form.on('POS Order', {
                         item_code: row.item_code,
                         status: "Served"
                     },
-                    callback: function (res) {
+                    callback(res) {
                         if (res.message) {
                             frappe.show_alert("✅ Item ditandai sebagai 'Served'.");
                             frm.reload_doc();
@@ -126,26 +110,35 @@ frappe.ui.form.on('POS Order', {
                 });
             });
 
-            // Tombol Mass Update Semua ke Served
+            // Semua item
             frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
-                frappe.confirm(
-                    "Yakin ingin menandai semua item sebagai 'Served'?",
-                    () => {
-                        frappe.call({
-                            method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
-                            args: {
-                                pos_order_id: frm.doc.name
-                            },
-                            callback: function (res) {
-                                if (res.message) {
-                                    frappe.show_alert("✅ Semua item telah ditandai sebagai 'Served'.");
-                                    frm.reload_doc();
-                                }
+                frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
+                    frappe.call({
+                        method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
+                        args: { pos_order_id: frm.doc.name },
+                        callback(res) {
+                            if (res.message) {
+                                frappe.show_alert("✅ Semua item telah ditandai sebagai 'Served'.");
+                                frm.reload_doc();
                             }
-                        });
-                    }
-                );
+                        }
+                    });
+                });
             }, __("Actions"));
         }
     }
 });
+
+// 🔄 Fungsi Kirim ke Dapur (digunakan untuk draft dan tambahan)
+function sendToKitchen(frm) {
+    frappe.call({
+        method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+        args: { pos_order_id: frm.doc.name },
+        callback(r) {
+            if (r.message) {
+                frappe.show_alert("✅ Pesanan dikirim ke dapur.");
+                frm.reload_doc();
+            }
+        }
+    });
+}
