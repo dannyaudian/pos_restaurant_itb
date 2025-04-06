@@ -2,10 +2,16 @@
   "doctype": "DocType",
   "name": "Kitchen Display Order",
   "module": "pos_restaurant_itb",
+  "creation": "2025-04-06 14:18:14",
+  "modified": "2025-04-06 14:18:14",
+  "modified_by": "dannyaudian",
+  "owner": "PT. Innovasi Terbaik Bangsa",
   "custom": 0,
   "istable": 0,
   "editable_grid": 1,
   "autoname": "autoincrement",
+  "track_changes": 1,
+  "track_seen": 1,
   "fields": [
     {
       "fieldname": "kot_id",
@@ -13,40 +19,74 @@
       "fieldtype": "Link",
       "options": "KOT",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Kitchen Order Ticket reference"
     },
     {
       "fieldname": "table",
       "label": "Table",
       "fieldtype": "Link",
       "options": "POS Table",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1,
+      "fetch_from": "kot_id.table",
+      "description": "Table being served"
     },
     {
       "fieldname": "branch",
       "label": "Branch",
       "fieldtype": "Link",
       "options": "Branch",
-      "read_only": 1
+      "read_only": 1,
+      "search_index": 1,
+      "fetch_from": "kot_id.branch",
+      "description": "Operating branch"
+    },
+    {
+      "fieldname": "order_info_section",
+      "label": "Order Information",
+      "fieldtype": "Section Break"
     },
     {
       "fieldname": "item_list",
       "label": "Items",
       "fieldtype": "Table",
-      "options": "KOT Item"
+      "options": "KOT Item",
+      "description": "List of items to prepare"
+    },
+    {
+      "fieldname": "status_section",
+      "label": "Status Information",
+      "fieldtype": "Section Break"
     },
     {
       "fieldname": "status",
       "label": "Status",
       "fieldtype": "Select",
       "options": "New\nIn Progress\nReady\nServed\nCancelled",
-      "default": "New"
+      "default": "New",
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Current order status"
+    },
+    {
+      "fieldname": "priority",
+      "label": "Priority",
+      "fieldtype": "Select",
+      "options": "Low\nMedium\nHigh\nUrgent",
+      "default": "Medium",
+      "in_list_view": 1,
+      "description": "Order priority level"
     },
     {
       "fieldname": "last_updated",
       "label": "Last Updated",
       "fieldtype": "Datetime",
-      "default": "now"
+      "default": "now",
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Last status update timestamp"
     }
   ],
   "permissions": [
@@ -54,14 +94,23 @@
       "role": "Kitchen Staff",
       "read": 1,
       "write": 1,
-      "create": 1
+      "create": 1,
+      "export": 1
     },
     {
       "role": "System Manager",
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1
+      "delete": 1,
+      "export": 1
     }
-  ]
+  ],
+  "search_fields": "kot_id,table,status",
+  "sort_field": "last_updated",
+  "sort_order": "DESC",
+  "title_field": "kot_id",
+  "show_title_field_in_link": 1,
+  "max_attachments": 0,
+  "quick_entry": 1
 }

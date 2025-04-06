@@ -1,7 +1,7 @@
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-06 10:24:26'
+__created_date__ = '2025-04-06 13:46:05'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
@@ -434,7 +434,7 @@ def get_table_stats(table: str) -> Dict:
         "last_order_time": None
     }
 
-    @frappe.whitelist()
+      @frappe.whitelist()
     def print_qr(self, print_format: Optional[str] = None) -> Dict:
         """
         Print table QR code
@@ -477,6 +477,7 @@ def get_table_stats(table: str) -> Dict:
             "print_type": settings.table_qr_print_type or "Direct",
             "preview_only": not bool(printer_settings)
         }
+
 
     @frappe.whitelist()
     def print_multiple(self, copies: int = 1) -> None:

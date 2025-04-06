@@ -2,10 +2,15 @@
   "doctype": "DocType",
   "name": "KOT Item",
   "module": "pos_restaurant_itb",
+  "creation": "2025-04-06 14:06:23",
+  "modified": "2025-04-06 14:06:23",
+  "modified_by": "dannyaudian",
+  "owner": "PT. Innovasi Terbaik Bangsa",
   "custom": 0,
   "istable": 1,
   "editable_grid": 1,
   "track_changes": 1,
+  "track_seen": 1,
   "fields": [
     {
       "fieldname": "item_code",
@@ -15,7 +20,8 @@
       "reqd": 1,
       "permlevel": 0,
       "in_list_view": 1,
-      "search_index": 1
+      "search_index": 1,
+      "description": "Select menu item to prepare"
     },
     {
       "fieldname": "item_name",
@@ -23,24 +29,29 @@
       "fieldtype": "Data",
       "permlevel": 0,
       "in_list_view": 1,
-      "fetch_from": "item_code.item_name"
+      "fetch_from": "item_code.item_name",
+      "read_only": 1,
+      "length": 140,
+      "translatable": 0
     },
     {
       "fieldname": "qty",
       "label": "Qty",
       "fieldtype": "Float",
-      "default": 1,
+      "default": "1",
       "permlevel": 0,
       "reqd": 1,
       "in_list_view": 1,
-      "precision": 2
+      "precision": "2",
+      "description": "Number of portions to prepare"
     },
     {
       "fieldname": "note",
       "label": "Note",
       "permlevel": 0,
       "fieldtype": "Small Text",
-      "max_height": 100
+      "max_height": 100,
+      "description": "Special instructions for kitchen"
     },
     {
       "fieldname": "kot_status",
@@ -50,7 +61,8 @@
       "options": "Queued\nCooking\nReady\nServed\nCancelled",
       "in_list_view": 1,
       "search_index": 1,
-      "default": "Queued"
+      "default": "Queued",
+      "description": "Current preparation status"
     },
     {
       "fieldname": "cancelled",
@@ -58,21 +70,26 @@
       "fieldtype": "Check",
       "default": "0",
       "in_list_view": 1,
-      "permlevel": 0
+      "permlevel": 0,
+      "description": "Mark item as cancelled"
     },
     {
       "fieldname": "cancellation_note",
       "label": "Cancellation Note",
       "fieldtype": "Small Text",
       "permlevel": 0,
-      "depends_on": "cancelled"
+      "depends_on": "cancelled",
+      "mandatory_depends_on": "cancelled",
+      "description": "Reason for cancellation"
     },
     {
       "fieldname": "kot_last_update",
       "label": "KOT Last Update",
       "permlevel": 0,
       "fieldtype": "Datetime",
-      "in_list_view": 1
+      "in_list_view": 1,
+      "read_only": 1,
+      "description": "Last status change timestamp"
     },
     {
       "fieldname": "dynamic_attributes",
@@ -80,7 +97,8 @@
       "permlevel": 0,
       "fieldtype": "Code",
       "options": "JSON",
-      "description": "Item variants and customizations"
+      "description": "Item variants and customizations",
+      "read_only": 1
     },
     {
       "fieldname": "waiter",
@@ -89,7 +107,8 @@
       "read_only": 1,
       "permlevel": 0,
       "in_list_view": 1,
-      "description": "Auto-filled from current user"
+      "description": "Auto-filled from current user",
+      "search_index": 1
     },
     {
       "fieldname": "order_id",
@@ -98,7 +117,8 @@
       "fetch_from": "parent.pos_order",
       "permlevel": 0,
       "read_only": 1,
-      "search_index": 1
+      "search_index": 1,
+      "description": "Reference to parent order"
     },
     {
       "fieldname": "branch",
@@ -108,7 +128,8 @@
       "fetch_from": "parent.branch",
       "read_only": 1,
       "permlevel": 0,
-      "search_index": 1
+      "search_index": 1,
+      "description": "Operating branch"
     }
   ],
   "permissions": [
@@ -117,23 +138,33 @@
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1
+      "delete": 1,
+      "export": 1
     },
     {
       "role": "Restaurant Manager",
       "read": 1,
       "write": 1,
-      "create": 1
+      "create": 1,
+      "export": 1
     },
     {
       "role": "Kitchen User",
       "read": 1,
-      "write": 1
+      "write": 1,
+      "export": 1
     },
     {
       "role": "Waiter",
       "read": 1,
-      "write": 1
+      "write": 1,
+      "export": 1
     }
-  ]
+  ],
+  "sort_field": "kot_last_update",
+  "sort_order": "DESC",
+  "title_field": "item_name",
+  "show_title_field_in_link": 1,
+  "search_fields": "item_code,item_name,waiter,order_id",
+  "max_attachments": 0
 }

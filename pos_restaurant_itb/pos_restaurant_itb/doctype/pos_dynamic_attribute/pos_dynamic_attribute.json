@@ -2,8 +2,8 @@
   "doctype": "DocType",
   "name": "POS Dynamic Attribute",
   "module": "pos_restaurant_itb",
-  "creation": "2025-04-06 08:13:38",
-  "modified": "2025-04-06 08:13:38",
+  "creation": "2025-04-06 14:02:30",
+  "modified": "2025-04-06 14:02:30",
   "modified_by": "dannyaudian",
   "owner": "PT. Innovasi Terbaik Bangsa",
   "custom": 0,
@@ -19,7 +19,8 @@
       "reqd": 1,
       "in_list_view": 1,
       "permlevel": 0,
-      "description": "Select item attribute (e.g., Size, Color, etc.)"
+      "description": "Select item attribute (e.g., Size, Color, etc.)",
+      "mandatory_depends_on": "eval:!doc.item_code"
     },
     {
       "fieldname": "attribute_value",
@@ -30,7 +31,8 @@
       "in_list_view": 1,
       "permlevel": 0,
       "description": "Select attribute value",
-      "get_query": "frappe.client.get_list('Item Attribute Value', filters={'parent': doc.attribute_name})"
+      "get_query": "frappe.client.get_list('Item Attribute Value', filters={'parent': doc.attribute_name})",
+      "mandatory_depends_on": "eval:!doc.item_code"
     },
     {
       "fieldname": "item_code",
@@ -39,7 +41,8 @@
       "options": "Item",
       "in_list_view": 1,
       "permlevel": 0,
-      "description": "Optional: Map this attribute to a specific item"
+      "description": "Optional: Map this attribute to a specific item",
+      "search_index": 1
     },
     {
       "fieldname": "item_name",
@@ -47,7 +50,8 @@
       "fieldtype": "Data",
       "fetch_from": "item_code.item_name",
       "read_only": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "length": 140
     },
     {
       "fieldname": "extra_price",
@@ -55,7 +59,9 @@
       "fieldtype": "Currency",
       "permlevel": 0,
       "description": "Additional cost for this attribute",
-      "in_list_view": 1
+      "in_list_view": 1,
+      "default": "0",
+      "precision": "2"
     },
     {
       "fieldname": "parent_pos_order_item",
@@ -63,7 +69,8 @@
       "fieldtype": "Link",
       "options": "POS Order Item",
       "reqd": 1,
-      "hidden": 1
+      "hidden": 1,
+      "search_index": 1
     }
   ],
   "permissions": [
@@ -72,23 +79,33 @@
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1
+      "delete": 1,
+      "export": 1
     },
     {
       "role": "Outlet Manager",
       "read": 1,
       "write": 1,
-      "create": 1
+      "create": 1,
+      "export": 1
     },
     {
       "role": "Waiter",
       "read": 1,
       "write": 1,
-      "create": 1
+      "create": 1,
+      "export": 1
     },
     {
       "role": "Kitchen User",
-      "read": 1
+      "read": 1,
+      "export": 1
     }
-  ]
+  ],
+  "search_fields": "attribute_name,attribute_value,item_code",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "title_field": "attribute_name",
+  "show_title_field_in_link": 1,
+  "max_attachments": 0
 }

@@ -1,32 +1,28 @@
-"""
-POS Restaurant ITB API Module
-----------------------------
-API endpoints for pos_restaurant_itb module.
+# Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
+# For license information, please see license.txt
 
-Author: dannyaudian
-Created: 2025-04-06 09:29:47
-"""
+__created_date__ = '2025-04-06 15:39:04'
+__author__ = 'dannyaudian'
+__owner__ = 'PT. Innovasi Terbaik Bangsa'
 
-from .load_pos_restaurant_config import load_pos_restaurant_config
-from .create_kot import create_kot_from_pos_order
-from .kot_status_update import update_kds_status_from_kot
-from .kitchen_station import (
-    create_kitchen_station_items_from_kot,
-    get_kitchen_items_by_station,
-    update_kitchen_item_status,
-    cancel_kitchen_item
-)
-from .kds import (
-    create_kds_from_kot,
-    update_kds_status,
-    get_kds_items
-)
+# Kitchen Management
+from .kitchen.create_kot import create_kot_from_pos_order
+from .kitchen.kot_status_update import update_kot_status
+from .kitchen.kitchen_analytics import get_station_efficiency
 
-# Utility functions
-from pos_restaurant_itb.utils.common import (
-    get_new_order_id,
-    update_kot_item_status,
-    get_branch_from_user
-)
+# Order Management
+from .order.resolve_variant import resolve_variant
+from .order.order_notes import add_order_note
 
-__version__ = '1.0.0'
+# QR System
+from .qr.qr_session import create_qr_session
+from .qr.qr_order import create_qr_order
+
+# Table Management
+from .table.table_status import get_table_status
+
+# Queue Management
+from .queue.queue_manager import create_queue_entry
+
+# Metrics
+from .metrics.operational_metrics import get_realtime_metrics

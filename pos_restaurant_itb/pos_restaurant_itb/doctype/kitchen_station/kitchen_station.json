@@ -2,10 +2,16 @@
   "doctype": "DocType",
   "name": "Kitchen Station",
   "module": "pos_restaurant_itb",
+  "creation": "2025-04-06 14:10:32",
+  "modified": "2025-04-06 14:10:32",
+  "modified_by": "dannyaudian",
+  "owner": "PT. Innovasi Terbaik Bangsa",
   "custom": 0,
   "istable": 0,
   "editable_grid": 1,
   "autoname": "autoincrement",
+  "track_changes": 1,
+  "track_seen": 1,
   "fields": [
     {
       "fieldname": "kot_id",
@@ -13,85 +19,122 @@
       "fieldtype": "Link",
       "options": "KOT",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Kitchen Order Ticket reference"
     },
     {
       "fieldname": "table",
       "label": "Table",
       "fieldtype": "Link",
       "options": "POS Table",
-      "read_only": 1
+      "read_only": 1,
+      "fetch_from": "kot_id.table",
+      "in_list_view": 1,
+      "description": "Table being served"
     },
     {
       "fieldname": "branch",
       "label": "Branch",
       "fieldtype": "Link",
       "options": "Branch",
-      "read_only": 1
+      "read_only": 1,
+      "fetch_from": "kot_id.branch",
+      "search_index": 1,
+      "description": "Operating branch"
     },
     {
       "fieldname": "item_code",
       "label": "Item Code",
       "fieldtype": "Link",
       "options": "Item",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Item to prepare"
     },
     {
       "fieldname": "item_name",
       "label": "Item Name",
       "fieldtype": "Data",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1,
+      "length": 140,
+      "fetch_from": "item_code.item_name",
+      "translatable": 0
     },
     {
       "fieldname": "attribute_summary",
       "label": "Attribute Summary",
       "fieldtype": "Data",
-      "read_only": 1
+      "read_only": 1,
+      "description": "Item customizations summary",
+      "length": 200
     },
     {
       "fieldname": "note",
       "label": "Note",
       "fieldtype": "Small Text",
-      "read_only": 1
+      "read_only": 1,
+      "description": "Special preparation instructions",
+      "max_height": 100
     },
     {
       "fieldname": "kot_status",
       "label": "Status",
       "fieldtype": "Select",
       "options": "Queued\nCooking\nReady\nCancelled",
-      "default": "Queued"
+      "default": "Queued",
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Current preparation status"
     },
     {
       "fieldname": "kot_last_update",
       "label": "Last Updated",
       "fieldtype": "Datetime",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Last status update timestamp"
     },
     {
       "fieldname": "cancelled",
       "label": "Cancelled",
       "fieldtype": "Check",
-      "read_only": 1
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Item cancelled indicator"
     },
     {
       "fieldname": "cancellation_note",
       "label": "Cancellation Note",
       "fieldtype": "Small Text",
-      "read_only": 1
+      "read_only": 1,
+      "description": "Reason for cancellation",
+      "depends_on": "cancelled",
+      "max_height": 100
     }
   ],
   "permissions": [
     {
       "role": "Kitchen Staff",
       "read": 1,
-      "write": 1
+      "write": 1,
+      "export": 1
     },
     {
       "role": "System Manager",
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1
+      "delete": 1,
+      "export": 1
     }
-  ]
+  ],
+  "search_fields": "kot_id,table,item_code,item_name",
+  "sort_field": "kot_last_update",
+  "sort_order": "DESC",
+  "title_field": "item_name",
+  "show_title_field_in_link": 1,
+  "max_attachments": 0
 }

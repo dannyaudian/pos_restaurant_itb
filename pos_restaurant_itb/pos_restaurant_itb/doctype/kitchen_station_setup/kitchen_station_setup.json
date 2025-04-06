@@ -1,54 +1,113 @@
 {
-    "doctype": "DocType",
-    "name": "Kitchen Station Setup",
-    "module": "pos_restaurant_itb",
-    "custom": 0,
-    "istable": 0,
-    "editable_grid": 1,
-    "fields": [
+  "doctype": "DocType",
+  "name": "Kitchen Station Setup",
+  "module": "pos_restaurant_itb",
+  "creation": "2025-04-06 14:14:16",
+  "modified": "2025-04-06 14:14:16",
+  "modified_by": "dannyaudian",
+  "owner": "PT. Innovasi Terbaik Bangsa",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 1,
+  "track_changes": 1,
+  "track_seen": 1,
+  "fields": [
       {
-        "fieldname": "station_name",
-        "label": "Station Name",
-        "fieldtype": "Data",
-        "reqd": 1
+          "fieldname": "station_name",
+          "label": "Station Name",
+          "fieldtype": "Data",
+          "reqd": 1,
+          "unique": 1,
+          "in_list_view": 1,
+          "search_index": 1,
+          "description": "Unique name for the kitchen station",
+          "length": 100,
+          "translatable": 1
       },
       {
-        "fieldname": "branch",
-        "label": "Branch",
-        "fieldtype": "Link",
-        "options": "Branch",
-        "reqd": 1
+          "fieldname": "branch",
+          "label": "Branch",
+          "fieldtype": "Link",
+          "options": "Branch",
+          "reqd": 1,
+          "in_list_view": 1,
+          "search_index": 1,
+          "description": "Branch where this station operates"
       },
       {
-        "fieldname": "item_group",
-        "label": "Item Group",
-        "fieldtype": "Link",
-        "options": "Item Group",
-        "reqd": 1
+          "fieldname": "item_group",
+          "label": "Item Group",
+          "fieldtype": "Link",
+          "options": "Item Group",
+          "reqd": 1,
+          "in_list_view": 1,
+          "search_index": 1,
+          "description": "Item group assigned to this station"
       },
       {
-        "fieldname": "printer_list",
-        "label": "Assigned Printers",
-        "fieldtype": "Table",
-        "options": "Printer Mapping POS Restaurant",
-        "reqd": 0
+          "fieldname": "printer_section",
+          "label": "Printer Settings",
+          "fieldtype": "Section Break"
       },
       {
-        "fieldname": "print_format",
-        "label": "Print Format",
-        "fieldtype": "Link",
-        "options": "Print Format",
-        "reqd": 0
+          "fieldname": "printer_list",
+          "label": "Assigned Printers",
+          "fieldtype": "Table",
+          "options": "Printer Mapping POS Restaurant",
+          "description": "List of printers assigned to this station"
+      },
+      {
+          "fieldname": "print_format",
+          "label": "Print Format",
+          "fieldtype": "Link",
+          "options": "Print Format",
+          "description": "Default print format for KOT printing",
+          "get_query": "pos_restaurant_itb.utils.queries.get_kot_print_formats"
+      },
+      {
+          "fieldname": "station_config_section",
+          "label": "Additional Configuration",
+          "fieldtype": "Section Break"
+      },
+      {
+          "fieldname": "is_active",
+          "label": "Active",
+          "fieldtype": "Check",
+          "default": "1",
+          "in_list_view": 1,
+          "description": "Enable/disable this station"
+      },
+      {
+          "fieldname": "sort_order",
+          "label": "Sort Order",
+          "fieldtype": "Int",
+          "default": "0",
+          "description": "Order of appearance in lists"
       }
-    ],
-    "permissions": [
+  ],
+  "permissions": [
       {
-        "role": "System Manager",
-        "read": 1,
-        "write": 1,
-        "create": 1,
-        "delete": 1
+          "role": "System Manager",
+          "read": 1,
+          "write": 1,
+          "create": 1,
+          "delete": 1,
+          "export": 1
+      },
+      {
+          "role": "Restaurant Manager",
+          "read": 1,
+          "write": 1,
+          "create": 1,
+          "export": 1
       }
-    ]
-  }
-  
+  ],
+  "search_fields": "station_name,branch,item_group",
+  "sort_field": "sort_order",
+  "sort_order": "ASC",
+  "title_field": "station_name",
+  "show_title_field_in_link": 1,
+  "max_attachments": 0,
+  "naming_rule": "By fieldname",
+  "autoname": "field:station_name"
+}
