@@ -19,7 +19,7 @@ def update_kot_item_status(order, item_code, status):
     for item in doc.pos_order_items:
         if item.item_code == item_code and not item.cancelled:
             item.kot_status = status
-            item.kot_last_update = now_datetime()
+            item.kot_last_update = now_datetime().isoformat()
             kot_id = item.kot_id
             updated = True
             break

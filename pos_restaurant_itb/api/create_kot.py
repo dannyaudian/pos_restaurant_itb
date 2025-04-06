@@ -1,11 +1,7 @@
-# pos_restaurant_itb/api/create_kot.py
-
 import frappe
 from frappe import _
 from frappe.utils import now
-from pos_restaurant_itb.pos_restaurant_itb.doctype.kot.kot import get_waiter_from_user
 from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_from_kot
-
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id):
@@ -45,7 +41,7 @@ def create_kot_from_pos_order(pos_order_id):
             "dynamic_attributes": frappe.as_json(item.dynamic_attributes or []),
             "order_id": pos_order.order_id,
             "branch": pos_order.branch,
-            "waiter": kot.waiter
+            "waiter": kot.waiter  # as Data, bukan Link
         })
 
     try:
@@ -66,8 +62,16 @@ def create_kot_from_pos_order(pos_order_id):
     # 🔁 Tambahkan ke Kitchen Station secara otomatis
     try:
         create_kitchen_station_items_from_kot(kot.name)
-    except Exception as e:
+    except Exception:
         frappe.log_error(frappe.get_traceback(), "❌ Gagal insert Kitchen Station")
         frappe.msgprint(_("KOT berhasil dibuat, namun gagal menambahkan item ke Kitchen Station."))
 
     return kot.name
+
+def get_waiter_from_user(user_id):
+    """
+    Ambil nama Employee berdasarkan user_id.
+    Jika tidak ditemukan, kembalikan user_id langsung (misal System Manager non-employee).
+    """
+    emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name")
+    return emp or user_id
