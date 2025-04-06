@@ -1,0 +1,70 @@
+{% raw %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Table QR - {{ doc.name }}</title>
+    <style>
+        .qr-card {
+            width: 90mm; /* Standard card size */
+            height: 50mm;
+            padding: 5mm;
+            margin: 0 auto;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 5mm;
+        }
+        .qr-image {
+            width: 40mm;
+            height: 40mm;
+            margin: 0 auto;
+        }
+        .table-info {
+            margin-top: 2mm;
+            font-family: Arial, sans-serif;
+        }
+        .table-id {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+        .branch-name {
+            font-size: 10pt;
+            color: #666;
+        }
+        .scan-text {
+            font-size: 8pt;
+            color: #888;
+            margin-top: 2mm;
+        }
+        @media print {
+            @page {
+                size: 90mm 50mm;
+                margin: 0;
+            }
+            body {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-card">
+        <div class="qr-image">
+            {% if doc.qr_code %}
+                {% if doc.qr_code.startswith('data:') %}
+                    <img src="{{ doc.qr_code }}" style="width: 100%; height: 100%;">
+                {% else %}
+                    <img src="{{ frappe.utils.get_url() }}{{ doc.qr_code }}" style="width: 100%; height: 100%;">
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="table-info">
+            <div class="table-id">{{ doc.table_id }}</div>
+            <div class="branch-name">{{ frappe.db.get_value("Branch", doc.branch, "branch_name") }}</div>
+            <div class="scan-text">Scan to Order</div>
+        </div>
+    </div>
+</body>
+</html>
+{% endraw %}

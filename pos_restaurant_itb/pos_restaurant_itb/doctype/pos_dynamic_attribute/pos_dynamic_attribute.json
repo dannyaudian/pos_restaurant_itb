@@ -2,10 +2,14 @@
   "doctype": "DocType",
   "name": "POS Dynamic Attribute",
   "module": "pos_restaurant_itb",
+  "creation": "2025-04-06 08:13:38",
+  "modified": "2025-04-06 08:13:38",
+  "modified_by": "dannyaudian",
+  "owner": "PT. Innovasi Terbaik Bangsa",
   "custom": 0,
   "istable": 1,
   "editable_grid": 1,
-  "autoname": "autoincrement",
+  "track_changes": 1,
   "fields": [
     {
       "fieldname": "attribute_name",
@@ -14,7 +18,8 @@
       "options": "Item Attribute",
       "reqd": 1,
       "in_list_view": 1,
-      "permlevel": 0
+      "permlevel": 0,
+      "description": "Select item attribute (e.g., Size, Color, etc.)"
     },
     {
       "fieldname": "attribute_value",
@@ -23,29 +28,44 @@
       "options": "Item Attribute Value",
       "reqd": 1,
       "in_list_view": 1,
-      "permlevel": 0
+      "permlevel": 0,
+      "description": "Select attribute value",
+      "get_query": "frappe.client.get_list('Item Attribute Value', filters={'parent': doc.attribute_name})"
     },
     {
       "fieldname": "item_code",
-      "label": "Mapped Item (Optional)",
+      "label": "Mapped Item",
       "fieldtype": "Link",
       "options": "Item",
       "in_list_view": 1,
-      "permlevel": 0
+      "permlevel": 0,
+      "description": "Optional: Map this attribute to a specific item"
+    },
+    {
+      "fieldname": "item_name",
+      "label": "Item Name",
+      "fieldtype": "Data",
+      "fetch_from": "item_code.item_name",
+      "read_only": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "extra_price",
       "label": "Extra Price",
       "fieldtype": "Currency",
-      "permlevel": 0
+      "permlevel": 0,
+      "description": "Additional cost for this attribute",
+      "in_list_view": 1
     },
     {
       "fieldname": "parent_pos_order_item",
       "label": "POS Order Item",
       "fieldtype": "Link",
       "options": "POS Order Item",
-      "reqd": 1
-    }  ],
+      "reqd": 1,
+      "hidden": 1
+    }
+  ],
   "permissions": [
     {
       "role": "System Manager",
@@ -55,10 +75,20 @@
       "delete": 1
     },
     {
+      "role": "Outlet Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1
+    },
+    {
       "role": "Waiter",
       "read": 1,
       "write": 1,
       "create": 1
+    },
+    {
+      "role": "Kitchen User",
+      "read": 1
     }
   ]
 }

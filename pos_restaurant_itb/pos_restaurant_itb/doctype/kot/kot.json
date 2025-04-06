@@ -6,6 +6,8 @@
   "istable": 0,
   "editable_grid": 1,
   "autoname": "autoincrement",
+  "track_changes": 1,
+  "track_views": 1,
   "fields": [
     {
       "fieldname": "pos_order",
@@ -13,7 +15,9 @@
       "fieldtype": "Link",
       "options": "POS Order",
       "permlevel": 0,
-      "reqd": 1
+      "reqd": 1,
+      "in_list_view": 1,
+      "search_index": 1
     },
     {
       "fieldname": "table",
@@ -21,7 +25,8 @@
       "fieldtype": "Link",
       "options": "POS Table",
       "permlevel": 0,
-      "fetch_from": "pos_order.table"
+      "fetch_from": "pos_order.table",
+      "in_list_view": 1
     },
     {
       "fieldname": "branch",
@@ -29,14 +34,17 @@
       "fieldtype": "Link",
       "options": "Branch",
       "permlevel": 0,
-      "fetch_from": "pos_order.branch"
+      "fetch_from": "pos_order.branch",
+      "reqd": 1,
+      "search_index": 1
     },
     {
       "fieldname": "kot_time",
       "label": "KOT Time",
       "fieldtype": "Datetime",
       "permlevel": 0,
-      "default": "now"
+      "default": "now",
+      "in_list_view": 1
     },
     {
       "fieldname": "kot_items",
@@ -51,27 +59,56 @@
       "fieldtype": "Select",
       "options": "New\nIn Progress\nReady\nServed\nCancelled",
       "permlevel": 0,
-      "default": "New"
+      "default": "New",
+      "in_list_view": 1,
+      "search_index": 1
     },
     {
       "fieldname": "waiter",
       "label": "Waiter",
       "fieldtype": "Data",
-      "permlevel": 0
-    }  ],
+      "permlevel": 0,
+      "in_list_view": 1,
+      "search_index": 1,
+      "description": "Employee name or User ID"
+    }
+  ],
   "permissions": [
     {
       "role": "System Manager",
       "read": 1,
       "write": 1,
       "create": 1,
-      "delete": 1
+      "delete": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1
     },
     {
-      "role": "Sales User",
+      "role": "Restaurant Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1,
+      "cancel": 1
+    },
+    {
+      "role": "Outlet Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1
+    },
+    {
+      "role": "Waiter",
       "read": 1,
       "write": 1,
       "create": 1
+    },
+    {
+      "role": "Kitchen User",
+      "read": 1,
+      "write": 1
     }
   ]
 }

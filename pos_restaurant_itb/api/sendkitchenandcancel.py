@@ -1,38 +1,61 @@
-# pos_restaurant_itb/api/sendkitchenandcancel.py
+# Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
+# For license information, please see license.txt
+
+__created_date__ = '2025-04-06 08:18:16'
+__author__ = 'dannyaudian'
+__owner__ = 'PT. Innovasi Terbaik Bangsa'
 
 import frappe
 from frappe import _
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
-
+from typing import Dict, Optional, Union
 
 @frappe.whitelist()
-def send_to_kitchen(pos_order):
+def send_to_kitchen(pos_order: str) -> str:
     """
-    Alias backward compatibility:
-    Tetap panggil create_kot_from_pos_order dari API resmi (bukan dari doctype langsung).
+    Send order items to kitchen by creating KOT.
+    
+    Args:
+        pos_order (str): POS Order ID to send to kitchen
+        
+    Returns:
+        str: HTML rendered KOT template if successful
+        
+    Raises:
+        frappe.ValidationError: If no items to send or error occurs
     """
-
     from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
 
     kot_name = create_kot_from_pos_order(pos_order_id=pos_order)
 
     if not kot_name:
-        frappe.throw(_("❌ Tidak ada item tambahan yang perlu dikirim ke dapur."))
+        frappe.throw(_("❌ No additional items to send to kitchen."))
 
     kot_doc = frappe.get_doc("KOT", kot_name)
 
-    # Render HTML template KOT
-    return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
-
+    # Render KOT HTML template
+    return frappe.render_template(
+        "templates/kot_print.html",
+        {"kot": kot_doc}
+    )
 
 @frappe.whitelist()
-def cancel_pos_order_item(item_name, reason=None):
+def cancel_pos_order_item(item_name: str, reason: Optional[str] = None) -> Dict:
     """
-    Batalkan satu item di POS Order. Hanya bisa dilakukan oleh Outlet Manager.
+    Cancel specific item in POS Order. Only allowed for Outlet Manager.
+    
+    Args:
+        item_name (str): POS Order Item name to cancel
+        reason (str, optional): Cancellation reason
+        
+    Returns:
+        Dict: Response with status and message
+        
+    Raises:
+        frappe.ValidationError: If user doesn't have permission or error occurs
     """
-
     if not frappe.has_role("Outlet Manager"):
-        frappe.throw(_("Hanya Outlet Manager yang boleh membatalkan item."))
+        frappe.throw(_("Only Outlet Manager can cancel items."))
 
     doc = frappe.get_doc("POS Order Item", item_name)
 
@@ -42,7 +65,7 @@ def cancel_pos_order_item(item_name, reason=None):
     doc.amount = 0
     doc.save()
 
-    # Rehitung total di parent
+    # Recalculate parent total
     parent = frappe.get_doc("POS Order", doc.parent)
     total = sum(i.amount for i in parent.pos_order_items if not i.cancelled)
     parent.total_amount = total
@@ -52,17 +75,25 @@ def cancel_pos_order_item(item_name, reason=None):
 
     return {
         "status": "success",
-        "message": _(f"Item {doc.item_code} dibatalkan.")
+        "message": _(f"Item {doc.item_code} cancelled.")
     }
 
-
 @frappe.whitelist()
-def mark_all_served(pos_order_id):
+def mark_all_served(pos_order_id: str) -> Union[str, None]:
     """
-    Tandai semua item dalam POS Order sebagai Served.
-    Biasanya dipakai saat makanan sudah selesai dan diantar semua.
+    Mark all items in POS Order as Served.
+    Usually used when all food has been delivered.
+    
+    Args:
+        pos_order_id (str): POS Order ID to mark items as served
+        
+    Returns:
+        str: Success message if items were updated
+        None: If no items needed update
+        
+    Raises:
+        frappe.ValidationError: If error occurs during update
     """
-
     doc = frappe.get_doc("POS Order", pos_order_id)
     updated = False
     kot_id = None
@@ -79,10 +110,13 @@ def mark_all_served(pos_order_id):
         frappe.db.commit()
 
         if kot_id:
-            kds_name = frappe.db.get_value("Kitchen Display Order", {"kot_id": kot_id})
+            kds_name = frappe.db.get_value(
+                "Kitchen Display Order",
+                {"kot_id": kot_id}
+            )
             if kds_name:
                 update_kds_status_from_kot(kds_name)
 
-        return f"✅ Semua item telah ditandai sebagai 'Served'."
+        return _("✅ All items marked as 'Served'.")
 
-    return "Tidak ada item yang perlu diubah."
+    return _("No items needed update.")

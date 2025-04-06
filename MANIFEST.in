@@ -1,1 +1,18 @@
-include pos_restaurant_itb/**
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include pos_restaurant_itb *.css
+recursive-include pos_restaurant_itb *.csv
+recursive-include pos_restaurant_itb *.html
+recursive-include pos_restaurant_itb *.ico
+recursive-include pos_restaurant_itb *.js
+recursive-include pos_restaurant_itb *.json
+recursive-include pos_restaurant_itb *.md
+recursive-include pos_restaurant_itb *.png
+recursive-include pos_restaurant_itb *.py
+recursive-include pos_restaurant_itb *.svg
+recursive-include pos_restaurant_itb *.txt
+recursive-exclude pos_restaurant_itb *.pyc
