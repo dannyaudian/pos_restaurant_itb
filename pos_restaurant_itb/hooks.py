@@ -34,5 +34,18 @@ app_include_js = [
     "/assets/pos_restaurant_itb/js/auto_refresh.js"
 ]
 
-# Tambahan hook bila perlu, misal scheduler_events, doc_events, dll
-# (sementara tidak digunakan — bisa ditambahkan nanti jika ada kebutuhan trigger)
+# Tambahkan ini untuk mendaftarkan API routes
+api_version = 1
+
+# Whitelist API methods
+has_permission = {
+    "pos_restaurant_itb.api.create_kot.create_kot_from_pos_order": "pos_restaurant_itb.auth.has_pos_permission"
+}
+
+# API Configuration
+rest_apis = [
+    {
+        "API": "pos_restaurant_itb.api",
+        "URI": "/api/method/pos_restaurant_itb.api"
+    }
+]
