@@ -31,7 +31,7 @@ doctype_js = {
 
 # Optional: Auto reload Desk
 app_include_js = [
-    "/assets/pos_restaurant_itb/js/auto_refresh.js"
+    "/assets/pos_restaurant_itb/custom/app/auto_refresh.js"
 ]
 
 # Tambahan hook bila perlu, misal scheduler_events, doc_events, dll
