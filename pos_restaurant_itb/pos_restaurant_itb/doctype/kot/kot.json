@@ -56,8 +56,7 @@
     {
       "fieldname": "waiter",
       "label": "Waiter",
-      "fieldtype": "Link",
-      "options": "Employee",
+      "fieldtype": "Data",
       "permlevel": 0
     }  ],
   "permissions": [
