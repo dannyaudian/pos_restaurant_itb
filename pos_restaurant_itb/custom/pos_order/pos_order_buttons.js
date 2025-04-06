@@ -131,14 +131,68 @@ frappe.ui.form.on('POS Order', {
 
 // 🔄 Fungsi Kirim ke Dapur (digunakan untuk draft dan tambahan)
 function sendToKitchen(frm) {
-    frappe.call({
-        method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
-        args: { pos_order_id: frm.doc.name },
-        callback(r) {
-            if (r.message) {
-                frappe.show_alert("✅ Pesanan dikirim ke dapur.");
-                frm.reload_doc();
-            }
+    // Validasi sebelum kirim
+    if (!frm.doc.pos_order_items || !frm.doc.pos_order_items.length) {
+        frappe.msgprint({
+            title: __("Validasi"),
+            indicator: 'red',
+            message: __('Tidak ada item untuk dikirim ke dapur.')
+        });
+        return;
+    }
+
+    // Cek item yang belum dikirim
+    const itemsToSend = frm.doc.pos_order_items.filter(
+        item => !item.sent_to_kitchen && !item.cancelled
+    );
+
+    if (!itemsToSend.length) {
+        frappe.msgprint({
+            title: __("Informasi"),
+            indicator: 'yellow',
+            message: __('Semua item sudah dikirim ke dapur atau dibatalkan.')
+        });
+        return;
+    }
+
+    // Tampilkan konfirmasi dengan detail item
+    const itemList = itemsToSend.map(
+        item => `${item.qty}x ${item.item_name}`
+    ).join('\n');
+
+    frappe.confirm(
+        `Kirim item berikut ke dapur?\n\n${itemList}`,
+        () => {
+            frappe.call({
+                method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                args: { 
+                    pos_order_id: frm.doc.name 
+                },
+                freeze: true,
+                freeze_message: __('Mengirim ke dapur...'),
+                callback: function(r) {
+                    if (r.message) {
+                        frm.reload_doc();
+                        frappe.show_alert({
+                            message: __(`✅ KOT dibuat: ${r.message}`),
+                            indicator: 'green'
+                        });
+                    }
+                },
+                error: function(r) {
+                    // Log error untuk debugging
+                    console.error("KOT Error:", r);
+                    
+                    frappe.msgprint({
+                        title: __('Error'),
+                        indicator: 'red',
+                        message: __(
+                            'Gagal mengirim ke dapur. Detail:\n' +
+                            (r.exc_message || r._server_messages || r.message || 'Unknown error')
+                        )
+                    });
+                }
+            });
         }
-    });
+    );
 }
