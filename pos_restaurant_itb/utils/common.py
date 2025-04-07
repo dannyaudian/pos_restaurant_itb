@@ -352,3 +352,7 @@ def calculate_cooking_time(items: List[Dict]) -> int:
         (prep_time_dict.get(item.item_code, 0) for item in items),
         default=0
     )
+@whitelist()
+@handle_pos_errors()
+def get_default_company() -> str:
+    return frappe.defaults.get_global_default("company") or "Default Company"

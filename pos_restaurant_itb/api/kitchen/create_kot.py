@@ -8,7 +8,7 @@ __owner__ = 'PT. Innovasi Terbaik Bangsa'
 import frappe
 from frappe import _
 from frappe.utils import now, cint, flt
-from pos_restaurant_itb.api.utils import get_default_company
+from pos_restaurant_itb.utils.common import get_default_company
 
 # Lazy loading untuk menghindari circular imports
 def get_security():
