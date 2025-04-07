@@ -1,7 +1,7 @@
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-07 01:15:48'
+__created_date__ = '2025-04-07 01:37:12'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
@@ -63,20 +63,28 @@ def create_qr_order(
         "customer_name": session.customer_name,
         "device_id": device_id,
         "special_instructions": special_instructions,
-        "status": "Draft"
+        "status": "Draft",
+        "payment_status": "Pending",
+        "source": "QR",
+        "created_via_api": 1
     })
     
-    # Add items to QR Order
+    # Add items to QR Order with full item details
     for item in items:
+        item_doc = frappe.get_doc("Item", item.get("item_code"))
         qr_order.append("items", {
             "item_code": item.get("item_code"),
+            "item_name": item_doc.item_name,
             "qty": item.get("qty", 1),
+            "rate": item_doc.rate,
+            "amount": item_doc.rate * item.get("qty", 1),
             "note": item.get("note"),
-            "kitchen_station": get_kitchen_station(item.get("item_code"))
+            "kitchen_station": item_doc.kitchen_station
         })
     
+    # Calculate totals
+    qr_order.calculate_totals()
     qr_order.insert()
-    
     # Create KOT
     kot_doc = frappe.get_doc({
         "doctype": "KOT",
@@ -92,11 +100,14 @@ def create_qr_order(
         "source": "QR"
     })
     
-    # Copy items to KOT
+    # Copy items to KOT with detailed information
     for item in qr_order.items:
         kot_doc.append("kot_items", {
             "item_code": item.item_code,
+            "item_name": item.item_name,
             "qty": item.qty,
+            "rate": item.rate,
+            "amount": item.amount,
             "note": item.note,
             "kitchen_station": item.kitchen_station,
             "qr_order_item": item.name
@@ -107,7 +118,7 @@ def create_qr_order(
     # Create Kitchen Display Orders
     create_kitchen_orders(kot_doc)
     
-    # Update QR Order with KOT reference
+    # Update QR Order with KOT reference and status
     qr_order.db_set({
         'kot': kot_doc.name,
         'status': 'In Progress'
@@ -115,14 +126,41 @@ def create_qr_order(
     
     # Notify order creation
     notify_order_update({
-        'qr_order': qr_order.name,
-        'kot': kot_doc.name
+        'qr_order': {
+            'id': qr_order.name,
+            'status': qr_order.status
+        },
+        'kot': {
+            'id': kot_doc.name,
+            'status': kot_doc.status
+        }
     })
     
     return {
         "success": True,
-        "qr_order_id": qr_order.name,
-        "kot_id": kot_doc.name,
+        "data": {
+            "order": {
+                "id": qr_order.name,
+                "status": qr_order.status,
+                "payment_status": qr_order.payment_status,
+                "grand_total": qr_order.grand_total,
+                "created_at": qr_order.creation,
+                "items": [{
+                    "item_code": item.item_code,
+                    "item_name": item.item_name,
+                    "qty": item.qty,
+                    "rate": item.rate,
+                    "amount": item.amount,
+                    "note": item.note,
+                    "kitchen_station": item.kitchen_station
+                } for item in qr_order.items]
+            },
+            "kot": {
+                "id": kot_doc.name,
+                "status": kot_doc.status,
+                "created_at": kot_doc.creation
+            }
+        },
         "timestamp": frappe.utils.now(),
         "estimated_time": calculate_estimated_time(kot_doc)
     }
@@ -155,6 +193,7 @@ def get_order_status(
         
         # Get KOT status
         kot_status = None
+        kitchen_orders = []
         if qr_order.kot:
             kot_doc = frappe.get_doc("KOT", qr_order.kot)
             kot_status = kot_doc.status
@@ -167,17 +206,35 @@ def get_order_status(
             )
         
         order_status = {
-            "qr_order_id": order_id,
-            "status": qr_order.status,
-            "kot_id": qr_order.kot,
-            "kot_status": kot_status,
-            "payment_status": qr_order.payment_status,
-            "creation": qr_order.creation,
-            "grand_total": qr_order.grand_total,
-            "kitchen_status": {
-                order.kitchen_station: order.status
-                for order in kitchen_orders
-            } if kot_status else {}
+            "success": True,
+            "data": {
+                "order": {
+                    "id": order_id,
+                    "status": qr_order.status,
+                    "payment_status": qr_order.payment_status,
+                    "grand_total": qr_order.grand_total,
+                    "created_at": qr_order.creation,
+                    "modified_at": qr_order.modified,
+                    "items": [{
+                        "item_code": item.item_code,
+                        "item_name": item.item_name,
+                        "qty": item.qty,
+                        "rate": item.rate,
+                        "amount": item.amount,
+                        "note": item.note,
+                        "kitchen_station": item.kitchen_station
+                    } for item in qr_order.items]
+                },
+                "kot": {
+                    "id": qr_order.kot,
+                    "status": kot_status,
+                    "kitchen_status": {
+                        order.kitchen_station: order.status
+                        for order in kitchen_orders
+                    } if kitchen_orders else {}
+                }
+            },
+            "timestamp": frappe.utils.now()
         }
         
         # Cache for 30 seconds
@@ -188,7 +245,6 @@ def get_order_status(
         )
     
     return order_status
-
 @frappe.whitelist(allow_guest=True)
 @handle_api_error
 def modify_order(
@@ -214,6 +270,10 @@ def modify_order(
     
     if qr_order.status not in ["Draft", "In Progress"]:
         frappe.throw(_(ErrorMessages.ORDER_MODIFICATION_DENIED))
+        
+    # Validate if order can be modified based on status
+    if qr_order.status not in QR_ORDER_STATUSES or not QR_ORDER_STATUSES[qr_order.status]:
+        frappe.throw(_(ErrorMessages.ORDER_MODIFICATION_DENIED))
     
     # Get associated KOT
     kot_doc = None
@@ -225,19 +285,26 @@ def modify_order(
     # Handle modifications
     if "add_items" in modifications:
         for item in modifications["add_items"]:
-            # Add to QR Order
+            item_doc = frappe.get_doc("Item", item.get("item_code"))
+            # Add to QR Order with full item details
             qr_item = qr_order.append("items", {
                 "item_code": item.get("item_code"),
+                "item_name": item_doc.item_name,
                 "qty": item.get("qty", 1),
+                "rate": item_doc.rate,
+                "amount": item_doc.rate * item.get("qty", 1),
                 "note": item.get("note"),
-                "kitchen_station": get_kitchen_station(item.get("item_code"))
+                "kitchen_station": item_doc.kitchen_station
             })
             
             # Add to KOT if exists
             if kot_doc:
                 kot_doc.append("kot_items", {
                     "item_code": item.get("item_code"),
+                    "item_name": item_doc.item_name,
                     "qty": item.get("qty", 1),
+                    "rate": item_doc.rate,
+                    "amount": item_doc.rate * item.get("qty", 1),
                     "note": item.get("note"),
                     "kitchen_station": qr_item.kitchen_station,
                     "qr_order_item": qr_item.name
@@ -264,6 +331,7 @@ def modify_order(
                 if item.name == mod.get("item_name"):
                     if "qty" in mod:
                         item.qty = mod["qty"]
+                        item.amount = item.rate * item.qty
                     if "note" in mod:
                         item.note = mod["note"]
                         
@@ -273,6 +341,7 @@ def modify_order(
                     if item.qr_order_item == mod.get("item_name"):
                         if "qty" in mod:
                             item.qty = mod["qty"]
+                            item.amount = item.rate * item.qty
                         if "note" in mod:
                             item.note = mod["note"]
     
@@ -280,6 +349,9 @@ def modify_order(
         qr_order.special_instructions = modifications["special_instructions"]
         if kot_doc:
             kot_doc.special_instructions = modifications["special_instructions"]
+    
+    # Recalculate totals
+    qr_order.calculate_totals()
     
     # Save documents
     qr_order.save()
@@ -292,14 +364,40 @@ def modify_order(
     
     # Notify modification
     notify_order_update({
-        'qr_order': qr_order.name,
-        'kot': kot_doc.name if kot_doc else None
+        'qr_order': {
+            'id': qr_order.name,
+            'status': qr_order.status
+        },
+        'kot': {
+            'id': kot_doc.name if kot_doc else None,
+            'status': kot_doc.status if kot_doc else None
+        }
     })
     
     return {
         "success": True,
-        "qr_order_id": order_id,
-        "kot_id": kot_doc.name if kot_doc else None,
+        "data": {
+            "order": {
+                "id": order_id,
+                "status": qr_order.status,
+                "payment_status": qr_order.payment_status,
+                "grand_total": qr_order.grand_total,
+                "modified_at": qr_order.modified,
+                "items": [{
+                    "item_code": item.item_code,
+                    "item_name": item.item_name,
+                    "qty": item.qty,
+                    "rate": item.rate,
+                    "amount": item.amount,
+                    "note": item.note,
+                    "kitchen_station": item.kitchen_station
+                } for item in qr_order.items]
+            },
+            "kot": {
+                "id": kot_doc.name if kot_doc else None,
+                "status": kot_doc.status if kot_doc else None
+            }
+        },
         "timestamp": frappe.utils.now()
     }
 
@@ -330,13 +428,18 @@ def create_kitchen_orders(kot_doc) -> None:
             "kitchen_station": station,
             "status": OrderStatus.NEW,
             "special_instructions": kot_doc.special_instructions,
-            "branch": kot_doc.branch
+            "branch": kot_doc.branch,
+            "qr_order": kot_doc.qr_order,
+            "source": "QR"
         })
         
         for item in items:
             kds_doc.append("items", {
                 "item_code": item.item_code,
+                "item_name": item.item_name,
                 "qty": item.qty,
+                "rate": item.rate,
+                "amount": item.amount,
                 "note": item.note,
                 "qr_order_item": item.qr_order_item
             })
@@ -374,7 +477,10 @@ def update_kitchen_orders(kot_doc) -> None:
             for item in items:
                 kds_doc.append("items", {
                     "item_code": item.item_code,
+                    "item_name": item.item_name,
                     "qty": item.qty,
+                    "rate": item.rate,
+                    "amount": item.amount,
                     "note": item.note,
                     "qr_order_item": item.qr_order_item
                 })
@@ -388,13 +494,18 @@ def update_kitchen_orders(kot_doc) -> None:
                 "kitchen_station": station,
                 "status": OrderStatus.NEW,
                 "special_instructions": kot_doc.special_instructions,
-                "branch": kot_doc.branch
+                "branch": kot_doc.branch,
+                "qr_order": kot_doc.qr_order,
+                "source": "QR"
             })
             
             for item in items:
                 kds_doc.append("items", {
                     "item_code": item.item_code,
+                    "item_name": item.item_name,
                     "qty": item.qty,
+                    "rate": item.rate,
+                    "amount": item.amount,
                     "note": item.note,
                     "qr_order_item": item.qr_order_item
                 })
@@ -406,12 +517,19 @@ def calculate_estimated_time(kot_doc) -> int:
     max_prep_time = 0
     
     for item in kot_doc.kot_items:
-        prep_time = frappe.get_cached_value(
-            "Item",
-            item.item_code,
-            "preparation_time"
-        ) or 0
-        
+        item_doc = frappe.get_cached_doc("Item", item.item_code)
+        prep_time = item_doc.preparation_time or 0
         max_prep_time = max(max_prep_time, prep_time)
     
     return max_prep_time
+
+def calculate_totals(self):
+    """Calculate totals for QR Order"""
+    total = 0
+    for item in self.items:
+        item.amount = flt(item.qty * item.rate)
+        total += item.amount
+    
+    self.grand_total = flt(total)
+    
+    return self.grand_total

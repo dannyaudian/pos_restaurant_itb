@@ -159,6 +159,20 @@
       "write": 1,
       "submit": 1,
       "cancel": 1
+    },
+    {
+      "fieldname": "source",
+      "fieldtype": "Select",
+      "label": "Source",
+      "options": "QR\nPOS\nOnline",
+      "default": "QR",
+      "reqd": 1
+    },
+    {
+      "fieldname": "created_via_api",
+      "fieldtype": "Check",
+      "label": "Created via API",
+      "default": 0
     }
   ],
   "links": [
