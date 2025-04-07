@@ -70,6 +70,24 @@ def handle_api_error(fn):
             }
     return wrapper
 
+# ✅ Tambahan definisi fungsi handle_api_error() (bukan dekorator)
+def handle_api_error(message="Internal Server Error", status_code=500):
+    """
+    Handle API error response format
+
+    Args:
+        message (str): Error message
+        status_code (int): HTTP status code
+
+    Raises:
+        frappe.ValidationError
+    """
+    frappe.local.response["http_status_code"] = status_code
+    frappe.local.response["message"] = message
+    frappe.local.response["type"] = "APIError"
+    frappe.response["exception"] = "APIError"
+    raise frappe.ValidationError(message)
+
 def handle_doc_error(fn):
     """
     Decorator to handle document operation errors
