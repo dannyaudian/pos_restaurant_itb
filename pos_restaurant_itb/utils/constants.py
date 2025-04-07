@@ -10,19 +10,20 @@ from typing import Dict, List
 
 
 # -------------------------
-# Status Enums & Constants
+# Order & Payment Statuses
 # -------------------------
 
 class OrderStatus:
     DRAFT = "Draft"
     NEW = "New"
     IN_PROGRESS = "In Progress"
+    READY = "Ready"
+    READY_FOR_BILLING = "Ready for Billing"
     COMPLETED = "Completed"
     CANCELLED = "Cancelled"
     PARTIAL = "Partial"
     PENDING = "Pending"
     DELIVERED = "Delivered"
-    READY = "Ready"
     RECEIVED = "Received"
     PROCESSING = "Processing"
     MERGED = "Merged"
@@ -116,17 +117,17 @@ DOCUMENT_STATUS_MAP = {
     "QR Order": {
         "status_field": "status",
         "statuses": QR_ORDER_STATUSES,
-        "default": "Draft"
+        "default": OrderStatus.DRAFT
     },
     "POS Order": {
         "status_field": "status",
         "statuses": POS_ORDER_STATUSES,
-        "default": "Draft"
+        "default": OrderStatus.DRAFT
     },
     "QR POS Order": {
         "status_field": "status",
         "statuses": QR_POS_ORDER_STATUSES,
-        "default": "Draft"
+        "default": OrderStatus.DRAFT
     },
     "KOT": {
         "status_field": "status",
@@ -145,14 +146,13 @@ DOCUMENT_STATUS_MAP = {
     }
 }
 
-
 STATUS_TRANSITIONS: Dict[str, Dict[str, List[str]]] = {
     key: value["statuses"] for key, value in DOCUMENT_STATUS_MAP.items()
 }
 
 
 # -------------------------
-# Cache & Error Constants
+# Error Messages
 # -------------------------
 
 class ErrorMessages:
@@ -173,6 +173,10 @@ class ErrorMessages:
     ITEMS_REQUIRED = "At least one item is required."
 
 
+# -------------------------
+# Cache Keys
+# -------------------------
+
 class CacheKeys:
     QR_ORDER = "qr_order"
     POS_ORDER = "pos_order"
@@ -187,7 +191,34 @@ class CacheKeys:
 
 
 # -------------------------
-# UI Message Sets
+# Naming Series by Branch
+# -------------------------
+
+NamingSeries: Dict[str, str] = {
+    "POS Order": "POS-{branch_code}-",
+    "QR Order": "QR-{branch_code}-",
+    "KOT": "KOT-{branch_code}-",
+    "Kitchen Station": "KS-{branch_code}-",
+    "Kitchen Station Setup": "KSS-{branch_code}-",
+    "Printer Mapping POS Restaurant": "PRN-{branch_code}-",
+    "Joined Table Entry": "JTE-{branch_code}-",
+    "POS Dynamic Attribute": "ATTR-{branch_code}-"
+}
+
+
+# -------------------------
+# Optional: Cache Expiration (in seconds)
+# -------------------------
+
+class CacheExpiration:
+    SHORT = 60          # 1 minute
+    MEDIUM = 300        # 5 minutes
+    LONG = 3600         # 1 hour
+    VERY_LONG = 86400   # 24 hours
+
+
+# -------------------------
+# System Messages
 # -------------------------
 
 MSGS = {
@@ -230,18 +261,4 @@ MSGS = {
         "background": "Running in background",
         "sync": "Synchronizing data"
     }
-}
-
-
-# -------------------------
-# Naming Series by Branch
-# -------------------------
-
-NamingSeries: Dict[str, str] = {
-    "POS Order": "POS-{branch_code}-",
-    "QR Order": "QR-{branch_code}-",
-    "KOT": "KOT-{branch_code}-",
-    "Kitchen Station": "KS-{branch_code}-",
-    "Kitchen Station Setup": "KSS-{branch_code}-",
-    "Printer Mapping POS Restaurant": "PRN-{branch_code}-"
 }
