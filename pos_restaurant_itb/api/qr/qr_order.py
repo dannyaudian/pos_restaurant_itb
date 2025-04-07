@@ -72,14 +72,16 @@ def create_qr_order(
     # Add items to QR Order with full item details
     for item in items:
         item_doc = frappe.get_doc("Item", item.get("item_code"))
-        qr_order.append("items", {
+        qr_item = qr_order.append("items", {
             "item_code": item.get("item_code"),
             "item_name": item_doc.item_name,
             "qty": item.get("qty", 1),
             "rate": item_doc.rate,
             "amount": item_doc.rate * item.get("qty", 1),
             "note": item.get("note"),
-            "kitchen_station": item_doc.kitchen_station
+            "kitchen_station": item_doc.kitchen_station,
+            "kitchen_status": "Pending",
+            "qr_order": qr_order.name
         })
     
     # Calculate totals
@@ -102,7 +104,7 @@ def create_qr_order(
     
     # Copy items to KOT with detailed information
     for item in qr_order.items:
-        kot_doc.append("kot_items", {
+        kot_item = kot_doc.append("kot_items", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "qty": item.qty,
@@ -112,6 +114,10 @@ def create_qr_order(
             "kitchen_station": item.kitchen_station,
             "qr_order_item": item.name
         })
+
+        # Update QR Order Item with KOT Item reference
+        frappe.db.set_value("QR Order Item", item.name, "kot_item", kot_item.name)
+
     
     kot_doc.insert()
     
@@ -222,7 +228,9 @@ def get_order_status(
                         "rate": item.rate,
                         "amount": item.amount,
                         "note": item.note,
-                        "kitchen_station": item.kitchen_station
+                        "kitchen_station": item.kitchen_station,
+                        "kitchen_status": item.kitchen_status,
+                        "kot_item": item.kot_item
                     } for item in qr_order.items]
                 },
                 "kot": {
@@ -294,12 +302,13 @@ def modify_order(
                 "rate": item_doc.rate,
                 "amount": item_doc.rate * item.get("qty", 1),
                 "note": item.get("note"),
-                "kitchen_station": item_doc.kitchen_station
+                "kitchen_station": item_doc.kitchen_station,
+                "kitchen_status": "Pending",
+                "qr_order": qr_order.name
             })
-            
-            # Add to KOT if exists
+           # Add to KOT if exists
             if kot_doc:
-                kot_doc.append("kot_items", {
+                kot_item = kot_doc.append("kot_items", {
                     "item_code": item.get("item_code"),
                     "item_name": item_doc.item_name,
                     "qty": item.get("qty", 1),
@@ -309,6 +318,8 @@ def modify_order(
                     "kitchen_station": qr_item.kitchen_station,
                     "qr_order_item": qr_item.name
                 })
+                # Update QR Order Item with KOT Item reference
+                qr_item.kot_item = kot_item.name
     
     if "remove_items" in modifications:
         # Remove from QR Order
@@ -531,5 +542,5 @@ def calculate_totals(self):
         total += item.amount
     
     self.grand_total = flt(total)
-    
     return self.grand_total
+
