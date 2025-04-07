@@ -1,21 +1,192 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-06 09:51:38'
+__created_date__ = '2025-04-06 17:28:47'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
+# [KEEP EXISTING IMPORTS]
 import frappe
 from frappe import _
-from typing import Optional, Dict, Any
-from frappe.utils import now_datetime
-from pos_restaurant_itb.utils.error_handlers import ValidationError
+from typing import Dict, Optional, Any
+from frappe.model.document import Document
+
+from pos_restaurant_itb.utils.error_handlers import (
+    handle_pos_errors,
+    ValidationError,
+    OrderError
+)
 from pos_restaurant_itb.utils.constants import (
     STATUS_TRANSITIONS,
-    POS_ORDER_STATUSES,
+    QR_ORDER_STATUSES,
     KOT_STATUSES,
-    KDS_STATUSES
+    POS_ORDER_STATUSES,
+    TableStatus,
+    ErrorMessages
 )
+from pos_restaurant_itb.utils.security import SecurityManager@handle_pos_errors()
+def handle_qr_order_status_update(
+    qr_order: Document,
+    new_status: str,
+    user: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Handle QR Order status updates
+    
+    Args:
+        qr_order (Document): QR Order document
+        new_status (str): New status to set
+        user (str, optional): User performing update. Defaults to current user.
+        
+    Returns:
+        Dict: Update result
+    """
+    if new_status not in QR_ORDER_STATUSES:
+        raise ValidationError(
+            ErrorMessages.format(
+                "Invalid QR Order status: {status}. Valid statuses are: {valid}",
+                status=new_status,
+                valid=", ".join(QR_ORDER_STATUSES)
+            )
+        )
+    
+    security = SecurityManager()
+    security.validate_branch_operation(
+        qr_order.branch,
+        f"update_qr_order_{new_status.lower()}"
+    )
+    
+    result = update_order_status(qr_order, new_status, user)
+    
+    # Handle side effects
+    if new_status == "Confirmed":
+        _create_kot_from_qr_order(qr_order)
+    elif new_status in ["Rejected", "Cancelled"]:
+        _handle_qr_order_cancellation(qr_order)
+        
+    return result
+
+def _create_kot_from_qr_order(qr_order: Document) -> Document:
+    """
+    Create KOT from QR Order
+    
+    Args:
+        qr_order (Document): QR Order document
+        
+    Returns:
+        Document: Created KOT document
+    """
+    if not qr_order.items:
+        raise ValidationError(ErrorMessages.ITEMS_REQUIRED)
+        
+    kot = frappe.get_doc({
+        "doctype": "KOT",
+        "table": qr_order.table,
+        "order_type": "QR",
+        "order_id": qr_order.name,
+        "branch": qr_order.branch,
+        "items": [
+            {
+                "item_code": item.item_code,
+                "item_name": item.item_name,
+                "quantity": item.quantity,
+                "notes": item.notes
+            }
+            for item in qr_order.items
+        ]
+    })
+    
+    kot.insert(ignore_permissions=True)
+    frappe.db.commit()
+    
+    return kot
+
+def _handle_qr_order_cancellation(qr_order: Document) -> None:
+    """
+    Handle QR Order cancellation side effects
+    
+    Args:
+        qr_order (Document): QR Order document
+    """
+    # Update table status
+    if qr_order.table:
+        table = frappe.get_doc("POS Table", qr_order.table)
+        table.status = TableStatus.AVAILABLE
+        table.save(ignore_permissions=True)
+    
+    # Cancel related KOTs
+    kots = frappe.get_all(
+        "KOT",
+        filters={
+            "order_id": qr_order.name,
+            "order_type": "QR",
+            "docstatus": ["!=", 2]  # Not cancelled
+        }
+    )
+    
+    for kot in kots:
+        kot_doc = frappe.get_doc("KOT", kot.name)
+        if kot_doc.status not in ["Completed", "Cancelled"]:
+            kot_doc.status = "Cancelled"
+            kot_doc.save(ignore_permissions=True)
+
+@frappe.whitelist()
+@handle_pos_errors()
+def get_qr_order_status_info(qr_order: str) -> Dict[str, Any]:
+    """
+    Get QR Order status information
+    
+    Args:
+        qr_order (str): QR Order name/ID
+        
+    Returns:
+        Dict: Status information
+    """
+    doc = frappe.get_doc("QR Order", qr_order)
+    current_status = doc.status
+    
+    valid_transitions = STATUS_TRANSITIONS.get("QR Order", {}).get(current_status, [])
+    
+    security = SecurityManager()
+    allowed_transitions = []
+    
+    for status in valid_transitions:
+        try:
+            security.validate_branch_operation(
+                doc.branch,
+                f"update_qr_order_{status.lower()}",
+                raise_error=False
+            )
+            allowed_transitions.append(status)
+        except:
+            continue
+    
+    return {
+        "current_status": current_status,
+        "allowed_transitions": allowed_transitions,
+        "has_active_kot": _has_active_kot(doc),
+        "can_cancel": (current_status not in ["Cancelled", "Rejected"] and 
+                      security.check_permission("update_qr_order_cancelled"))
+    }
+
+def _has_active_kot(qr_order: Document) -> bool:
+    """
+    Check if QR Order has active KOT
+    
+    Args:
+        qr_order (Document): QR Order document
+        
+    Returns:
+        bool: True if has active KOT
+    """
+    return bool(frappe.db.exists({
+        "doctype": "KOT",
+        "order_id": qr_order.name,
+        "order_type": "QR",
+        "status": ["not in", ["Completed", "Cancelled"]],
+        "docstatus": ["!=", 2]
+    }))
 
 class StatusManager:
     """

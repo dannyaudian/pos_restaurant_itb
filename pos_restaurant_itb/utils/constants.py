@@ -180,3 +180,19 @@ __all__ = [
     'CacheExpiration',
     'NamingSeries'
 ]
+# Update OPERATION_ROLES dictionary
+OPERATION_ROLES: Final[Dict[str, List[str]]] = {
+    # ... existing roles ...
+    "create_qr_order": ["QR Order User", "Outlet Manager", "Restaurant Manager"],
+    "update_qr_order_confirmed": ["QR Order User", "Outlet Manager", "Restaurant Manager"],
+    "update_qr_order_rejected": ["Outlet Manager", "Restaurant Manager"],
+    "update_qr_order_cancelled": ["Outlet Manager", "Restaurant Manager"]
+},
+# Tambahkan ke STATUS_TRANSITIONS
+"QR Order": {
+    "Draft": ["In Progress", "Cancelled"],
+    "In Progress": ["Ready for Billing", "Cancelled"],
+    "Ready for Billing": ["Completed", "Cancelled"],
+    "Completed": [],  # Final state
+    "Cancelled": []   # Final state
+}
