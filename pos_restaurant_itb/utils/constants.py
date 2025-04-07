@@ -49,6 +49,12 @@ class TableStatus(str, Enum):
     MERGED = "Merged"
     SPLIT = "Split"
 
+class SessionStatus(str, Enum):
+    """Session status enum for QR Order Sessions"""
+    ACTIVE = "Active"
+    INACTIVE = "Inactive"
+    EXPIRED = "Expired"
+    CLOSED = "Closed"
 
 # -------------------------
 # Status Transition Maps
@@ -107,6 +113,14 @@ TABLE_STATUSES = {
     TableStatus.MERGED: [TableStatus.AVAILABLE],
     TableStatus.SPLIT: [TableStatus.AVAILABLE]
 }
+
+QR_ORDER_STATUSES = {
+    SessionStatus.ACTIVE: [SessionStatus.EXPIRED, SessionStatus.CLOSED],
+    SessionStatus.INACTIVE: [SessionStatus.ACTIVE],
+    SessionStatus.EXPIRED: [],
+    SessionStatus.CLOSED: []
+}
+
 
 
 # -------------------------
