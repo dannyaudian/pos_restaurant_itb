@@ -8,9 +8,12 @@ __owner__ = 'PT. Innovasi Terbaik Bangsa'
 from enum import Enum
 from typing import Dict, List
 
-# Status Constants
+
+# -------------------------
+# Status Enums & Constants
+# -------------------------
+
 class OrderStatus:
-    """Order status constants"""
     DRAFT = "Draft"
     NEW = "New"
     IN_PROGRESS = "In Progress"
@@ -26,7 +29,6 @@ class OrderStatus:
     VOID = "Void"
 
 class PaymentStatus:
-    """Payment status constants"""
     PENDING = "Pending"
     PAID = "Paid"
     PARTIALLY_PAID = "Partially Paid"
@@ -38,38 +40,7 @@ class PaymentStatus:
     SETTLED = "Settled"
     VOID = "Void"
 
-class ErrorMessages:
-    """Error message constants"""
-    INVALID_DEVICE = "Invalid device ID"
-    SESSION_INACTIVE = "Session is not active"
-    ORDER_NOT_FOUND = "Order not found"
-    ORDER_MODIFICATION_DENIED = "Order modification not allowed"
-    INVALID_STATUS = "Invalid status"
-    INVALID_PAYMENT = "Invalid payment"
-    PERMISSION_DENIED = "Permission denied"
-    BRANCH_UNAUTHORIZED = "Branch access unauthorized"
-    TABLE_UNAVAILABLE = "Table is not available"
-    KOT_ERROR = "Error processing KOT"
-    INVALID_CONFIGURATION = "Invalid configuration"
-    SESSION_EXPIRED = "Session has expired"
-    INVALID_CREDENTIALS = "Invalid credentials"
-    SYSTEM_ERROR = "System error occurred"
-
-class CacheKeys:
-    """Cache key constants"""
-    QR_ORDER = "qr_order"
-    POS_ORDER = "pos_order"
-    KOT = "kot"
-    TABLE = "table"
-    SESSION = "session"
-    USER_PROFILE = "user_profile"
-    POS_PROFILE = "pos_profile"
-    SYSTEM_SETTINGS = "system_settings"
-    BRANCH_SETTINGS = "branch_settings"
-    KITCHEN_SETTINGS = "kitchen_settings"
-
 class TableStatus(str, Enum):
-    """Table status enum"""
     AVAILABLE = "Available"
     OCCUPIED = "Occupied"
     RESERVED = "Reserved"
@@ -77,34 +48,32 @@ class TableStatus(str, Enum):
     MERGED = "Merged"
     SPLIT = "Split"
 
-# Status Flow Maps
+
+# -------------------------
+# Status Transition Maps
+# -------------------------
+
 QR_ORDER_STATUSES: Dict[str, List[str]] = {
     "Draft": ["In Progress", "Cancelled"],
-    "In Progress": ["Completed", "Cancelled"],
+    "In Progress": ["Ready for Billing", "Cancelled"],
+    "Ready for Billing": ["Completed", "Cancelled"],
     "Completed": [],
-    "Cancelled": [],
-    "Void": []
+    "Cancelled": []
 }
 
 POS_ORDER_STATUSES: Dict[str, List[str]] = {
     "Draft": ["In Progress", "Cancelled"],
-    "In Progress": ["Completed", "Cancelled"],
+    "In Progress": ["Ready for Billing", "Cancelled"],
+    "Ready for Billing": ["Completed", "Cancelled"],
     "Completed": [],
     "Cancelled": [],
     "Merged": [],
     "Void": []
 }
 
-QR_POS_ORDER_STATUSES: Dict[str, List[str]] = {
-    "Draft": ["In Progress", "Cancelled"],
-    "In Progress": ["Completed", "Cancelled"],
-    "Completed": [],
-    "Cancelled": [],
-    "Merged": [],
-    "Void": []
-}
+QR_POS_ORDER_STATUSES = POS_ORDER_STATUSES.copy()
 
-KOT_STATUSES: Dict[str, List[str]] = {
+KOT_STATUSES = {
     "New": ["In Progress", "Cancelled"],
     "In Progress": ["Completed", "Cancelled"],
     "Completed": [],
@@ -112,16 +81,7 @@ KOT_STATUSES: Dict[str, List[str]] = {
     "Void": []
 }
 
-TABLE_STATUSES: Dict[str, List[str]] = {
-    TableStatus.AVAILABLE: [TableStatus.OCCUPIED, TableStatus.RESERVED, TableStatus.MAINTENANCE],
-    TableStatus.OCCUPIED: [TableStatus.AVAILABLE, TableStatus.MAINTENANCE],
-    TableStatus.RESERVED: [TableStatus.AVAILABLE, TableStatus.OCCUPIED, TableStatus.MAINTENANCE],
-    TableStatus.MAINTENANCE: [TableStatus.AVAILABLE],
-    TableStatus.MERGED: [TableStatus.AVAILABLE],
-    TableStatus.SPLIT: [TableStatus.AVAILABLE]
-}
-
-KITCHEN_DISPLAY_STATUSES: Dict[str, List[str]] = {
+KITCHEN_DISPLAY_STATUSES = {
     "New": ["Processing", "Cancelled"],
     "Processing": ["Ready", "Cancelled"],
     "Ready": ["Delivered"],
@@ -129,7 +89,7 @@ KITCHEN_DISPLAY_STATUSES: Dict[str, List[str]] = {
     "Cancelled": []
 }
 
-PAYMENT_STATUSES: Dict[str, List[str]] = {
+PAYMENT_STATUSES = {
     "Pending": ["Paid", "Partially Paid", "Cancelled"],
     "Partially Paid": ["Paid", "Cancelled"],
     "Paid": ["Refunded", "Void"],
@@ -138,8 +98,21 @@ PAYMENT_STATUSES: Dict[str, List[str]] = {
     "Void": []
 }
 
-# Document Status Maps
-DOCUMENT_STATUS_MAP: Dict[str, Dict] = {
+TABLE_STATUSES = {
+    TableStatus.AVAILABLE: [TableStatus.OCCUPIED, TableStatus.RESERVED, TableStatus.MAINTENANCE],
+    TableStatus.OCCUPIED: [TableStatus.AVAILABLE, TableStatus.MAINTENANCE],
+    TableStatus.RESERVED: [TableStatus.AVAILABLE, TableStatus.OCCUPIED, TableStatus.MAINTENANCE],
+    TableStatus.MAINTENANCE: [TableStatus.AVAILABLE],
+    TableStatus.MERGED: [TableStatus.AVAILABLE],
+    TableStatus.SPLIT: [TableStatus.AVAILABLE]
+}
+
+
+# -------------------------
+# Document Status Mapping
+# -------------------------
+
+DOCUMENT_STATUS_MAP = {
     "QR Order": {
         "status_field": "status",
         "statuses": QR_ORDER_STATUSES,
@@ -172,8 +145,52 @@ DOCUMENT_STATUS_MAP: Dict[str, Dict] = {
     }
 }
 
-# Message Constants
-MSGS: Dict[str, Dict[str, str]] = {
+
+STATUS_TRANSITIONS: Dict[str, Dict[str, List[str]]] = {
+    key: value["statuses"] for key, value in DOCUMENT_STATUS_MAP.items()
+}
+
+
+# -------------------------
+# Cache & Error Constants
+# -------------------------
+
+class ErrorMessages:
+    INVALID_DEVICE = "Invalid device ID"
+    SESSION_INACTIVE = "Session is not active"
+    ORDER_NOT_FOUND = "Order not found"
+    ORDER_MODIFICATION_DENIED = "Order modification not allowed"
+    INVALID_STATUS = "Invalid status"
+    INVALID_PAYMENT = "Invalid payment"
+    PERMISSION_DENIED = "Permission denied"
+    BRANCH_UNAUTHORIZED = "Branch access unauthorized"
+    TABLE_UNAVAILABLE = "Table is not available"
+    KOT_ERROR = "Error processing KOT"
+    INVALID_CONFIGURATION = "Invalid configuration"
+    SESSION_EXPIRED = "Session has expired"
+    INVALID_CREDENTIALS = "Invalid credentials"
+    SYSTEM_ERROR = "System error occurred"
+    ITEMS_REQUIRED = "At least one item is required."
+
+
+class CacheKeys:
+    QR_ORDER = "qr_order"
+    POS_ORDER = "pos_order"
+    KOT = "kot"
+    TABLE = "table"
+    SESSION = "session"
+    USER_PROFILE = "user_profile"
+    POS_PROFILE = "pos_profile"
+    SYSTEM_SETTINGS = "system_settings"
+    BRANCH_SETTINGS = "branch_settings"
+    KITCHEN_SETTINGS = "kitchen_settings"
+
+
+# -------------------------
+# UI Message Sets
+# -------------------------
+
+MSGS = {
     "success": {
         "create": "Created successfully",
         "update": "Updated successfully",
@@ -213,4 +230,18 @@ MSGS: Dict[str, Dict[str, str]] = {
         "background": "Running in background",
         "sync": "Synchronizing data"
     }
+}
+
+
+# -------------------------
+# Naming Series by Branch
+# -------------------------
+
+NamingSeries: Dict[str, str] = {
+    "POS Order": "POS-{branch_code}-",
+    "QR Order": "QR-{branch_code}-",
+    "KOT": "KOT-{branch_code}-",
+    "Kitchen Station": "KS-{branch_code}-",
+    "Kitchen Station Setup": "KSS-{branch_code}-",
+    "Printer Mapping POS Restaurant": "PRN-{branch_code}-"
 }
