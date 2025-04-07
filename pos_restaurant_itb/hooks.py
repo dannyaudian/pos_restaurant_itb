@@ -14,7 +14,9 @@ __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 __version__ = '1.0.0'
 
-# App Info
+# -----------------------------------------------------
+# App Metadata
+# -----------------------------------------------------
 app_name = "pos_restaurant_itb"
 app_title = "POS Restaurant"
 app_publisher = "PT. Innovasi Terbaik Bangsa"
@@ -23,7 +25,9 @@ app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 app_version = "1.0.0"
 
+# -----------------------------------------------------
 # Fixtures
+# -----------------------------------------------------
 fixtures = [
     "Custom Field",
     "Property Setter",
@@ -48,7 +52,23 @@ fixtures = [
     }
 ]
 
-# Doctype Custom Scripts
+# -----------------------------------------------------
+# Frontend Assets
+# -----------------------------------------------------
+app_include_js = [
+    "/assets/pos_restaurant_itb/js/auto_refresh.js",
+    "/assets/pos_restaurant_itb/js/pos_extensions.js",
+    "/assets/pos_restaurant_itb/js/kitchen_display.js"
+]
+
+app_include_css = [
+    "/assets/pos_restaurant_itb/css/pos_restaurant.css",
+    "/assets/pos_restaurant_itb/css/kitchen_display.css"
+]
+
+# -----------------------------------------------------
+# Doctype Custom JS
+# -----------------------------------------------------
 doctype_js = {
     "POS Order": [
         "custom/pos_order/pos_order.js",
@@ -69,19 +89,9 @@ doctype_js = {
     "Queue Management": "custom/queue/queue_dashboard.js"
 }
 
-# Assets
-app_include_js = [
-    "/assets/pos_restaurant_itb/js/auto_refresh.js",
-    "/assets/pos_restaurant_itb/js/pos_extensions.js",
-    "/assets/pos_restaurant_itb/js/kitchen_display.js"
-]
-
-app_include_css = [
-    "/assets/pos_restaurant_itb/css/pos_restaurant.css",
-    "/assets/pos_restaurant_itb/css/kitchen_display.css"
-]
-
+# -----------------------------------------------------
 # Document Events
+# -----------------------------------------------------
 doc_events = {
     "POS Order": {
         "validate": [
@@ -120,7 +130,9 @@ doc_events = {
     }
 }
 
-# Scheduler Events
+# -----------------------------------------------------
+# Scheduled Tasks
+# -----------------------------------------------------
 scheduler_events = {
     "daily": [
         "pos_restaurant_itb.utils.optimization.cleanup_old_data",
@@ -142,7 +154,9 @@ scheduler_events = {
     }
 }
 
-# Security
+# -----------------------------------------------------
+# Permissions & Security
+# -----------------------------------------------------
 permission_query_conditions = {
     "POS Order": "pos_restaurant_itb.utils.security.get_pos_permission_query",
     "KOT": "pos_restaurant_itb.utils.security.get_kot_permission_query",
@@ -154,8 +168,9 @@ has_permission = {
     "QR Order": "pos_restaurant_itb.utils.security.validate_qr_permission"
 }
 
-# API & REST
-api_version = 1
+# -----------------------------------------------------
+# REST API
+# -----------------------------------------------------
 rest_apis = [
     {
         "API": "pos_restaurant_itb.api",
@@ -167,7 +182,6 @@ rest_apis = [
     }
 ]
 
-# Whitelisted Methods
 whitelisted_methods = [
     "pos_restaurant_itb.utils.common.get_new_order_id",
     "pos_restaurant_itb.utils.common.update_kot_item_status",
@@ -180,18 +194,12 @@ whitelisted_methods = [
     "pos_restaurant_itb.api.qr_order.create_qr_order"
 ]
 
-# Website
+# -----------------------------------------------------
+# Website Portal
+# -----------------------------------------------------
 portal_menu_items = [
-    {
-        "title": "My Orders",
-        "route": "/orders",
-        "reference_doctype": "POS Order"
-    },
-    {
-        "title": "QR Orders",
-        "route": "/qr-orders",
-        "reference_doctype": "QR Order"
-    }
+    {"title": "My Orders", "route": "/orders", "reference_doctype": "POS Order"},
+    {"title": "QR Orders", "route": "/qr-orders", "reference_doctype": "QR Order"}
 ]
 
 website_route_rules = [
@@ -199,46 +207,51 @@ website_route_rules = [
     {"from_route": "/qr-orders", "to_route": "pos_restaurant_itb.www.qr_orders"}
 ]
 
-# Overridden Classes
+# -----------------------------------------------------
+# Doctype Overrides
+# -----------------------------------------------------
 override_doctype_class = {
     "POS Profile": "pos_restaurant_itb.overrides.pos_profile.CustomPOSProfile",
     "POS Invoice": "pos_restaurant_itb.overrides.pos_invoice.CustomPOSInvoice"
 }
 
+# -----------------------------------------------------
 # Redis Queues
+# -----------------------------------------------------
 rq_queues = [
-    {
-        "name": "pos_restaurant_itb",
-        "connection_kwargs": {"queue_type": "default", "async_timeout": 30}
-    },
-    {
-        "name": "pos_restaurant_itb_long",
-        "connection_kwargs": {"queue_type": "long", "async_timeout": 600}
-    }
+    {"name": "pos_restaurant_itb", "connection_kwargs": {"queue_type": "default", "async_timeout": 30}},
+    {"name": "pos_restaurant_itb_long", "connection_kwargs": {"queue_type": "long", "async_timeout": 600}}
 ]
 
+# -----------------------------------------------------
 # Session and Boot
+# -----------------------------------------------------
 boot_session = "pos_restaurant_itb.boot.boot_session"
 
-# Error Handlers
+# -----------------------------------------------------
+# Error Handling
+# -----------------------------------------------------
 error_handlers = [
     "pos_restaurant_itb.utils.error_handlers.handle_pos_errors",
     "pos_restaurant_itb.utils.error_handlers.POSRestaurantError"
 ]
 
-# After Migrate
+# -----------------------------------------------------
+# Setup Tasks
+# -----------------------------------------------------
 after_migrate = [
     "pos_restaurant_itb.setup.install.after_install",
     "pos_restaurant_itb.setup.install.create_custom_fields"
 ]
 
-# Before Tests
 before_tests = [
     "pos_restaurant_itb.tests.test_setup.setup_test_data",
     "pos_restaurant_itb.tests.test_setup.setup_test_config"
 ]
 
-# Jinja
+# -----------------------------------------------------
+# Jinja Filters
+# -----------------------------------------------------
 jinja = {
     "filters": [
         "pos_restaurant_itb.utils.jinja_filters.format_currency",
@@ -247,7 +260,9 @@ jinja = {
     ]
 }
 
-# Translatable Doctypes
+# -----------------------------------------------------
+# Translatable Content
+# -----------------------------------------------------
 translatable = [
     {"doctype": "POS Order", "language": ["id", "en"]},
     {"doctype": "QR Order", "language": ["id", "en"]}

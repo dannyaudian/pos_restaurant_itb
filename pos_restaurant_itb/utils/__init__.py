@@ -8,18 +8,19 @@ __owner__ = 'PT. Innovasi Terbaik Bangsa'
 """
 POS Restaurant ITB - Utilities Module
 -------------------------------------
-Collection of utility functions and helpers for POS Restaurant ITB.
+Kumpulan fungsi utilitas dan helper untuk modul POS Restaurant ITB.
 
 Submodules:
-- attributes: Item attribute handling utilities
-- common: Common utility functions
-- constants: System-wide constants and messages
-- error_handlers: Error handling and logging
-- jinja_filters: Custom Jinja template filters
-- optimization: Performance optimization utilities
-- price: Price calculation utilities
-- security: Security and permission utilities
-- status_manager: Status transition management
+- attributes         : Penanganan atribut item & varian
+- common             : Fungsi umum (branch, order ID, validasi, dsb)
+- constants          : Konstanta status, pesan, naming series
+- error_handlers     : Penanganan error & log
+- jinja_filters      : Filter untuk jinja templates
+- optimization       : Optimasi dan pembersihan data
+- price              : Perhitungan harga & diskon
+- security           : Validasi otorisasi & keamanan
+- status_manager     : Pengaturan transisi status
+- realtime           : Komunikasi realtime via socketio
 """
 
 from . import (
@@ -31,7 +32,8 @@ from . import (
     optimization,
     price,
     security,
-    status_manager
+    status_manager,
+    realtime
 )
 
 # Constants
@@ -46,10 +48,11 @@ from .constants import (
     CacheKeys,
     QR_ORDER_STATUSES,
     POS_ORDER_STATUSES,
-    QR_POS_ORDER_STATUSES
+    QR_POS_ORDER_STATUSES,
+    NamingSeries
 )
 
-# Common Functions
+# Common Utilities
 from .common import (
     get_branch_from_user,
     get_new_order_id,
@@ -61,7 +64,7 @@ from .common import (
     calculate_cooking_time
 )
 
-# Error Handlers
+# Error Handling
 from .error_handlers import (
     POSRestaurantError,
     TableError,
@@ -77,21 +80,21 @@ from .error_handlers import (
     handle_doc_error
 )
 
-# Price Utilities
+# Price Calculation
 from .price import (
     get_item_price,
     calculate_item_amount,
     get_price_list_details
 )
 
-# Attribute Utilities
+# Attribute Handling
 from .attributes import (
     validate_item_attributes,
     get_variant_attributes,
     find_variant
 )
 
-# Security Utilities
+# Security & Permission
 from .security import (
     validate_user_permission,
     get_user_restrictions,
@@ -100,7 +103,7 @@ from .security import (
     get_valid_status_transitions
 )
 
-# Optimization Utilities
+# Optimization
 from .optimization import (
     cleanup_old_data,
     update_stats,
@@ -123,91 +126,62 @@ from .status_manager import (
     update_document_status
 )
 
-# Version and metadata
+# Realtime Utilities
+from .realtime import (
+    notify_session_update,
+    notify_order_update,
+    notify_kitchen_status,
+    broadcast_to_kitchen
+)
+
+# Version Info
 __version__ = '1.0.0'
 
 __all__ = [
-    # Submodules
-    'attributes',
-    'common',
-    'constants',
-    'error_handlers',
-    'jinja_filters',
-    'optimization',
-    'price',
-    'security',
-    'status_manager',
+    # Modules
+    'attributes', 'common', 'constants', 'error_handlers', 'jinja_filters',
+    'optimization', 'price', 'security', 'status_manager', 'realtime',
 
     # Constants
-    'KOT_STATUSES',
-    'ORDER_STATUSES',
-    'TABLE_STATUSES',
-    'MSGS',
-    'OrderStatus',
-    'PaymentStatus',
-    'ErrorMessages',
-    'CacheKeys',
-    'QR_ORDER_STATUSES',
-    'POS_ORDER_STATUSES',
-    'QR_POS_ORDER_STATUSES',
+    'KOT_STATUSES', 'ORDER_STATUSES', 'TABLE_STATUSES', 'MSGS',
+    'OrderStatus', 'PaymentStatus', 'ErrorMessages', 'CacheKeys',
+    'QR_ORDER_STATUSES', 'POS_ORDER_STATUSES', 'QR_POS_ORDER_STATUSES',
+    'NamingSeries',
 
     # Exception Classes
-    'POSRestaurantError',
-    'TableError',
-    'OrderError',
-    'KitchenError',
-    'ValidationError',
+    'POSRestaurantError', 'TableError', 'OrderError', 'KitchenError', 'ValidationError',
 
-    # Common Functions
-    'get_branch_from_user',
-    'get_new_order_id',
-    'update_kot_item_status',
-    'is_pos_profile_authorized',
-    'get_pos_settings',
-    'validate_working_day',
-    'get_table_status',
-    'calculate_cooking_time',
+    # Common
+    'get_branch_from_user', 'get_new_order_id', 'update_kot_item_status',
+    'is_pos_profile_authorized', 'get_pos_settings', 'validate_working_day',
+    'get_table_status', 'calculate_cooking_time',
 
-    # Error Handlers
-    'handle_pos_errors',
-    'log_pos_activity',
-    'notify_error',
-    'handle_transaction_error',
-    'cleanup_failed_documents',
-    'handle_api_error',
-    'handle_doc_error',
+    # Error
+    'handle_pos_errors', 'log_pos_activity', 'notify_error',
+    'handle_transaction_error', 'cleanup_failed_documents',
+    'handle_api_error', 'handle_doc_error',
 
-    # Price Functions
-    'get_item_price',
-    'calculate_item_amount',
-    'get_price_list_details',
+    # Price
+    'get_item_price', 'calculate_item_amount', 'get_price_list_details',
 
-    # Attribute Functions
-    'validate_item_attributes',
-    'get_variant_attributes',
-    'find_variant',
+    # Attributes
+    'validate_item_attributes', 'get_variant_attributes', 'find_variant',
 
-    # Security Functions
-    'validate_user_permission',
-    'get_user_restrictions',
-    'validate_branch_access',
-    'update_order_status',
-    'get_valid_status_transitions',
+    # Security
+    'validate_user_permission', 'get_user_restrictions', 'validate_branch_access',
+    'update_order_status', 'get_valid_status_transitions',
 
     # Optimization
-    'cleanup_old_data',
-    'update_stats',
-    'optimize_db_queries',
-    'update_pos_order_stats',
+    'cleanup_old_data', 'update_stats', 'optimize_db_queries', 'update_pos_order_stats',
 
-    # Jinja Filters
-    'format_currency',
-    'format_datetime',
-    'format_status',
+    # Jinja
+    'format_currency', 'format_datetime', 'format_status',
 
-    # Status Manager
-    'StatusManager',
-    'handle_qr_order_status_update',
-    'get_qr_order_status_info',
-    'update_document_status'
+    # Status
+    'StatusManager', 'handle_qr_order_status_update', 'get_qr_order_status_info',
+    'update_document_status',
+
+    # Realtime
+    'notify_session_update', 'notify_order_update',
+    'notify_kitchen_status', 'broadcast_to_kitchen'
 ]
