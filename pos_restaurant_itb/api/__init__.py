@@ -1,28 +1,54 @@
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-06 15:39:04'
+__created_date__ = '2025-04-07 08:16:01'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
-# Kitchen Management
-from .kitchen.create_kot import create_kot_from_pos_order
-from .kitchen.kot_status_update import update_kot_status
-from .kitchen.kitchen_analytics import get_station_efficiency
+import frappe
+from frappe import _
 
-# Order Management
-from .order.resolve_variant import resolve_variant
-from .order.order_notes import add_order_note
+"""
+POS Restaurant ITB - API Module
+-----------------------------
+Collection of API endpoints and utilities for POS Restaurant ITB.
 
-# QR System
-from .qr.qr_session import create_qr_session
-from .qr.qr_order import create_qr_order
+Modules:
+- kitchen: Kitchen display and order management APIs
+- pos: POS operations and transaction APIs  
+- qr: QR code order management APIs
+- table: Table management APIs
+"""
 
-# Table Management
-from .table.table_status import get_table_status
+# Import submodules
+from . import pos, qr, table
 
-# Queue Management
-from .queue.queue_manager import create_queue_entry
+# Lazy load kitchen module to avoid circular imports
+def get_kitchen_module():
+    from . import kitchen
+    return kitchen
 
-# Metrics
-from .metrics.operational_metrics import get_realtime_metrics
+def create_kot_from_pos_order(*args, **kwargs):
+    kitchen = get_kitchen_module()
+    return kitchen.create_kot.create_kot_from_pos_order(*args, **kwargs)
+
+def update_kot_status(*args, **kwargs):
+    kitchen = get_kitchen_module()
+    return kitchen.update_kot.update_kot_status(*args, **kwargs)
+
+def get_kot_details(*args, **kwargs):
+    kitchen = get_kitchen_module()
+    return kitchen.get_kot.get_kot_details(*args, **kwargs)
+
+# Version and metadata
+__version__ = '1.0.0'
+
+# Module exports
+__all__ = [
+    'pos',
+    'qr',
+    'table',
+    'create_kot_from_pos_order',
+    'update_kot_status',
+    'get_kot_details'
+]

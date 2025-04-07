@@ -1,7 +1,7 @@
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-07 07:41:12'
+__created_date__ = '2025-04-07 07:47:42'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
@@ -21,10 +21,6 @@ Modules:
 - security: Security and permission utilities
 """
 
-import frappe
-from frappe import _
-from frappe.utils import get_traceback
-
 from . import (
     attributes,
     common,
@@ -33,8 +29,7 @@ from . import (
     jinja_filters,
     optimization,
     price,
-    security,
-    realtime
+    security
 )
 
 # Constants
@@ -61,16 +56,23 @@ from .common import (
     get_pos_settings,
     validate_working_day,
     get_table_status,
-    calculate_cooking_time,
-    create_logs,
-    get_pos_profile,
-    get_user_profile,
-    get_user_branch,
-    get_kot_in_progress,
-    get_draft_qr_orders,
-    get_user_roles,
-    get_system_settings,
-    validate_permissions
+    calculate_cooking_time
+)
+
+# Error Handlers
+from .error_handlers import (
+    POSRestaurantError,
+    TableError,
+    OrderError,
+    KitchenError,
+    ValidationError,
+    handle_pos_errors,
+    log_pos_activity,
+    notify_error,
+    handle_transaction_error,
+    cleanup_failed_documents,
+    handle_api_error,
+    handle_doc_error
 )
 
 # Price Functions
@@ -108,35 +110,9 @@ from .jinja_filters import (
     format_status
 )
 
-# Error Handlers
-from .error_handlers import (
-    POSRestaurantError,
-    TableError,
-    OrderError,
-    KitchenError,
-    ValidationError,
-    handle_api_error,
-    handle_doc_error,
-    handle_pos_errors,
-    log_pos_activity,
-    notify_error,
-    handle_transaction_error,
-    cleanup_failed_documents
-)
-
-# Realtime Functions
-from .realtime import (
-    notify_order_update,
-    notify_kot_update,
-    notify_kitchen_update
-)
-
 # Version and metadata
 __version__ = '1.0.0'
-
-# Module exports
 __all__ = [
-    # Modules
     'attributes',
     'common',
     'constants',
@@ -145,11 +121,10 @@ __all__ = [
     'optimization',
     'price',
     'security',
-    'realtime',
     
     # Constants
     'KOT_STATUSES',
-    'ORDER_STATUSES', 
+    'ORDER_STATUSES',
     'TABLE_STATUSES',
     'MSGS',
     'OrderStatus',
@@ -160,14 +135,14 @@ __all__ = [
     'POS_ORDER_STATUSES',
     'QR_POS_ORDER_STATUSES',
     
-    # Error Classes
+    # Classes
     'POSRestaurantError',
     'TableError',
     'OrderError',
     'KitchenError',
     'ValidationError',
     
-    # Common Functions
+    # Functions
     'get_branch_from_user',
     'get_new_order_id',
     'update_kot_item_status',
@@ -176,52 +151,26 @@ __all__ = [
     'validate_working_day',
     'get_table_status',
     'calculate_cooking_time',
-    'create_logs',
-    'get_pos_profile',
-    'get_user_profile',
-    'get_user_branch',
-    'get_kot_in_progress',
-    'get_draft_qr_orders',
-    'get_user_roles',
-    'get_system_settings',
-    'validate_permissions',
-    
-    # Error Handlers
-    'handle_api_error',
-    'handle_doc_error',
     'handle_pos_errors',
     'log_pos_activity',
     'notify_error',
     'handle_transaction_error',
     'cleanup_failed_documents',
-    
-    # Price Functions
+    'handle_api_error',
+    'handle_doc_error',
     'get_item_price',
     'calculate_item_amount',
     'get_price_list_details',
-    
-    # Attribute Functions
     'validate_item_attributes',
     'get_variant_attributes',
     'find_variant',
-    
-    # Security Functions
     'validate_user_permission',
     'get_user_restrictions',
     'validate_branch_access',
-    
-    # Optimization Functions
     'cleanup_old_data',
     'update_stats',
     'optimize_db_queries',
-    
-    # Jinja Filter Functions
     'format_currency',
     'format_datetime',
-    'format_status',
-    
-    # Realtime Functions
-    'notify_order_update',
-    'notify_kot_update',
-    'notify_kitchen_update'
+    'format_status'
 ]
