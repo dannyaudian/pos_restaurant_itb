@@ -10,44 +10,49 @@ from frappe import _
 
 """
 POS Restaurant ITB - API Module
------------------------------
+-------------------------------
 Collection of API endpoints and utilities for POS Restaurant ITB.
 
-Modules:
-- kitchen: Kitchen display and order management APIs
-- pos: POS operations and transaction APIs  
-- qr: QR code order management APIs
-- table: Table management APIs
+Submodules:
+- kitchen: Kitchen display, station, and order integration
+- pos: POS operations (order creation, billing, status updates)
+- qr: QR ordering system (order, session, payment)
+- table: Table management (availability, status)
+- order: Attribute, splitting, analytics, voiding
+- metrics: Operational and dashboard metrics
+- queue: Kitchen queue manager
 """
 
-# Import submodules
-from . import pos, qr, table
+# Core submodules (non-circular)
+from . import pos, qr, table, order, metrics, queue
 
-# Lazy load kitchen module to avoid circular imports
+# Lazy-load circular modules
 def get_kitchen_module():
     from . import kitchen
     return kitchen
 
+# API Proxy Shortcuts
 def create_kot_from_pos_order(*args, **kwargs):
-    kitchen = get_kitchen_module()
-    return kitchen.create_kot.create_kot_from_pos_order(*args, **kwargs)
+    return get_kitchen_module().create_kot_from_pos_order(*args, **kwargs)
 
 def update_kot_status(*args, **kwargs):
-    kitchen = get_kitchen_module()
-    return kitchen.update_kot.update_kot_status(*args, **kwargs)
+    return get_kitchen_module().kot_status_update.update_kds_status_from_kot(*args, **kwargs)
 
 def get_kot_details(*args, **kwargs):
-    kitchen = get_kitchen_module()
-    return kitchen.get_kot.get_kot_details(*args, **kwargs)
+    # Misal fungsi ini tersedia dalam kitchen/kds.py (disesuaikan)
+    return get_kitchen_module().kds.get_kds_dashboard(*args, **kwargs)
 
-# Version and metadata
+# Versioning
 __version__ = '1.0.0'
 
-# Module exports
+# Public exports
 __all__ = [
     'pos',
     'qr',
     'table',
+    'order',
+    'metrics',
+    'queue',
     'create_kot_from_pos_order',
     'update_kot_status',
     'get_kot_details'

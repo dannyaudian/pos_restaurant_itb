@@ -7,10 +7,10 @@ __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
 """
 POS Restaurant ITB - Utilities Module
------------------------------------
+-------------------------------------
 Collection of utility functions and helpers for POS Restaurant ITB.
 
-Modules:
+Submodules:
 - attributes: Item attribute handling utilities
 - common: Common utility functions
 - constants: System-wide constants and messages
@@ -19,6 +19,7 @@ Modules:
 - optimization: Performance optimization utilities
 - price: Price calculation utilities
 - security: Security and permission utilities
+- status_manager: Status transition management
 """
 
 from . import (
@@ -29,7 +30,8 @@ from . import (
     jinja_filters,
     optimization,
     price,
-    security
+    security,
+    status_manager
 )
 
 # Constants
@@ -75,32 +77,35 @@ from .error_handlers import (
     handle_doc_error
 )
 
-# Price Functions
+# Price Utilities
 from .price import (
     get_item_price,
     calculate_item_amount,
     get_price_list_details
 )
 
-# Attribute Functions
+# Attribute Utilities
 from .attributes import (
     validate_item_attributes,
     get_variant_attributes,
     find_variant
 )
 
-# Security Functions
+# Security Utilities
 from .security import (
     validate_user_permission,
     get_user_restrictions,
-    validate_branch_access
+    validate_branch_access,
+    update_order_status,
+    get_valid_status_transitions
 )
 
-# Optimization Functions
+# Optimization Utilities
 from .optimization import (
     cleanup_old_data,
     update_stats,
-    optimize_db_queries
+    optimize_db_queries,
+    update_pos_order_stats
 )
 
 # Jinja Filters
@@ -110,9 +115,19 @@ from .jinja_filters import (
     format_status
 )
 
+# Status Manager
+from .status_manager import (
+    StatusManager,
+    handle_qr_order_status_update,
+    get_qr_order_status_info,
+    update_document_status
+)
+
 # Version and metadata
 __version__ = '1.0.0'
+
 __all__ = [
+    # Submodules
     'attributes',
     'common',
     'constants',
@@ -121,7 +136,8 @@ __all__ = [
     'optimization',
     'price',
     'security',
-    
+    'status_manager',
+
     # Constants
     'KOT_STATUSES',
     'ORDER_STATUSES',
@@ -134,15 +150,15 @@ __all__ = [
     'QR_ORDER_STATUSES',
     'POS_ORDER_STATUSES',
     'QR_POS_ORDER_STATUSES',
-    
-    # Classes
+
+    # Exception Classes
     'POSRestaurantError',
     'TableError',
     'OrderError',
     'KitchenError',
     'ValidationError',
-    
-    # Functions
+
+    # Common Functions
     'get_branch_from_user',
     'get_new_order_id',
     'update_kot_item_status',
@@ -151,6 +167,8 @@ __all__ = [
     'validate_working_day',
     'get_table_status',
     'calculate_cooking_time',
+
+    # Error Handlers
     'handle_pos_errors',
     'log_pos_activity',
     'notify_error',
@@ -158,19 +176,38 @@ __all__ = [
     'cleanup_failed_documents',
     'handle_api_error',
     'handle_doc_error',
+
+    # Price Functions
     'get_item_price',
     'calculate_item_amount',
     'get_price_list_details',
+
+    # Attribute Functions
     'validate_item_attributes',
     'get_variant_attributes',
     'find_variant',
+
+    # Security Functions
     'validate_user_permission',
     'get_user_restrictions',
     'validate_branch_access',
+    'update_order_status',
+    'get_valid_status_transitions',
+
+    # Optimization
     'cleanup_old_data',
     'update_stats',
     'optimize_db_queries',
+    'update_pos_order_stats',
+
+    # Jinja Filters
     'format_currency',
     'format_datetime',
-    'format_status'
+    'format_status',
+
+    # Status Manager
+    'StatusManager',
+    'handle_qr_order_status_update',
+    'get_qr_order_status_info',
+    'update_document_status'
 ]
