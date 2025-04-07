@@ -31,7 +31,7 @@ def create_kot_from_pos_order(pos_order_id):
             pos_order = frappe.get_doc("POS Order", pos_order_id)
         except frappe.DoesNotExistError:
             frappe.throw(_("POS Order {0} tidak ditemukan.").format(pos_order_id))
-            
+        
         # Validasi status dokumen
         validate_pos_order(pos_order)
         
