@@ -115,12 +115,14 @@ doc_events = {
     },
     "KOT": {
         "after_insert": [
+            "pos_restaurant_itb.api.kot_status_update.update_kds_status_from_kot"
             "pos_restaurant_itb.events.kot.create_kds_order",
             "pos_restaurant_itb.events.kot.notify_kitchen_station"
         ],
         "on_update": [
             "pos_restaurant_itb.events.kot.notify_kitchen",
-            "pos_restaurant_itb.events.kot.update_order_status"
+            "pos_restaurant_itb.events.kot.update_order_status",
+            "pos_restaurant_itb.api.kot_status_update.update_kds_status_from_kot"
         ]
     },
     "QR Order": {
