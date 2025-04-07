@@ -1,144 +1,219 @@
 # Copyright (c) 2024, PT. Innovasi Terbaik Bangsa and contributors
 # For license information, please see license.txt
 
-__created_date__ = '2025-04-06 09:01:39'
+__created_date__ = '2025-04-07 07:41:12'
 __author__ = 'dannyaudian'
 __owner__ = 'PT. Innovasi Terbaik Bangsa'
 
 import frappe
 from frappe import _
 from functools import wraps
+from frappe.utils import get_traceback
+
+def handle_api_error(fn):
+    """
+    Decorator to handle API errors consistently
+    
+    Args:
+        fn: Function to decorate
+        
+    Returns:
+        Wrapped function that handles errors
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except frappe.DoesNotExistError:
+            frappe.local.response.http_status_code = 404
+            return {
+                "success": False,
+                "message": _("Resource not found"),
+                "error_code": "NOT_FOUND",
+                "timestamp": frappe.utils.now()
+            }
+        except frappe.ValidationError as e:
+            frappe.local.response.http_status_code = 400
+            return {
+                "success": False,
+                "message": str(e),
+                "error_code": "VALIDATION_ERROR",
+                "timestamp": frappe.utils.now()
+            }
+        except frappe.AuthenticationError:
+            frappe.local.response.http_status_code = 401
+            return {
+                "success": False,
+                "message": _("Authentication failed"),
+                "error_code": "AUTHENTICATION_ERROR",
+                "timestamp": frappe.utils.now()
+            }
+        except frappe.PermissionError:
+            frappe.local.response.http_status_code = 403
+            return {
+                "success": False,
+                "message": _("You don't have permission to access this resource"),
+                "error_code": "PERMISSION_ERROR",
+                "timestamp": frappe.utils.now()
+            }
+        except Exception as e:
+            frappe.log_error(
+                title="API Error",
+                message=get_traceback()
+            )
+            frappe.local.response.http_status_code = 500
+            return {
+                "success": False,
+                "message": _("Internal server error"),
+                "error_code": "INTERNAL_ERROR",
+                "timestamp": frappe.utils.now()
+            }
+    return wrapper
+
+def handle_doc_error(fn):
+    """
+    Decorator to handle document operation errors
+    
+    Args:
+        fn: Function to decorate
+        
+    Returns:
+        Wrapped function that handles document errors
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except frappe.DoesNotExistError as e:
+            frappe.throw(_("Document not found: {0}").format(str(e)))
+        except frappe.ValidationError as e:
+            frappe.throw(_("Validation failed: {0}").format(str(e)))
+        except frappe.AuthenticationError:
+            frappe.throw(_("Authentication failed"))
+        except frappe.PermissionError:
+            frappe.throw(_("You don't have permission to perform this action"))
+        except Exception as e:
+            frappe.log_error(
+                title="Document Operation Error",
+                message=get_traceback()
+            )
+            frappe.throw(_("An error occurred while processing the document"))
+    return wrapper
 
 class POSRestaurantError(Exception):
     """Base exception class for POS Restaurant"""
-    def __init__(self, message, title=None, **kwargs):
-        self.message = message
-        self.title = title or "Error"
-        self.kwargs = kwargs
-        super().__init__(self.message)
+    pass
 
 class TableError(POSRestaurantError):
-    """Table related errors"""
+    """Exception for table related errors"""
     pass
 
 class OrderError(POSRestaurantError):
-    """Order related errors"""
+    """Exception for order related errors"""
     pass
 
 class KitchenError(POSRestaurantError):
-    """Kitchen related errors"""
+    """Exception for kitchen related errors"""
     pass
 
 class ValidationError(POSRestaurantError):
-    """Validation related errors"""
+    """Exception for validation errors"""
     pass
 
-def handle_pos_errors(log_error=True):
+def handle_pos_errors(fn):
     """
-    Decorator for handling POS Restaurant errors
+    Decorator to handle POS specific errors
     
     Args:
-        log_error (bool): Whether to log error in Error Log
+        fn: Function to decorate
         
-    Usage:
-        @handle_pos_errors()
-        def my_function():
-            # Your code here
+    Returns:
+        Wrapped function that handles POS errors
     """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except POSRestaurantError as e:
-                if log_error:
-                    frappe.log_error(
-                        message=f"POS Error: {str(e)}",
-                        title=e.title,
-                        **e.kwargs
-                    )
-                frappe.throw(_(str(e)), title=_(e.title))
-            except Exception as e:
-                if log_error:
-                    frappe.log_error(
-                        message=f"Unexpected Error: {str(e)}",
-                        title="POS System Error"
-                    )
-                frappe.throw(
-                    _("An unexpected error occurred. Please contact support."),
-                    title=_("System Error")
-                )
-        return wrapper
-    return decorator
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except POSRestaurantError as e:
+            frappe.log_error(
+                title="POS Error",
+                message=get_traceback()
+            )
+            frappe.throw(str(e))
+        except Exception as e:
+            frappe.log_error(
+                title="POS System Error",
+                message=get_traceback()
+            )
+            frappe.throw(_("An error occurred in POS system"))
+    return wrapper
 
-def log_pos_activity(activity_type, title=None):
+def log_pos_activity(activity_type: str, data: dict = None) -> None:
     """
-    Decorator for logging POS activities
+    Log POS activity for auditing
     
     Args:
-        activity_type (str): Type of activity
-        title (str): Optional title for the log
-        
-    Usage:
-        @log_pos_activity("order_creation")
-        def create_order():
-            # Your code here
+        activity_type: Type of activity
+        data: Additional data to log
     """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                result = func(*args, **kwargs)
-                
-                # Log successful activity
-                frappe.log_error(
-                    message=f"Activity: {activity_type}\nUser: {frappe.session.user}\nResult: Success",
-                    title=title or f"POS Activity: {activity_type}",
-                    type="Activity Log"
-                )
-                
-                return result
-            except Exception as e:
-                # Log failed activity
-                frappe.log_error(
-                    message=f"Activity: {activity_type}\nUser: {frappe.session.user}\nError: {str(e)}",
-                    title=title or f"POS Activity Error: {activity_type}"
-                )
-                raise
-        return wrapper
-    return decorator
+    if not data:
+        data = {}
+    
+    log = frappe.get_doc({
+        "doctype": "POS Activity Log",
+        "activity_type": activity_type,
+        "user": frappe.session.user,
+        "data": frappe.as_json(data),
+        "creation": frappe.utils.now()
+    })
+    log.insert(ignore_permissions=True)
 
-def handle_transaction_error(doc, silent=False):
-    """Handle transaction related errors"""
-    try:
-        if doc.docstatus == 1:  # If submitted
-            doc.cancel()
-        doc.delete()
-        if not silent:
-            frappe.msgprint(_("Transaction cancelled and cleaned up"))
-    except Exception as e:
-        frappe.log_error(
-            message=f"Failed to cleanup {doc.doctype} {doc.name}: {str(e)}",
-            title="Transaction Cleanup Error"
-        )
-        if not silent:
+def notify_error(title: str, message: str) -> None:
+    """
+    Send error notification to user
+    
+    Args:
+        title: Error title
+        message: Error message
+    """
+    frappe.publish_realtime(
+        "pos_error_notification",
+        {
+            "title": title,
+            "message": message,
+            "timestamp": frappe.utils.now()
+        },
+        user=frappe.session.user
+    )
+
+def handle_transaction_error(fn):
+    """
+    Decorator to handle transaction errors
+    
+    Args:
+        fn: Function to decorate
+        
+    Returns:
+        Wrapped function that handles transaction errors
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            frappe.db.rollback()
+            cleanup_failed_documents()
+            frappe.log_error(
+                title="Transaction Error",
+                message=get_traceback()
+            )
             raise
+    return wrapper
 
-def cleanup_failed_documents(days=1):
-    """Cleanup failed draft documents"""
-    doctypes = ["POS Order", "KOT", "Sales Invoice"]
-    
-    for dt in doctypes:
-        docs = frappe.get_all(
-            dt,
-            filters={
-                "docstatus": 0,
-                "modified": ["<", f"DATE_SUB(NOW(), INTERVAL {days} DAY)"]
-            }
-        )
-        
-        for doc in docs:
-            try:
-                frappe.delete_doc(dt, doc.name, force=1)
-            except:
-                continue
+def cleanup_failed_documents() -> None:
+    """Clean up any failed document operations"""
+    try:
+        # Add specific cleanup logic here
+        frappe.db.commit()
+    except:
+        frappe.db.rollback()
