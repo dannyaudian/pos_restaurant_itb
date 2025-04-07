@@ -21,7 +21,7 @@ from pos_restaurant_itb.utils.constants import (
 )
 from pos_restaurant_itb.utils.status_manager import StatusManager
 from pos_restaurant_itb.utils.error_handlers import handle_pos_errors, ValidationError
-from pos_restaurant_itb.api.create_kot import create_kot_from_qr_order
+from pos_restaurant_itb.api.kitchen.create_kot import create_kot_from_qr_order
 
 class QROrder(Document):
     """

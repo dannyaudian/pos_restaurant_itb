@@ -60,7 +60,7 @@ def send_to_kitchen(
         )
 
     # Import here to avoid circular dependency
-    from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
+    from pos_restaurant_itb.api.kitchen.create_kot import create_kot_from_pos_order
 
     try:
         # Create KOT
@@ -274,7 +274,7 @@ def update_kds_for_items(items: List) -> None:
     Args:
         items: List of updated items
     """
-    from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+    from pos_restaurant_itb.api.kitchen.kot_status_update import update_kds_status_from_kot
     
     processed_kots = set()
     

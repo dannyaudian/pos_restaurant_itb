@@ -1,7 +1,7 @@
 frappe.ui.form.on('POS Profile', {
     refresh: function(frm) {
         frappe.call({
-            method: 'pos_restaurant_itb.api.load_pos_restaurant_config',
+            method: 'pos_restaurant_itb.api.metrics.load_pos_restaurant_config',
             args: { profile: frm.doc.name },
             callback: function(r) {
                 if (r.message && r.message.is_restaurant) {

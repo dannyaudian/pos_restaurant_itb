@@ -171,7 +171,7 @@ pos_restaurant_itb.pos_order = {
     async processKotCreation(frm) {
         try {
             const response = await frappe.call({
-                method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                method: 'pos_restaurant_itb.api.kitchen.create_kot.create_kot_from_pos_order',
                 args: { pos_order_id: frm.doc.name },
                 freeze: true,
                 freeze_message: __('Mengirim ke dapur...')
@@ -212,7 +212,7 @@ pos_restaurant_itb.pos_order = {
     async processCancellation(frm, item, reason) {
         try {
             const response = await frappe.call({
-                method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
+                method: "pos_restaurant_itb.api.kitchen.sendkitchenandcancel.cancel_pos_order_item",
                 args: {
                     item_name: item.name,
                     reason: reason
@@ -231,7 +231,7 @@ pos_restaurant_itb.pos_order = {
     async processMarkAsServed(frm, item) {
         try {
             const response = await frappe.call({
-                method: "pos_restaurant_itb.api.update_kot_item_status",
+                method: "pos_restaurant_itb.api.kitchen.update_kot_item_status",
                 args: {
                     order: frm.doc.name,
                     item_code: item.item_code,
@@ -251,7 +251,7 @@ pos_restaurant_itb.pos_order = {
     async processMarkAllServed(frm) {
         try {
             const response = await frappe.call({
-                method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
+                method: "pos_restaurant_itb.api.kitchen.sendkitchenandcancel.mark_all_served",
                 args: { pos_order_id: frm.doc.name }
             });
 

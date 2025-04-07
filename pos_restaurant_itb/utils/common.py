@@ -10,7 +10,7 @@ from frappe import _, whitelist
 from frappe.utils import now_datetime, flt, cint
 from typing import Dict, List, Optional, Union, Any
 from pos_restaurant_itb.utils.error_handlers import handle_pos_errors, ValidationError
-from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+from pos_restaurant_itb.api.kitchen.kot_status_update import update_kds_status_from_kot
 from pos_restaurant_itb.utils.constants import KOT_STATUSES, WORKING_HOURS
 
 @handle_pos_errors()

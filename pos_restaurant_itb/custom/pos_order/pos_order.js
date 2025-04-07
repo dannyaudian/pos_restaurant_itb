@@ -86,7 +86,7 @@ pos_restaurant_itb.pos_order = class POSOrderHandler {
 
     async getAvailableTables(branch) {
         const result = await frappe.call({
-            method: "pos_restaurant_itb.api.get_available_tables",
+            method: "pos_restaurant_itb.api.table.get_available_tables",
             args: { branch }
         });
         return result.message || [];
@@ -189,7 +189,7 @@ class POSOrderItemHandler {
 
     async getItemAttributes() {
         const result = await frappe.call({
-            method: "pos_restaurant_itb.api.get_attributes_for_item",
+            method: "pos_restaurant_itb.api.order.get_attributes_for_item",
             args: { item_code: this.row.item_code }
         });
         return result.message;
@@ -233,7 +233,7 @@ class POSOrderItemHandler {
         }));
 
         const result = await frappe.call({
-            method: "pos_restaurant_itb.api.resolve_variant",
+            method: "pos_restaurant_itb.api.order.resolve_variant",
             args: {
                 template: this.row.item_code,
                 attributes: attr_array
