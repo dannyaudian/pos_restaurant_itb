@@ -4,9 +4,10 @@ Frappe app untuk mengelola operasional restoran modern.
 
 ## Fitur Utama
 - Kitchen Order Ticket (KOT)
-- Join Table
-- Kitchen Display System (KDS)
-- Second Screen Display
+- Kitchen Display System (KDS) (monitoring order per table)
+- Kitchen Station (monitoring order per item)
+- Item Attribute (side dish, sauce,dll)
+- Table Management
 
 ---
 
