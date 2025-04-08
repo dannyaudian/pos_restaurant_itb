@@ -2,7 +2,6 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
-
 @frappe.whitelist()
 def get_kitchen_items_by_station(branch, item_group):
     """
@@ -42,7 +41,6 @@ def get_kitchen_items_by_station(branch, item_group):
 
     return kot_items
 
-
 @frappe.whitelist()
 def update_kitchen_item_status(kot_item_id, new_status):
     """
@@ -69,7 +67,6 @@ def update_kitchen_item_status(kot_item_id, new_status):
         "status": "success",
         "message": f"Item {kot_item.item_code} diubah menjadi {new_status}"
     }
-
 
 @frappe.whitelist()
 def cancel_kitchen_item(kot_item_id, reason):
