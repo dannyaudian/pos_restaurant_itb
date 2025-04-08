@@ -3,14 +3,12 @@ import json
 from frappe import _
 from frappe.utils import now_datetime
 
-
 def get_attribute_summary(dynamic_attributes_json):
     try:
         attrs = json.loads(dynamic_attributes_json or "[]")
         return ", ".join(f"{d.get('attribute_name')}: {d.get('attribute_value')}" for d in attrs)
     except Exception:
         return ""
-
 
 @frappe.whitelist()
 def create_kitchen_station_items_from_kot(kot_id):
