@@ -15,7 +15,7 @@ frappe.ui.form.on('POS Order', {
                         const is_available = available_tables.some(t => t.name === frm.doc.table);
 
                         if (!is_available) {
-                            frappe.msgprint(`❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.`);
+                            frappe.msgprint(❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.);
                             frm.set_value("table", null);
                             return;
                         }
@@ -51,18 +51,18 @@ frappe.ui.form.on('POS Order', {
             };
         });
 
-        // 📛 Filter meja berdasarkan ketersediaan (via API)
+        // 📛 Filter meja berdasarkan ketersediaan
         frm.set_query("table", () => {
             if (!frm.doc.branch) {
-              frappe.msgprint("Pilih cabang terlebih dahulu.");
-              return { filters: { name: ["=", ""] } };
+                frappe.msgprint("Pilih cabang terlebih dahulu.");
+                return { filters: { name: ["=", ""] } };
             }
 
             return {
-              filters: [
-                ["POS Table", "branch", "=", frm.doc.branch],
-                ["POS Table", "is_active", "=", 1]
-              ]
+                filters: [
+                    ["POS Table", "branch", "=", frm.doc.branch],
+                    ["POS Table", "is_active", "=", 1]
+                ]
             };
         });
 
@@ -80,27 +80,7 @@ frappe.ui.form.on('POS Order', {
         if (!frm.doc.branch) {
             frappe.msgprint("Cabang harus dipilih.");
             frappe.validated = false;
-            return;
         }
-
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Kitchen Station",
-                filters: {
-                    branch: frm.doc.branch,
-                    status: "Active"
-                },
-                limit_page_length: 1
-            },
-            async: false,
-            callback: function (res) {
-                if (!res.message.length) {
-                    frappe.msgprint("❌ Tidak ada Kitchen Station aktif di cabang ini.");
-                    frappe.validated = false;
-                }
-            }
-        });
     }
 });
 
@@ -200,7 +180,7 @@ function resolve_variant_after_save(frm, row, attributes) {
                 frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
 
                 frappe.show_alert({
-                    message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
+                    message: 🔄 Diganti ke Variant: ${r.message.item_name},
                     indicator: 'green'
                 });
             }
