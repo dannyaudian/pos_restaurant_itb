@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>POS Order Entry</title>
+    <title>POS Order</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="/assets/frappe/js/frappe.min.js"></script>
     <script src="/assets/js/control.min.js"></script>
@@ -9,518 +9,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --secondary-color: #64748b;
-            --background-color: #f1f5f9;
-            --surface-color: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --danger-color: #dc2626;
-            --success-color: #059669;
-            --warning-color: #d97706;
-            --border-radius: 12px;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background: var(--background-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        .pos-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 20px;
-            height: calc(100vh - 40px);
-        }
-
-        /* Left Sidebar */
-        .order-sidebar {
-            background: var(--surface-color);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        .order-header {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .order-status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .status-draft { background: #fff3cd; color: #856404; }
-        .status-in-progress { background: #cce5ff; color: #004085; }
-        .status-ready { background: #d4edda; color: #155724; }
-        .status-paid { background: #c3e6cb; color: #155724; }
-        .status-cancelled { background: #f8d7da; color: #721c24; }
-
-        .order-info {
-            display: grid;
-            gap: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f8fafc;
-            transition: var(--transition);
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .form-control[readonly] {
-            background-color: #f1f5f9;
-            cursor: not-allowed;
-        }
-
-        /* Cart Section */
-        .cart-items {
-            flex-grow: 1;
-            overflow-y: auto;
-            margin: 15px 0;
-            min-height: 200px;
-            max-height: 400px;
-            border: 1px solid #e2e8f0;
-            border-radius: var(--border-radius);
-        }
-
-        .cart-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
-            background: white;
-            transition: var(--transition);
-        }
-
-        .cart-item:hover {
-            background: #f8fafc;
-        }
-
-        .cart-item-info {
-            flex-grow: 1;
-            margin: 0 10px;
-        }
-
-        .cart-item-name {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .cart-item-price {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        .cart-item-notes {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .cart-item-kot-status {
-            font-size: 0.75rem;
-            padding: 2px 8px;
+        /* [Previous CSS remains the same, adding new status styles] */
+        .kot-status-badge {
+            padding: 4px 8px;
             border-radius: 12px;
-            display: inline-block;
-            margin-top: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .kot-draft { background: #fff3cd; color: #856404; }
         .kot-queued { background: #cce5ff; color: #004085; }
         .kot-cooking { background: #fff4e5; color: #ff8c00; }
         .kot-ready { background: #d4edda; color: #155724; }
+        .kot-served { background: #c3e6cb; color: #155724; }
+        .kot-cancelled { background: #f8d7da; color: #721c24; }
 
-        .quantity-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .quantity-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: none;
-            background: #f1f5f9;
-            color: var(--text-primary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .quantity-btn:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        /* Order Summary */
-        .order-summary {
-            margin-top: auto;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.875rem;
-        }
-
-        .summary-item.total {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed #e2e8f0;
-        }
-
-        /* Main Content Area */
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background: var(--surface-color);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-        }
-
-        .search-bar {
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f8fafc;
-            font-size: 0.875rem;
-        }
-
-        /* Categories and Items */
-        .categories {
-            display: flex;
-            gap: 10px;
-            padding: 15px;
-            background: var(--surface-color);
-            border-bottom: 1px solid #e2e8f0;
-            overflow-x: auto;
-            scrollbar-width: thin;
-        }
-
-        .category-btn {
-            padding: 8px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            white-space: nowrap;
-            transition: var(--transition);
-            font-size: 0.875rem;
-        }
-
-        .category-btn:hover,
-        .category-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            padding: 15px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
-        .item-card {
+        /* Add styles for variant selection */
+        .variant-dialog {
             background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .item-card:hover {
-            transform: translateY(-2px);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            width: 400px;
             box-shadow: var(--shadow-md);
         }
 
-        .item-image {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 10px;
+        .variant-option {
+            margin-bottom: 15px;
         }
 
-        .item-name {
+        .variant-label {
             font-weight: 500;
-            margin-bottom: 5px;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-        }
-
-        .item-category {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
             margin-bottom: 8px;
-        }
-
-        .item-price {
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 0.875rem;
-            margin-top: auto;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.875rem;
-        }
-
-        .btn i {
-            font-size: 16px;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-        }
-
-        .btn-secondary {
-            background: var(--surface-color);
-            color: var(--text-primary);
-            border: 1px solid #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: #f8fafc;
-        }
-
-        .btn-danger {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: var(--border-radius);
-            padding: 24px;
-            width: 90%;
-            max-width: 500px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .modal-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
             color: var(--text-secondary);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Toast Notifications */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 16px;
-            border-radius: 8px;
-            color: white;
-            max-width: 350px;
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideInRight 0.3s ease-out;
-            z-index: 1000;
-        }
-
-        .toast-success { background: var(--success-color); }
-        .toast-error { background: var(--danger-color); }
-        .toast-warning { background: var(--warning-color); }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* Loading State */
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .pos-container {
-                grid-template-columns: 1fr;
-                height: auto;
-                gap: 15px;
-            }
-
-            .order-sidebar, 
-            .main-content {
-                height: auto;
-                max-height: none;
-            }
-
-            .items-grid {
-                height: 500px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .pos-container {
-                padding: 10px;
-            }
-
-            .items-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
-
-            .btn {
-                padding: 10px 16px;
-            }
         }
     </style>
 </head>
@@ -530,13 +53,14 @@
         <div class="order-sidebar">
             <div class="order-header">
                 <div>
-                    <h2 class="order-title">New Order</h2>
-                    <p class="text-muted">Order #<span id="order-number">...</span></p>
+                    <h2>POS Order</h2>
+                    <p class="text-muted">Order #<span id="order-number"></span></p>
                 </div>
                 <span class="order-status status-draft" id="order-status">Draft</span>
             </div>
 
             <div class="order-info">
+                <!-- Branch Selection - Required with Permission Filtering -->
                 <div class="form-group">
                     <label>
                         <i class="fas fa-building"></i>
@@ -547,16 +71,18 @@
                     </select>
                 </div>
 
+                <!-- Table Selection - With Availability Check -->
                 <div class="form-group">
                     <label>
                         <i class="fas fa-utensils"></i>
                         Table
                     </label>
-                    <select class="form-control" id="table">
+                    <select class="form-control" id="table" disabled>
                         <option value="">Select Table</option>
                     </select>
                 </div>
 
+                <!-- Order Type Selection -->
                 <div class="form-group">
                     <label>
                         <i class="fas fa-shopping-bag"></i>
@@ -569,14 +95,14 @@
                     </select>
                 </div>
 
+                <!-- Customer Selection -->
                 <div class="form-group">
                     <label>
                         <i class="fas fa-user"></i>
                         Customer
                     </label>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="customer-display" readonly 
-                               placeholder="Search customer...">
+                        <input type="text" class="form-control" id="customer-display" readonly>
                         <input type="hidden" id="customer">
                         <button class="btn btn-secondary" onclick="showCustomerSearch()">
                             <i class="fas fa-search"></i>
@@ -585,24 +111,21 @@
                 </div>
             </div>
 
-            <div class="cart-items" id="cart-items">
-                <!-- Cart items will be dynamically added here -->
-            </div>
+            <!-- Cart Items with KOT Status -->
+            <div class="cart-items" id="cart-items"></div>
 
+            <!-- Order Summary -->
             <div class="order-summary">
                 <div class="summary-item">
                     <span>Subtotal</span>
                     <span id="subtotal">₹0.00</span>
                 </div>
-                <div class="summary-item">
-                    <span>Tax (18%)</span>
-                    <span id="tax">₹0.00</span>
-                </div>
                 <div class="summary-item total">
-                    <span>Total</span>
+                    <span>Total Amount</span>
                     <span id="total">₹0.00</span>
                 </div>
 
+                <!-- Action Buttons -->
                 <div class="action-buttons">
                     <button class="btn btn-danger" onclick="cancelOrder()">
                         <i class="fas fa-times"></i>
@@ -611,6 +134,18 @@
                     <button class="btn btn-primary" onclick="saveOrder()">
                         <i class="fas fa-save"></i>
                         Save Order
+                    </button>
+                </div>
+                
+                <!-- KOT Actions -->
+                <div class="kot-actions" style="margin-top: 10px;">
+                    <button class="btn btn-secondary" id="send-to-kitchen" onclick="sendToKitchen()" disabled>
+                        <i class="fas fa-utensils"></i>
+                        Send to Kitchen
+                    </button>
+                    <button class="btn btn-secondary" onclick="printKOT()">
+                        <i class="fas fa-print"></i>
+                        Print KOT
                     </button>
                 </div>
             </div>
@@ -623,39 +158,22 @@
                        onkeyup="searchItems(this.value)">
             </div>
 
-            <div class="categories" id="categories">
-                <!-- Categories will be dynamically added here -->
-            </div>
-
-            <div class="items-grid" id="items-grid">
-                <!-- Items will be dynamically added here -->
-            </div>
+            <div class="categories" id="categories"></div>
+            <div class="items-grid" id="items-grid"></div>
         </div>
     </div>
 
-    <!-- Quantity Modal -->
-    <div class="modal" id="quantity-modal">
-        <div class="modal-content">
+    <!-- Variant Selection Modal -->
+    <div class="modal" id="variant-modal">
+        <div class="modal-content variant-dialog">
             <div class="modal-header">
-                <h3 class="modal-title">Add Item</h3>
-                <button class="close-modal" onclick="closeModal('quantity-modal')">&times;</button>
+                <h3>Select Variant Options</h3>
+                <button class="close-modal" onclick="closeModal('variant-modal')">&times;</button>
             </div>
-            <div class="form-group">
-                <label>Item</label>
-                <input type="text" class="form-control" id="modal-item-name" readonly>
-            </div>
-            <div class="form-group">
-                <label>Quantity</label>
-                <input type="number" class="form-control" id="quantity-input" min="1" value="1">
-            </div>
-            <div class="form-group">
-                <label>Notes</label>
-                <textarea class="form-control" id="item-notes" rows="2" 
-                          placeholder="Add special instructions..."></textarea>
-            </div>
+            <div id="variant-options"></div>
             <div class="action-buttons">
-                <button class="btn btn-secondary" onclick="closeModal('quantity-modal')">Cancel</button>
-                <button class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
+                <button class="btn btn-secondary" onclick="closeModal('variant-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmVariant()">Confirm</button>
             </div>
         </div>
     </div>
@@ -664,23 +182,31 @@
     <div class="modal" id="customer-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Search Customer</h3>
+                <h3>Select Customer</h3>
                 <button class="close-modal" onclick="closeModal('customer-modal')">&times;</button>
             </div>
-            <div class="form-group">
-                <input type="text" class="form-control" id="customer-search" 
-                       placeholder="Search by name or phone..."
-                       onkeyup="searchCustomers(this.value)">
-            </div>
-            <div id="customer-list" style="max-height: 300px; overflow-y: auto;">
-                <!-- Customer list will be populated here -->
-            </div>
+            <input type="text" class="form-control" placeholder="Search customers..."
+                   onkeyup="searchCustomers(this.value)">
+            <div id="customer-list" style="margin-top: 15px;"></div>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading" style="display: none;">
-        <div class="loading-spinner"></div>
+    <!-- Item Cancellation Modal -->
+    <div class="modal" id="cancel-item-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Item</h3>
+                <button class="close-modal" onclick="closeModal('cancel-item-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Reason for Cancellation</label>
+                <textarea class="form-control" id="cancel-reason" rows="3"></textarea>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('cancel-item-modal')">Close</button>
+                <button class="btn btn-danger" onclick="confirmItemCancellation()">Cancel Item</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -691,10 +217,12 @@
             table: '',
             orderType: 'Dine In',
             customer: '',
-            status: 'Draft'
+            status: 'Draft',
+            docstatus: 0
         };
 
         let selectedItem = null;
+        let selectedItemForCancel = null;
         let allItems = [];
         let filteredItems = [];
 
@@ -705,6 +233,7 @@
         async function initializePOS() {
             showLoading();
             try {
+                await loadUserPermissions();
                 await loadBranches();
                 await loadCategories();
                 await loadItems();
@@ -717,227 +246,352 @@
             }
         }
 
-        function showLoading() {
-            document.querySelector('.loading').style.display = 'flex';
+        async function loadUserPermissions() {
+            // Load user's branch permissions
+            if (!frappe.user.has_role("System Manager")) {
+                const result = await frappe.call({
+                    method: "frappe.client.get_list",
+                    args: {
+                        doctype: "User Permission",
+                        filters: {
+                            user: frappe.session.user,
+                            allow: "Branch"
+                        },
+                        fields: ["for_value"]
+                    }
+                });
+
+                window.userBranches = result.message?.map(p => p.for_value) || [];
+            }
         }
 
-        function hideLoading() {
-            document.querySelector('.loading').style.display = 'none';
-        }
-
+        // Branch handling with permission check
         async function loadBranches() {
+            const branchSelect = document.getElementById('branch');
+            branchSelect.innerHTML = '<option value="">Select Branch</option>';
+
             try {
+                let filters = { is_active: 1 };
+                if (!frappe.user.has_role("System Manager") && window.userBranches?.length) {
+                    filters.name = ["in", window.userBranches];
+                }
+
                 const result = await frappe.call({
                     method: "frappe.client.get_list",
                     args: {
                         doctype: "Branch",
-                        fields: ["name", "branch_code"],
-                        filters: { is_active: 1 }
+                        filters: filters,
+                        fields: ["name", "branch_code"]
                     }
                 });
 
-                const branchSelect = document.getElementById('branch');
-                branchSelect.innerHTML = '<option value="">Select Branch</option>';
-                
                 result.message.forEach(branch => {
                     const option = new Option(branch.name, branch.name);
                     branchSelect.add(option);
                 });
             } catch (error) {
-                console.error('Error loading branches:', error);
                 showToast('Error loading branches', 'error');
             }
         }
 
-        async function loadCategories() {
+        async function loadTables(branch) {
+            const tableSelect = document.getElementById('table');
+            tableSelect.innerHTML = '<option value="">Select Table</option>';
+            tableSelect.disabled = !branch;
+
+            if (!branch) return;
+
             try {
                 const result = await frappe.call({
-                    method: "frappe.client.get_list",
-                    args: {
-                        doctype: "Item Group",
-                        fields: ["name"],
-                        filters: { is_group: 0 }
-                    }
+                    method: "pos_restaurant_itb.api.get_available_tables",
+                    args: { branch: branch }
                 });
 
-                const categoriesContainer = document.getElementById('categories');
-                categoriesContainer.innerHTML = '<button class="category-btn active" onclick="filterItems(\'all\')">All Items</button>';
-                
-                result.message.forEach(category => {
-                    const button = document.createElement('button');
-                    button.className = 'category-btn';
-                    button.textContent = category.name;
-                    button.onclick = () => filterItems(category.name);
-                    categoriesContainer.appendChild(button);
+                result.message.forEach(table => {
+                    const option = new Option(`Table ${table.table_number}`, table.name);
+                    tableSelect.add(option);
                 });
             } catch (error) {
-                console.error('Error loading categories:', error);
-                showToast('Error loading categories', 'error');
+                showToast('Error loading tables', 'error');
             }
         }
 
-        async function loadItems() {
+        async function generateOrderId(branch) {
             try {
                 const result = await frappe.call({
-                    method: "frappe.client.get_list",
-                    args: {
-                        doctype: "Item",
-                        fields: ["name", "item_name", "item_group", "standard_rate", "image"],
-                        filters: { is_sales_item: 1 }
-                    }
+                    method: "pos_restaurant_itb.api.get_new_order_id",
+                    args: { branch: branch }
                 });
 
-                allItems = result.message;
-                filteredItems = [...allItems];
-                renderItems(allItems);
+                if (result.message) {
+                    document.getElementById('order-number').textContent = result.message;
+                    currentOrder.orderId = result.message;
+                }
             } catch (error) {
-                console.error('Error loading items:', error);
-                showToast('Error loading items', 'error');
+                showToast('Error generating order ID', 'error');
             }
         }
 
-        function renderItems(items) {
-            const grid = document.getElementById('items-grid');
-            grid.innerHTML = '';
-
-            if (items.length === 0) {
-                grid.innerHTML = '<div class="text-center p-4">No items found</div>';
+        async function handleBranchChange(branch) {
+            if (!branch) {
+                document.getElementById('table').disabled = true;
                 return;
             }
 
-            items.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item-card';
-                card.onclick = () => showQuantityModal(item);
+            // Load tables for selected branch
+            await loadTables(branch);
+            
+            // Generate new order ID
+            await generateOrderId(branch);
 
-                card.innerHTML = `
-                    <img src="${item.image || '/assets/pos_restaurant_itb/images/no-image.png'}" 
-                         alt="${item.item_name}" 
-                         class="item-image">
-                    <div class="item-name">${item.item_name}</div>
-                    <div class="item-category">${item.item_group}</div>
-                    <div class="item-price">${frappe.format_currency(item.standard_rate)}</div>
+            // Enable table selection
+            document.getElementById('table').disabled = false;
+        }
+
+        async function handleTableChange(table) {
+            if (!table) return;
+
+            try {
+                const result = await frappe.call({
+                    method: "pos_restaurant_itb.api.get_available_tables",
+                    args: { branch: currentOrder.branch }
+                });
+
+                const isAvailable = result.message.some(t => t.name === table);
+                if (!isAvailable) {
+                    showToast(`Table ${table} is currently in use. Please select another table.`, 'error');
+                    document.getElementById('table').value = '';
+                    return;
+                }
+
+            } catch (error) {
+                showToast('Error checking table availability', 'error');
+            }
+        }
+
+        // Item Variant Handling
+        async function checkForVariants(item) {
+            try {
+                const result = await frappe.call({
+                    method: "pos_restaurant_itb.api.get_attributes_for_item",
+                    args: { item_code: item.name }
+                });
+
+                if (result.message && result.message.length > 0) {
+                    showVariantModal(item, result.message);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Error checking variants:', error);
+                return false;
+            }
+        }
+
+        function showVariantModal(item, attributes) {
+            const variantOptions = document.getElementById('variant-options');
+            variantOptions.innerHTML = '';
+
+            attributes.forEach(attr => {
+                const div = document.createElement('div');
+                div.className = 'variant-option';
+                div.innerHTML = `
+                    <label class="variant-label">${attr.attribute}</label>
+                    <select class="form-control" data-attribute="${attr.attribute}">
+                        <option value="">Select ${attr.attribute}</option>
+                        ${attr.values.map(v => `<option value="${v}">${v}</option>`).join('')}
+                    </select>
                 `;
-
-                grid.appendChild(card);
-            });
-        }
-
-        function filterItems(category) {
-            // Update active category button
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent === category);
+                variantOptions.appendChild(div);
             });
 
-            // Filter items
-            filteredItems = category === 'all' 
-                ? [...allItems]
-                : allItems.filter(item => item.item_group === category);
-
-            renderItems(filteredItems);
+            document.getElementById('variant-modal').style.display = 'flex';
         }
 
-        function searchItems(query) {
-            if (!query) {
-                renderItems(filteredItems);
+        async function confirmVariant() {
+            const selectedAttrs = {};
+            document.querySelectorAll('#variant-options select').forEach(select => {
+                if (!select.value) {
+                    showToast('Please select all variant options', 'error');
+                    throw new Error('Incomplete variant selection');
+                }
+                selectedAttrs[select.dataset.attribute] = select.value;
+            });
+
+            try {
+                const result = await frappe.call({
+                    method: "pos_restaurant_itb.api.resolve_variant",
+                    args: {
+                        template: selectedItem.name,
+                        attributes: Object.entries(selectedAttrs).map(([key, value]) => ({
+                            attribute_name: key,
+                            attribute_value: value
+                        }))
+                    }
+                });
+
+                if (result.message) {
+                    selectedItem = {
+                        ...selectedItem,
+                        name: result.message.item_code,
+                        item_name: result.message.item_name,
+                        standard_rate: result.message.rate
+                    };
+                    
+                    closeModal('variant-modal');
+                    showQuantityModal(selectedItem);
+                }
+            } catch (error) {
+                showToast('Error resolving variant', 'error');
+            }
+        }
+
+        // KOT Integration
+        async function sendToKitchen() {
+            if (!currentOrder.items.length) {
+                showToast('No items to send to kitchen', 'error');
                 return;
             }
 
-            const searchResults = filteredItems.filter(item => 
-                item.item_name.toLowerCase().includes(query.toLowerCase()) ||
-                item.item_group.toLowerCase().includes(query.toLowerCase())
+            const itemsToSend = currentOrder.items.filter(
+                item => !item.sent_to_kitchen && !item.cancelled
             );
 
-            renderItems(searchResults);
-        }
-
-        function showQuantityModal(item) {
-            selectedItem = item;
-            document.getElementById('modal-item-name').value = item.item_name;
-            document.getElementById('quantity-input').value = '1';
-            document.getElementById('item-notes').value = '';
-            document.getElementById('quantity-modal').style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function addToCart() {
-            const quantity = parseInt(document.getElementById('quantity-input').value);
-            const notes = document.getElementById('item-notes').value;
-
-            if (quantity < 1) {
-                showToast('Please enter a valid quantity', 'error');
+            if (!itemsToSend.length) {
+                showToast('All items have been sent to kitchen or cancelled', 'warning');
                 return;
             }
 
-            const cartItem = {
-                item: selectedItem.name,
-                item_name: selectedItem.item_name,
-                quantity: quantity,
-                rate: selectedItem.standard_rate,
-                notes: notes,
-                amount: quantity * selectedItem.standard_rate,
-                kot_status: 'Draft'
-            };
+            const itemList = itemsToSend.map(item => `${item.quantity}x ${item.item_name}`).join('\n');
+            
+            if (confirm(`Send these items to kitchen?\n\n${itemList}`)) {
+                try {
+                    showLoading();
+                    const result = await frappe.call({
+                        method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                        args: { pos_order_id: currentOrder.orderId }
+                    });
 
-            currentOrder.items.push(cartItem);
-            updateCart();
-            closeModal('quantity-modal');
-            showToast('Item added to cart', 'success');
+                    if (result.message) {
+                        showToast(`KOT created: ${result.message}`, 'success');
+                        itemsToSend.forEach(item => {
+                            item.sent_to_kitchen = true;
+                            item.kot_status = 'Queued';
+                        });
+                        updateCart();
+                    }
+                } catch (error) {
+                    showToast('Error sending to kitchen', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
         }
 
-        function updateCart() {
-            const cartContainer = document.getElementById('cart-items');
-            cartContainer.innerHTML = '';
+        // Print Handlers
+        async function printKOT() {
+            try {
+                const result = await frappe.call({
+                    method: 'pos_restaurant_itb.api.print_kot',
+                    args: { name: currentOrder.orderId }
+                });
+
+                if (result.message) {
+                    const win = window.open();
+                    win.document.write(result.message);
+                    win.document.close();
+                }
+            } catch (error) {
+                showToast('Error printing KOT', 'error');
+            }
+        }
+
+        async function printReceipt() {
+            try {
+                const result = await frappe.call({
+                    method: 'pos_restaurant_itb.api.print_receipt',
+                    args: { name: currentOrder.orderId }
+                });
+
+                if (result.message) {
+                    const win = window.open();
+                    win.document.write(result.message);
+                    win.document.close();
+                }
+            } catch (error) {
+                showToast('Error printing receipt', 'error');
+            }
+        }
+
+        // Save Order
+        async function saveOrder() {
+            if (!currentOrder.branch) {
+                showToast('Please select a branch', 'error');
+                return;
+            }
 
             if (currentOrder.items.length === 0) {
-                cartContainer.innerHTML = `
-                    <div class="text-center p-4 text-secondary">
-                        <i class="fas fa-shopping-cart fa-2x mb-2"></i>
-                        <p>Cart is empty</p>
-                    </div>
-                `;
+                showToast('Please add items to the order', 'error');
                 return;
             }
 
-            currentOrder.items.forEach((item, index) => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'cart-item';
-                itemElement.innerHTML = `
-                    <div class="cart-item-info">
-                        <div class="cart-item-name">${item.item_name}</div>
-                        <div class="cart-item-price">
-                            ${frappe.format_currency(item.rate)} × ${item.quantity}
-                        </div>
-                        ${item.notes ? `
-                            <div class="cart-item-notes">
-                                <i class="fas fa-comment-alt"></i> ${item.notes}
-                            </div>
-                        ` : ''}
-                        <span class="cart-item-kot-status kot-${item.kot_status.toLowerCase()}">
-                            ${item.kot_status}
-                        </span>
-                    </div>
-                    <div class="quantity-control">
-                        <button class="quantity-btn" onclick="updateItemQuantity(${index}, -1)">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <span>${item.quantity}</span>
-                        <button class="quantity-btn" onclick="updateItemQuantity(${index}, 1)">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="quantity-btn" onclick="removeItem(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                cartContainer.appendChild(itemElement);
-            });
+            try {
+                showLoading();
+                const orderDoc = {
+                    doctype: 'POS Order',
+                    order_id: currentOrder.orderId,
+                    branch: currentOrder.branch,
+                    table: currentOrder.table,
+                    order_type: currentOrder.orderType,
+                    customer: currentOrder.customer,
+                    total_amount: currentOrder.total,
+                    status: 'Draft',
+                    pos_order_items: currentOrder.items.map(item => ({
+                        item_code: item.item,
+                        item_name: item.item_name,
+                        quantity: item.quantity,
+                        rate: item.rate,
+                        amount: item.amount,
+                        notes: item.notes,
+                        kot_status: item.kot_status || 'Draft'
+                    }))
+                };
 
-            updateOrderSummary();
+                const result = await frappe.call({
+                    method: 'frappe.client.insert',
+                    args: { doc: orderDoc }
+                });
+
+                if (result && !result.exc) {
+                    showToast('Order saved successfully', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Error saving order', 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
-        function updateItemQuantity(index, change) {
-            const
+        // Event Listeners Setup
+        function setupEventListeners() {
+            document.getElementById('branch').addEventListener('change', (e) => {
+                currentOrder.branch = e.target.value;
+                handleBranchChange(e.target.value);
+            });
+
+            document.getElementById('table').addEventListener('change', (e) => {
+                currentOrder.table = e.target.value;
+                handleTableChange(e.target.value);
+            });
+
+            document.getElementById('order-type').addEventListener('change', (e) => {
+                currentOrder.orderType = e.target.value;
+            });
+        }
+    </script>
+</body>
+</html>
