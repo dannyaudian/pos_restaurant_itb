@@ -1,9 +1,6 @@
-# pos_restaurant_itb/api/kds_handler.py
-
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
-
 
 @frappe.whitelist()
 def create_kds_from_kot(kot_id):
