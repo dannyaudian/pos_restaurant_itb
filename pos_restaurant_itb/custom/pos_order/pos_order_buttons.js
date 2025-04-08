@@ -139,6 +139,15 @@ frappe.ui.form.on('POS Order', {
 // 🔄 Fungsi Kirim ke Dapur (digunakan untuk draft dan tambahan)
 function sendToKitchen(frm) {
     // Validasi sebelum kirim
+    if (frm.doc.docstatus === 0) {
+        frappe.msgprint({
+            title: __("Validasi"),
+            indicator: 'red',
+            message: __('POS Order belum disave. Silakan save terlebih dahulu sebelum mengirim item ke dapur.')
+        });
+        return;
+    }
+
     if (!frm.doc.pos_order_items || !frm.doc.pos_order_items.length) {
         frappe.msgprint({
             title: __("Validasi"),

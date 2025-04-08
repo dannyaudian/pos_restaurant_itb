@@ -22,7 +22,7 @@ def create_kot_from_pos_order(pos_order_id):
         # Validasi input
         if not pos_order_id:
             frappe.throw(_("POS Order tidak boleh kosong."))
-            
+        
         # Log untuk tracking
         frappe.logger().debug(f"📝 Memulai pembuatan KOT untuk POS Order: {pos_order_id}")
         
@@ -43,7 +43,10 @@ def create_kot_from_pos_order(pos_order_id):
         items_to_send = get_items_to_send(pos_order)
         if not items_to_send:
             frappe.throw(_("Semua item dalam order ini sudah dikirim ke dapur atau dibatalkan."))
-            
+        
+        # Log detail item yang akan dikirim
+        frappe.logger().debug(f"📝 Item yang akan dikirim: {items_to_send}")
+        
         # Buat KOT
         kot = create_kot_document(pos_order, items_to_send)
         
@@ -103,8 +106,9 @@ def create_kot_document(pos_order, items_to_send):
                 "branch": pos_order.branch,
                 "waiter": kot.waiter
             })
-            
+        
         kot.insert(ignore_permissions=True)
+        frappe.logger().info(f"✅ KOT document created: {kot.name}")
         return kot
         
     except Exception as e:
@@ -123,6 +127,7 @@ def update_pos_order_items(pos_order, kot_name, items_to_send):
                 item.kot_id = kot_name
         
         pos_order.save(ignore_permissions=True)
+        frappe.logger().info(f"✅ POS Order items updated for KOT: {kot_name}")
         
     except Exception as e:
         frappe.log_error(
