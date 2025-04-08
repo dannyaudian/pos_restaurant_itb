@@ -58,11 +58,28 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            overflow-y: auto;
         }
 
         .order-header {
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
+        .order-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-draft { background: #fff3cd; color: #856404; }
+        .status-in-progress { background: #cce5ff; color: #004085; }
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-paid { background: #c3e6cb; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
 
         .order-info {
             display: grid;
@@ -96,6 +113,94 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
+        .form-control[readonly] {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        /* Cart Section */
+        .cart-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin: 15px 0;
+            min-height: 200px;
+            max-height: 400px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            background: white;
+            transition: var(--transition);
+        }
+
+        .cart-item:hover {
+            background: #f8fafc;
+        }
+
+        .cart-item-info {
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .cart-item-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .cart-item-price {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .cart-item-notes {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .cart-item-kot-status {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .kot-draft { background: #fff3cd; color: #856404; }
+        .kot-queued { background: #cce5ff; color: #004085; }
+        .kot-cooking { background: #fff4e5; color: #ff8c00; }
+        .kot-ready { background: #d4edda; color: #155724; }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quantity-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #f1f5f9;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .quantity-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
         /* Order Summary */
         .order-summary {
             margin-top: auto;
@@ -124,16 +229,33 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .search-bar {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            font-size: 0.875rem;
         }
 
         /* Categories and Items */
         .categories {
             display: flex;
             gap: 10px;
-            padding: 10px;
+            padding: 15px;
             background: var(--surface-color);
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
             overflow-x: auto;
             scrollbar-width: thin;
         }
@@ -147,6 +269,7 @@
             cursor: pointer;
             white-space: nowrap;
             transition: var(--transition);
+            font-size: 0.875rem;
         }
 
         .category-btn:hover,
@@ -158,11 +281,9 @@
 
         .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            background: var(--surface-color);
-            border-radius: var(--border-radius);
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            padding: 15px;
             overflow-y: auto;
             flex-grow: 1;
         }
@@ -171,10 +292,12 @@
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 15px;
+            padding: 12px;
             cursor: pointer;
             transition: var(--transition);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .item-card:hover {
@@ -194,64 +317,20 @@
             font-weight: 500;
             margin-bottom: 5px;
             font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .item-category {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
         }
 
         .item-price {
             color: var(--primary-color);
             font-weight: 600;
-        }
-
-        /* Cart Section */
-        .cart-items {
-            flex-grow: 1;
-            overflow-y: auto;
-            margin: 15px 0;
-        }
-
-        .cart-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .cart-item-info {
-            flex-grow: 1;
-            margin: 0 10px;
-        }
-
-        .cart-item-name {
-            font-weight: 500;
-        }
-
-        .cart-item-price {
-            color: var(--text-secondary);
             font-size: 0.875rem;
-        }
-
-        .quantity-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .quantity-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: none;
-            background: #f1f5f9;
-            color: var(--text-primary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .quantity-btn:hover {
-            background: var(--primary-color);
-            color: white;
+            margin-top: auto;
         }
 
         /* Action Buttons */
@@ -271,6 +350,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .btn i {
+            font-size: 16px;
         }
 
         .btn-primary {
@@ -301,7 +385,7 @@
             background: #b91c1c;
         }
 
-        /* Modals */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -324,36 +408,32 @@
             animation: slideIn 0.3s ease-out;
         }
 
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
         @keyframes slideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .pos-container {
-                grid-template-columns: 1fr;
-            }
-
-            .order-sidebar {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: auto;
-                z-index: 100;
-                border-radius: var(--border-radius) var(--border-radius) 0 0;
-            }
-
-            .main-content {
-                margin-bottom: 300px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .items-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
         }
 
         /* Toast Notifications */
@@ -373,17 +453,74 @@
             z-index: 1000;
         }
 
-        .toast-success {
-            background: var(--success-color);
-        }
-
-        .toast-error {
-            background: var(--danger-color);
-        }
+        .toast-success { background: var(--success-color); }
+        .toast-error { background: var(--danger-color); }
+        .toast-warning { background: var(--warning-color); }
 
         @keyframes slideInRight {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Loading State */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .pos-container {
+                grid-template-columns: 1fr;
+                height: auto;
+                gap: 15px;
+            }
+
+            .order-sidebar, 
+            .main-content {
+                height: auto;
+                max-height: none;
+            }
+
+            .items-grid {
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .pos-container {
+                padding: 10px;
+            }
+
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .btn {
+                padding: 10px 16px;
+            }
         }
     </style>
 </head>
@@ -392,18 +529,21 @@
         <!-- Left Sidebar -->
         <div class="order-sidebar">
             <div class="order-header">
-                <h2>New Order</h2>
-                <p class="text-muted">Order #<span id="order-number">...</span></p>
+                <div>
+                    <h2 class="order-title">New Order</h2>
+                    <p class="text-muted">Order #<span id="order-number">...</span></p>
+                </div>
+                <span class="order-status status-draft" id="order-status">Draft</span>
             </div>
 
             <div class="order-info">
                 <div class="form-group">
                     <label>
                         <i class="fas fa-building"></i>
-                        Branch
+                        Branch*
                     </label>
-                    <select class="form-control" id="branch">
-                        <!-- Dynamically populated -->
+                    <select class="form-control" id="branch" required>
+                        <option value="">Select Branch</option>
                     </select>
                 </div>
 
@@ -413,7 +553,7 @@
                         Table
                     </label>
                     <select class="form-control" id="table">
-                        <!-- Dynamically populated -->
+                        <option value="">Select Table</option>
                     </select>
                 </div>
 
@@ -434,7 +574,14 @@
                         <i class="fas fa-user"></i>
                         Customer
                     </label>
-                    <input type="text" class="form-control" id="customer" placeholder="Search customer...">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="customer-display" readonly 
+                               placeholder="Search customer...">
+                        <input type="hidden" id="customer">
+                        <button class="btn btn-secondary" onclick="showCustomerSearch()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -471,6 +618,11 @@
 
         <!-- Main Content -->
         <div class="main-content">
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="Search items..." 
+                       onkeyup="searchItems(this.value)">
+            </div>
+
             <div class="categories" id="categories">
                 <!-- Categories will be dynamically added here -->
             </div>
@@ -481,23 +633,54 @@
         </div>
     </div>
 
-    <!-- Modal Templates -->
+    <!-- Quantity Modal -->
     <div class="modal" id="quantity-modal">
         <div class="modal-content">
-            <h3>Set Quantity</h3>
+            <div class="modal-header">
+                <h3 class="modal-title">Add Item</h3>
+                <button class="close-modal" onclick="closeModal('quantity-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Item</label>
+                <input type="text" class="form-control" id="modal-item-name" readonly>
+            </div>
             <div class="form-group">
                 <label>Quantity</label>
                 <input type="number" class="form-control" id="quantity-input" min="1" value="1">
             </div>
             <div class="form-group">
                 <label>Notes</label>
-                <textarea class="form-control" id="item-notes" rows="2"></textarea>
+                <textarea class="form-control" id="item-notes" rows="2" 
+                          placeholder="Add special instructions..."></textarea>
             </div>
             <div class="action-buttons">
                 <button class="btn btn-secondary" onclick="closeModal('quantity-modal')">Cancel</button>
                 <button class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
             </div>
         </div>
+    </div>
+
+    <!-- Customer Search Modal -->
+    <div class="modal" id="customer-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Search Customer</h3>
+                <button class="close-modal" onclick="closeModal('customer-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" id="customer-search" 
+                       placeholder="Search by name or phone..."
+                       onkeyup="searchCustomers(this.value)">
+            </div>
+            <div id="customer-list" style="max-height: 300px; overflow-y: auto;">
+                <!-- Customer list will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading" style="display: none;">
+        <div class="loading-spinner"></div>
     </div>
 
     <script>
@@ -507,24 +690,39 @@
             branch: '',
             table: '',
             orderType: 'Dine In',
-            customer: ''
+            customer: '',
+            status: 'Draft'
         };
+
+        let selectedItem = null;
+        let allItems = [];
+        let filteredItems = [];
 
         frappe.ready(function() {
             initializePOS();
         });
 
         async function initializePOS() {
-            await loadBranches();
-            await loadCategories();
-            await loadItems();
-            setupEventListeners();
-            generateOrderNumber();
+            showLoading();
+            try {
+                await loadBranches();
+                await loadCategories();
+                await loadItems();
+                setupEventListeners();
+                hideLoading();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showToast('Error initializing POS', 'error');
+                hideLoading();
+            }
         }
 
-        function generateOrderNumber() {
-            const timestamp = new Date().getTime().toString().slice(-6);
-            document.getElementById('order-number').textContent = `POS${timestamp}`;
+        function showLoading() {
+            document.querySelector('.loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading').style.display = 'none';
         }
 
         async function loadBranches() {
@@ -533,17 +731,20 @@
                     method: "frappe.client.get_list",
                     args: {
                         doctype: "Branch",
-                        fields: ["name"],
+                        fields: ["name", "branch_code"],
                         filters: { is_active: 1 }
                     }
                 });
 
                 const branchSelect = document.getElementById('branch');
+                branchSelect.innerHTML = '<option value="">Select Branch</option>';
+                
                 result.message.forEach(branch => {
                     const option = new Option(branch.name, branch.name);
                     branchSelect.add(option);
                 });
             } catch (error) {
+                console.error('Error loading branches:', error);
                 showToast('Error loading branches', 'error');
             }
         }
@@ -560,6 +761,8 @@
                 });
 
                 const categoriesContainer = document.getElementById('categories');
+                categoriesContainer.innerHTML = '<button class="category-btn active" onclick="filterItems(\'all\')">All Items</button>';
+                
                 result.message.forEach(category => {
                     const button = document.createElement('button');
                     button.className = 'category-btn';
@@ -568,6 +771,7 @@
                     categoriesContainer.appendChild(button);
                 });
             } catch (error) {
+                console.error('Error loading categories:', error);
                 showToast('Error loading categories', 'error');
             }
         }
@@ -583,9 +787,11 @@
                     }
                 });
 
-                window.allItems = result.message;
-                renderItems(result.message);
+                allItems = result.message;
+                filteredItems = [...allItems];
+                renderItems(allItems);
             } catch (error) {
+                console.error('Error loading items:', error);
                 showToast('Error loading items', 'error');
             }
         }
@@ -593,6 +799,11 @@
         function renderItems(items) {
             const grid = document.getElementById('items-grid');
             grid.innerHTML = '';
+
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="text-center p-4">No items found</div>';
+                return;
+            }
 
             items.forEach(item => {
                 const card = document.createElement('div');
@@ -604,6 +815,7 @@
                          alt="${item.item_name}" 
                          class="item-image">
                     <div class="item-name">${item.item_name}</div>
+                    <div class="item-category">${item.item_group}</div>
                     <div class="item-price">${frappe.format_currency(item.standard_rate)}</div>
                 `;
 
@@ -612,22 +824,39 @@
         }
 
         function filterItems(category) {
-            const filteredItems = window.allItems.filter(item => item.item_group === category);
-            renderItems(filteredItems);
-
-            // Update active category
+            // Update active category button
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.textContent === category);
             });
+
+            // Filter items
+            filteredItems = category === 'all' 
+                ? [...allItems]
+                : allItems.filter(item => item.item_group === category);
+
+            renderItems(filteredItems);
         }
 
-        let selectedItem = null;
+        function searchItems(query) {
+            if (!query) {
+                renderItems(filteredItems);
+                return;
+            }
+
+            const searchResults = filteredItems.filter(item => 
+                item.item_name.toLowerCase().includes(query.toLowerCase()) ||
+                item.item_group.toLowerCase().includes(query.toLowerCase())
+            );
+
+            renderItems(searchResults);
+        }
 
         function showQuantityModal(item) {
             selectedItem = item;
-            document.getElementById('quantity-modal').style.display = 'flex';
+            document.getElementById('modal-item-name').value = item.item_name;
             document.getElementById('quantity-input').value = '1';
             document.getElementById('item-notes').value = '';
+            document.getElementById('quantity-modal').style.display = 'flex';
         }
 
         function closeModal(modalId) {
@@ -649,7 +878,8 @@
                 quantity: quantity,
                 rate: selectedItem.standard_rate,
                 notes: notes,
-                amount: quantity * selectedItem.standard_rate
+                amount: quantity * selectedItem.standard_rate,
+                kot_status: 'Draft'
             };
 
             currentOrder.items.push(cartItem);
@@ -662,14 +892,33 @@
             const cartContainer = document.getElementById('cart-items');
             cartContainer.innerHTML = '';
 
+            if (currentOrder.items.length === 0) {
+                cartContainer.innerHTML = `
+                    <div class="text-center p-4 text-secondary">
+                        <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+                        <p>Cart is empty</p>
+                    </div>
+                `;
+                return;
+            }
+
             currentOrder.items.forEach((item, index) => {
                 const itemElement = document.createElement('div');
                 itemElement.className = 'cart-item';
                 itemElement.innerHTML = `
                     <div class="cart-item-info">
                         <div class="cart-item-name">${item.item_name}</div>
-                        <div class="cart-item-price">${frappe.format_currency(item.rate)} × ${item.quantity}</div>
-                        ${item.notes ? `<small class="text-muted">${item.notes}</small>` : ''}
+                        <div class="cart-item-price">
+                            ${frappe.format_currency(item.rate)} × ${item.quantity}
+                        </div>
+                        ${item.notes ? `
+                            <div class="cart-item-notes">
+                                <i class="fas fa-comment-alt"></i> ${item.notes}
+                            </div>
+                        ` : ''}
+                        <span class="cart-item-kot-status kot-${item.kot_status.toLowerCase()}">
+                            ${item.kot_status}
+                        </span>
                     </div>
                     <div class="quantity-control">
                         <button class="quantity-btn" onclick="updateItemQuantity(${index}, -1)">
@@ -691,133 +940,4 @@
         }
 
         function updateItemQuantity(index, change) {
-            const item = currentOrder.items[index];
-            const newQuantity = item.quantity + change;
-
-            if (newQuantity < 1) {
-                removeItem(index);
-                return;
-            }
-
-            item.quantity = newQuantity;
-            item.amount = item.quantity * item.rate;
-            updateCart();
-        }
-
-        function removeItem(index) {
-            currentOrder.items.splice(index, 1);
-            updateCart();
-            showToast('Item removed from cart', 'success');
-        }
-
-        function updateOrderSummary() {
-            const subtotal = currentOrder.items.reduce((sum, item) => sum + item.amount, 0);
-            const tax = subtotal * 0.18; // 18% tax
-            const total = subtotal + tax;
-
-            document.getElementById('subtotal').textContent = frappe.format_currency(subtotal);
-            document.getElementById('tax').textContent = frappe.format_currency(tax);
-            document.getElementById('total').textContent = frappe.format_currency(total);
-
-            currentOrder.total = total;
-        }
-
-        async function saveOrder() {
-            if (currentOrder.items.length === 0) {
-                showToast('Please add items to the order', 'error');
-                return;
-            }
-
-            try {
-                const orderDoc = {
-                    doctype: 'POS Order',
-                    order_id: document.getElementById('order-number').textContent,
-                    branch: document.getElementById('branch').value,
-                    table: document.getElementById('table').value,
-                    order_type: document.getElementById('order-type').value,
-                    customer: document.getElementById('customer').value,
-                    total_amount: currentOrder.total,
-                    status: 'Draft',
-                    pos_order_items: currentOrder.items.map(item => ({
-                        item: item.item,
-                        quantity: item.quantity,
-                        rate: item.rate,
-                        amount: item.amount,
-                        notes: item.notes
-                    }))
-                };
-
-                await frappe.call({
-                    method: 'frappe.client.insert',
-                    args: {
-                        doc: orderDoc
-                    },
-                    callback: function(r) {
-                        if (!r.exc) {
-                            showToast('Order saved successfully', 'success');
-                            setTimeout(() => {
-                                window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
-                            }, 1000);
-                        }
-                    }
-                });
-            } catch (error) {
-                showToast('Error saving order', 'error');
-                console.error(error);
-            }
-        }
-
-        function cancelOrder() {
-            if (confirm('Are you sure you want to cancel this order?')) {
-                window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
-            }
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                <span>${message}</span>
-            `;
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        function setupEventListeners() {
-            document.getElementById('branch').addEventListener('change', async (e) => {
-                const branch = e.target.value;
-                await loadTables(branch);
-            });
-
-            // Add more event listeners as needed
-        }
-
-        async function loadTables(branch) {
-            try {
-                const result = await frappe.call({
-                    method: "frappe.client.get_list",
-                    args: {
-                        doctype: "POS Table",
-                        fields: ["name", "table_number"],
-                        filters: { branch: branch, is_active: 1 }
-                    }
-                });
-
-                const tableSelect = document.getElementById('table');
-                tableSelect.innerHTML = '<option value="">Select Table</option>';
-                result.message.forEach(table => {
-                    const option = new Option(`Table ${table.table_number}`, table.name);
-                    tableSelect.add(option);
-                });
-            } catch (error) {
-                showToast('Error loading tables', 'error');
-            }
-        }
-    </script>
-</body>
-</html>
+            const
