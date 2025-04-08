@@ -11,6 +11,8 @@
       "fieldname": "kot_id",
       "fieldtype": "Data",
       "label": "KOT ID",
+      "unique": 0,
+      "in_list_view": 1,
       "permlevel": 0,
       "reqd": 1
     },
