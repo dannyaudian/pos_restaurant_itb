@@ -1,28 +1,28 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from datetime import datetime
 
 class POSOrder(Document):
     def autoname(self):
         if not self.branch:
             frappe.throw(_("Branch is required to generate Order ID."))
 
-        # Format: POS-YYYYMMDD-BRANCHCODE-####
-        today = frappe.utils.now().strftime("%Y%m%d")
+        # Format: POS-YYYYMMDD-BRANCHCODE-#####
+        today = datetime.now().strftime("%Y%m%d")
 
         branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
         if not branch_code:
             frappe.throw(_("Branch must have a valid Branch Code."))
 
         branch_code = branch_code.strip().upper()
-
         prefix = f"POS-{today}-{branch_code}"
 
         last = frappe.db.sql(
             """SELECT name FROM `tabPOS Order`
                WHERE name LIKE %s
                ORDER BY name DESC LIMIT 1""",
-            (prefix + "%",)
+            (prefix + "-%",),
         )
 
         last_number = int(last[0][0].split("-")[-1]) if last else 0
@@ -55,11 +55,13 @@ class POSOrder(Document):
 
         self.total_amount = total
 
-        new_status = "Draft"
+        # Penentuan status berdasarkan item
         if all(s == "Ready" for s in item_statuses):
             new_status = "Ready for Billing"
         elif any(s in ["Cooking", "Queued"] for s in item_statuses):
             new_status = "In Progress"
+        else:
+            new_status = "Draft"
 
         if self.status != new_status:
             self.status = new_status
@@ -67,7 +69,8 @@ class POSOrder(Document):
 
         frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
 
+
 def validate_active_kitchen_station(branch):
     """Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu."""
     if not frappe.db.exists("Kitchen Station", {"branch": branch, "status": "Active"}):
-        frappe.throw(_("Tidak ada kitchen station yang aktif untuk cabang ini."))
+        frappe.throw(_("🚫 Tidak ada kitchen station yang aktif untuk cabang ini."))
