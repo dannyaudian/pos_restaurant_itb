@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant POS | Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/assets/frappe/js/frappe.min.js"></script>
+    <link href="/assets/frappe/css/frappe.css" rel="stylesheet">
+    <!-- Add Google font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Add FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #059669;
+            --error-color: #dc2626;
+            --background-color: #f1f5f9;
+            --text-color: #1e293b;
+            --border-radius: 12px;
+            --input-bg: #f8fafc;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--background-color);
+            height: 100vh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-name {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            background: var(--input-bg);
+            border-radius: var(--border-radius);
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-login:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: var(--error-color);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        .forgot-password a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        .loading .btn-login {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading .spinner {
+            display: inline-block;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1rem;
+            }
+
+            .login-card {
+                padding: 1.5rem;
+            }
+
+            .brand-name {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Success Message Animation */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            display: none;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-container">
+                <div class="brand-name">Restaurant POS</div>
+                <div class="brand-subtitle">Waiter Access Portal</div>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" class="form-control" 
+                               placeholder="Enter your username" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" class="form-control" 
+                               placeholder="Enter your password" required>
+                        <span class="password-toggle" onclick="togglePassword()">
+                            <i class="far fa-eye"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Login</span>
+                    <div class="spinner"></div>
+                </button>
+
+                <div id="error-message" class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="error-text"></span>
+                </div>
+            </form>
+
+            <div class="forgot-password">
+                <a href="/update-password">
+                    <i class="fas fa-key"></i> Forgot password?
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-message" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span>Login successful! Redirecting...</span>
+    </div>
+
+    <script>
+        frappe.ready(function() {
+            class WaiterLogin {
+                constructor() {
+                    this.setupForm();
+                    this.checkLoginStatus();
+                }
+
+                setupForm() {
+                    $('#login-form').on('submit', async (e) => {
+                        e.preventDefault();
+                        await this.handleLogin();
+                    });
+                }
+
+                async checkLoginStatus() {
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.auth.get_logged_user"
+                        });
+
+                        if (result.message) {
+                            const hasWaiterRole = await this.checkWaiterRole(result.message);
+                            if (hasWaiterRole) {
+                                this.redirectToOrders();
+                            } else {
+                                this.showError("Access denied. You must have Waiter role.");
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Error checking login status:", error);
+                    }
+                }
+
+                async handleLogin() {
+                    const username = $('#username').val();
+                    const password = $('#password').val();
+
+                    this.setLoading(true);
+
+                    try {
+                        await frappe.call({
+                            method: "frappe.auth.get_logged_user",
+                            callback: async (r) => {
+                                if (r.message) {
+                                    await this.validateAndRedirect(r.message);
+                                } else {
+                                    await this.attemptLogin(username, password);
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error("Login error:", error);
+                        this.showError("Login failed. Please try again.");
+                        this.setLoading(false);
+                    }
+                }
+
+                async attemptLogin(username, password) {
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.auth.login",
+                            args: {
+                                usr: username,
+                                pwd: password
+                            },
+                            callback: async (r) => {
+                                if (r.exc) {
+                                    this.showError("Invalid username or password");
+                                    this.setLoading(false);
+                                } else {
+                                    await this.validateAndRedirect(username);
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error("Login error:", error);
+                        this.showError("Login failed. Please try again.");
+                        this.setLoading(false);
+                    }
+                }
+
+                async validateAndRedirect(username) {
+                    const hasWaiterRole = await this.checkWaiterRole(username);
+                    if (hasWaiterRole) {
+                        this.showSuccess();
+                        setTimeout(() => this.redirectToOrders(), 1500);
+                    } else {
+                        this.showError("Access denied. You must have Waiter role.");
+                        this.setLoading(false);
+                    }
+                }
+
+                async checkWaiterRole(username) {
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.client.get",
+                            args: {
+                                doctype: "Has Role",
+                                filters: {
+                                    parent: username,
+                                    role: "Waiter"
+                                }
+                            }
+                        });
+                        return !!result.message;
+                    } catch (error) {
+                        console.error("Error checking role:", error);
+                        return false;
+                    }
+                }
+
+                showError(message) {
+                    const errorDiv = $('#error-message');
+                    const errorText = $('#error-text');
+                    errorText.text(message);
+                    errorDiv.slideDown();
+                    setTimeout(() => errorDiv.slideUp(), 5000);
+                }
+
+                showSuccess() {
+                    const successDiv = $('#success-message');
+                    successDiv.show();
+                    successDiv.css('display', 'flex');
+                }
+
+                setLoading(isLoading) {
+                    const form = $('#login-form').closest('.login-card');
+                    if (isLoading) {
+                        form.addClass('loading');
+                    } else {
+                        form.removeClass('loading');
+                    }
+                }
+
+                redirectToOrders() {
+                    window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
+                }
+            }
+
+            // Initialize the login page
+            window.waiterLogin = new WaiterLogin();
+        });
+
+        // Password visibility toggle
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.password-toggle i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>
