@@ -8,6 +8,13 @@
   "autoname": "autoincrement",
   "fields": [
     {
+      "fieldname": "kot_id",
+      "fieldtype": "Data",
+      "label": "KOT ID",
+      "permlevel": 0,
+      "reqd": 1
+    },
+    {
       "fieldname": "pos_order",
       "label": "POS Order",
       "fieldtype": "Link",
