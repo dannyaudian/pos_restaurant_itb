@@ -1,230 +1,180 @@
 # Restaurant POS Core
 
-Frappe app untuk mengelola operasional restoran modern.
+Aplikasi Frappe untuk operasional restoran modern:  
+pengelolaan order, dapur, meja, dan printer.
 
-## Fitur Utama
-- Kitchen Order Ticket (KOT)
-- Kitchen Display System (KDS) (monitoring order per table)
-- Kitchen Station (monitoring order per item)
-- Item Attribute (side dish, sauce,dll)
-- Table Management
+## Modul Utama
+- **POS Order**: Pusat transaksi
+- **KOT (Kitchen Order Ticket)**: Tiket masakan dari order
+- **Kitchen Display (KDS)**: Tampilkan order per meja
+- **Kitchen Station**: Tampilkan order per item
+- **Item Attributes**: Contoh: sauce, side dish
+- **Table Management**: Status & alokasi meja
 
 ---
 
-## Modul: POS Order
+## Struktur Folder (Custom Script)
+- `custom/pos_order/` → Logika & tombol order POS
+- `custom/kot/` → Script KOT & pemrosesan dapur
+- `custom/kitchen_station/` → Update & pengelompokan station
+- `custom/kitchen_display_order/` → Tampilan dapur
+- `custom/pos_profile/` → Pengaturan kasir
 
-### Fungsionalitas
-- Autoname otomatis berdasarkan cabang + tanggal
-- Validasi cabang & station aktif
-- Hitung total dan set status dari item
+---
 
-### Fields
-- order_id, table, branch, order_type, customer
-- items, total_amount, status, final_billed, sales_invoice
+## API Utama (`pos_restaurant_itb/api/`)
+
+| File                        | Fungsi                                      |
+|-----------------------------|---------------------------------------------|
+| `resolve_variant.py`        | Resolve item variant dari template          |
+| `kitchen_station.py`        | Buat station dari KOT, ringkasan atribut    |
+| `kds_handler.py`            | Buat KDS otomatis dari KOT                  |
+| `create_kot.py`             | Generate KOT dari POS Order                 |
+| `get_available_tables.py`   | List meja aktif yang belum dipakai          |
+| `get_attributes_for_item.py`| Ambil opsi atribut dari item template       |
+| `sendkitchenandcancel.py`   | Kirim ke dapur, cancel item, tandai served  |
+| `kitchen_station_handler.py`| Ambil item per station, update status       |
+| `kot_status_update.py`      | Update status KDS dari KOT                  |
+| `api.py`                    | API umum: update status, buat KDS, dsb      |
+
+---
+
+## POS Order
+
+### Fungsi
+- Auto ID → cabang + tanggal
+- Validasi cabang aktif
+- Hitung total + ubah status otomatis
+
+### Field Penting
+- `order_id`, `table`, `branch`, `order_type`, `customer`
+- `items`, `total_amount`, `status`, `final_billed`, `sales_invoice`
+
+### Status Flow
+- Draft → In Progress → Ready for Billing → Paid / Cancelled
+
+### Akses
+| Role           | Hak Akses |
+|----------------|-----------|
+| System Manager | CRUD      |
+| Sales User     | CRU       |
+| Waiter         | CRU       |
+
+---
+
+## POS Table
+
+### Field
+- `table_id`, `branch`, `is_active`
+
+### Akses
+- System Manager: CRUD
+
+---
+
+## Kitchen Order Ticket (KOT)
+
+### Fungsi
+- Dibuat otomatis dari POS Order
+- Menampung item yang perlu dimasak
+
+### Field
+- `kot_id`, `pos_order`, `table`, `branch`
+- `kot_time`, `items`, `status`, `waiter`
 
 ### Status
-- Draft, In Progress, Ready for Billing, Paid, Cancelled
+- New → In Progress → Ready → Served / Cancelled
 
 ### Akses
 | Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
-| Sales User     | CRU        |
-| Waiter         | CRU        |
+|----------------|-----------|
+| System Manager | CRUD      |
+| Sales User     | CRU       |
 
 ---
 
-## Modul: POS Table
+## KOT Item
 
-### Fields
-- table_id, branch, is_active
+### Field
+- `item_code`, `item_name`, `qty`, `note`
+- `kot_status`, `cancelled`, `cancellation_note`
+- `dynamic_attributes`, `waiter`, `order_id`, `branch`
+
+### Akses
+- System Manager: CRUD
+
+---
+
+## Kitchen SLA Log
+- Logging performa dapur
+- Akses: System Manager (CRUD)
+
+---
+
+## Kitchen Station Setup
+
+### Field
+- `station_name`, `branch`, `item_group`
+- `status`, `assigned_printers`, `print_format`
+
+### Akses
+- System Manager: CRUD
+
+---
+
+## Kitchen Display Order
+
+### Field
+- `kot`, `table`, `branch`, `items`
+- `status`, `last_updated`
 
 ### Akses
 | Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
+|----------------|-----------|
+| Kitchen Staff  | CRU       |
+| System Manager | CRUD      |
 
 ---
 
-## Modul: Kitchen Order Ticket (KOT)
+## Kitchen Station
 
-### Fungsionalitas
-- Buat otomatis dari POS Order
-- Menampilkan item yang perlu dimasak
-
-### Fields
-- kot_id, pos_order, table, branch
-- kot_time, items, status, waiter
-
-### Status
-- New, In Progress, Ready, Served, Cancelled
+### Field
+- `kot`, `item_code`, `status`, `last_updated`
+- `attribute_summary`, `note`, `cancelled`, `cancellation_note`
 
 ### Akses
 | Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
-| Sales User     | CRU        |
+|----------------|-----------|
+| Kitchen Staff  | CR        |
+| System Manager | CRUD      |
 
 ---
 
-## Modul: KOT Item
+## POS Dynamic Attribute
 
-### Fields
-- item_code, item_name, qty, note
-- kot_status, cancelled, cancellation_note
-- kot_last_update, dynamic_attributes
-- waiter, order_id, branch
+### Field
+- `attribute_name`, `attribute_value`
+- `mapped_item`, `extra_price`, `pos_order_item`
 
 ### Akses
 | Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
+|----------------|-----------|
+| Waiter         | CRU       |
+| System Manager | CRUD      |
 
 ---
 
-## Modul: Kitchen SLA Log
+## Printer Mapping
+
+### Field
+- `printer_name`, `printer_type`
+- `printer_ip`, `bluetooth_identifier`
+- `print_format`
 
 ### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
-
----
-
-## Modul: Kitchen Station Setup
-
-### Fields
-- station_name, branch, item_group
-- status, assigned_printers, print_format
-
-### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
-
----
-
-## Modul: Kitchen Display Order
-
-### Fields
-- kot, table, branch, items
-- status, last_updated
-
-### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| Kitchen Staff  | CRU        |
-| System Manager | CRUD       |
-
----
-
-## Modul: Kitchen Station
-
-### Fields
-- kot, status, table, branch
-- item_code, item_name, attribute_summary
-- note, kot_status, last_updated, cancelled, cancellation_note
-
-### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| Kitchen Staff  | CR         |
-| System Manager | CRUD       |
-
----
-
-## Modul: POS Dynamic Attribute
-
-### Fields
-- attribute_name, attribute_value
-- mapped_item, extra_price, pos_order_item
-
-### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| Waiter         | CRU        |
-| System Manager | CRUD       |
-
----
-
-## Modul: Printer Mapping POS Restaurant
-
-### Fields
-- printer_name, printer_type
-- printer_ip, bluetooth_identifier
-- print_format
-
-### Akses
-| Role           | Hak Akses |
-|----------------|------------|
-| System Manager | CRUD       |
-
----
-
-## API Highlights
-
-### resolve_variant.py
-- `resolve_variant(template, attributes)`
-
-### kitchen_station.py
-- `get_attribute_summary(dynamic_attributes_json)`
-- `create_kitchen_station_items_from_kot(kot_id)`
-
-### kds_handler.py
-- `create_kds_from_kot(kot_id)`
-
-### create_kot.py
-- `create_kot_from_pos_order(pos_order_id)`
-
-### get_available_tables.py
-- `get_available_tables(branch)`
-
-### get_attributes_for_item.py
-- `get_attributes_for_item(item_code)`
-
-### kds.py
-- `create_kds_from_kot(kot_id)`
-
-### sendkitchenandcancel.py
-- `send_to_kitchen(pos_order)`
-- `cancel_pos_order_item(item_name, reason)`
-- `mark_all_served(pos_order_id)`
-
-### kitchen_station_handler.py
-- `get_kitchen_items_by_station(branch, item_group)`
-- `update_kitchen_item_status(kot_item_id, new_status)`
-- `cancel_kitchen_item(kot_item_id, reason)`
-
-### kot_status_update.py
-- `update_kds_status_from_kot(kds_name)`
-
-### api.py
-- `update_kot_item_status(order, item_code, status)`
-- `get_new_order_id(branch)`
-- `create_kds_from_kot(kot_id)`
-- `create_kds_from_kot_manual(kot_id)`
-
----
-
-## Custom Folder
-
-### pos_restaurant_itb/custom/pos_order
-Folder ini berisi custom script dan konfigurasi untuk POS Order di aplikasi Restaurant Management.
-
-### pos_restaurant_itb/custom/kot
-Folder ini berisi custom script dan konfigurasi untuk Kitchen Order Ticket (KOT) di aplikasi Restaurant Management.
-
-### pos_restaurant_itb/custom/pos_profile
-Folder ini berisi custom script dan konfigurasi untuk POS Profile di aplikasi Restaurant Management.
-
-### pos_restaurant_itb/custom/kitchen_station
-Folder ini berisi custom script dan konfigurasi untuk Kitchen Station di aplikasi Restaurant Management.
-
-### pos_restaurant_itb/custom/kitchen_display_order
-Folder ini berisi custom script dan konfigurasi untuk Kitchen Display Order di aplikasi Restaurant Management.
+- System Manager: CRUD
 
 ---
 
 ## ERD
-
 ![ERD - POS Restaurant ITB](./pos_restaurant_itb_erd.png)
