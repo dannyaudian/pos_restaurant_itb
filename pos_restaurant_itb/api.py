@@ -108,3 +108,44 @@ def create_kds_from_kot(kot_id):
     frappe.db.commit()
 
     return kds.name
+
+# Perubahan untuk memastikan data kitchen station diambil dari KDS
+@frappe.whitelist()
+def create_kds_from_kot_manual(kot_id):
+    """
+    Membuat Kitchen Display Order manual dari KOT ID.
+    Mengisi otomatis semua informasi dan item_list dari KDS.
+    """
+    if not kot_id:
+        frappe.throw(_("KOT ID wajib diisi."))
+
+    # Cek apakah sudah ada KDS sebelumnya
+    existing = frappe.db.exists("Kitchen Display Order", {"kot_id": kot_id})
+    if existing:
+        return existing
+
+    kds = frappe.get_doc("Kitchen Display Order", kot_id)
+
+    new_kds = frappe.new_doc("Kitchen Display Order")
+    new_kds.kot_id = kds.kot_id
+    new_kds.table_number = kds.table_number
+    new_kds.branch = kds.branch
+    new_kds.status = "New"
+    new_kds.last_updated = now_datetime()
+
+    for item in kds.item_list:
+        new_kds.append("item_list", {
+            "item_code": item.item_code,
+            "item_name": item.item_name,
+            "kot_status": item.kot_status,
+            "kot_last_update": item.kot_last_update,
+            "attribute_summary": item.attribute_summary,
+            "note": item.note,
+            "cancelled": item.cancelled,
+            "cancellation_note": item.cancellation_note
+        })
+
+    new_kds.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return new_kds.name
