@@ -3,7 +3,6 @@ from frappe import _
 from frappe.utils import now_datetime
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
 
-
 @frappe.whitelist()
 def update_kot_item_status(order, item_code, status):
     """
@@ -41,7 +40,6 @@ def update_kot_item_status(order, item_code, status):
         "message": _(f"{item_code} berhasil diupdate ke status {status}")
     }
 
-
 @frappe.whitelist()
 def get_new_order_id(branch):
     """
@@ -69,7 +67,6 @@ def get_new_order_id(branch):
     new_order_id = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
     return new_order_id
-
 
 @frappe.whitelist()
 def create_kds_from_kot(kot_id):
