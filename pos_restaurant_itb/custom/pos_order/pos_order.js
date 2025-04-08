@@ -15,7 +15,7 @@ frappe.ui.form.on('POS Order', {
                         const is_available = available_tables.some(t => t.name === frm.doc.table);
 
                         if (!is_available) {
-                            frappe.msgprint(❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.);
+                            frappe.msgprint('❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.');
                             frm.set_value("table", null);
                             return;
                         }
@@ -180,7 +180,7 @@ function resolve_variant_after_save(frm, row, attributes) {
                 frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
 
                 frappe.show_alert({
-                    message: 🔄 Diganti ke Variant: ${r.message.item_name},
+                    message: '🔄 Diganti ke Variant: ${r.message.item_name}',
                     indicator: 'green'
                 });
             }
