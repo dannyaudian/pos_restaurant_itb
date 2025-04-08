@@ -1,5 +1,3 @@
-# pos_restaurant_itb/pos_restaurant_itb/doctype/kot/kot.py
-
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -24,6 +22,9 @@ class KOT(Document):
 
         last_number = int(last[0][0].split("-")[-1]) if last else 0
         self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
+        
+        # Set field kot_id jika diperlukan
+        self.kot_id = self.name
 
     def validate(self):
         if self.pos_order:
