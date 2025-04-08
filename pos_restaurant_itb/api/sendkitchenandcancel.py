@@ -1,5 +1,3 @@
-# pos_restaurant_itb/api/sendkitchenandcancel.py
-
 import frappe
 from frappe import _
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
