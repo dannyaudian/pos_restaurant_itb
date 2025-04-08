@@ -29,9 +29,11 @@ class POSOrder(Document):
         self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
     def validate(self):
-        # Panggil fungsi validasi kitchen station aktif
+        if not self.branch:
+            frappe.throw(_("Branch harus diisi sebelum menyimpan order."))
+
         validate_active_kitchen_station(self.branch)
-        
+
         if not self.pos_order_items:
             self.status = "Draft"
             self.total_amount = 0
@@ -42,13 +44,14 @@ class POSOrder(Document):
         item_statuses = []
 
         for item in self.pos_order_items:
+            if item.cancelled:
+                continue
             item.validate()
             total += item.amount
             item_statuses.append(item.kot_status or "Draft")
 
         self.total_amount = total
 
-        # Tentukan status berdasarkan status item
         new_status = "Draft"
         if all(s == "Ready" for s in item_statuses):
             new_status = "Ready for Billing"

@@ -16,6 +16,15 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Draft\nActive\nInactive",
+      "default": "Draft",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
       "fieldname": "table",
       "label": "Table",
       "fieldtype": "Link",
