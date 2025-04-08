@@ -54,6 +54,13 @@ rest_apis = [
 website_route_rules = [
     {
         "from_route": "/pos_restaurant_itb/public/ui/login",
-        "to_route": "pos_restaurant_itb/public/ui/login.html"
+        "to_route": "pos_restaurant_itb.public.ui.login"
     }
 ]
+
+# Whitelist methods for login
+whitelisted_methods = {
+    "frappe.auth.get_logged_user": True,
+    "frappe.auth.login": True,
+    "frappe.client.get": True
+}
