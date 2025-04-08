@@ -57,20 +57,48 @@ frappe.ui.form.on('POS Order', {
               frappe.msgprint("Pilih cabang terlebih dahulu.");
               return { filters: { name: ["=", ""] } };
             }
-          
+
             return {
               filters: [
                 ["POS Table", "branch", "=", frm.doc.branch],
                 ["POS Table", "is_active", "=", 1]
               ]
             };
-          });
+        });
+
         // 🧾 Filter item template saja
         frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
             filters: {
                 variant_of: ["is", "not set"],
                 is_sales_item: 1,
                 disabled: 0
+            }
+        });
+    },
+
+    validate: function (frm) {
+        if (!frm.doc.branch) {
+            frappe.msgprint("Cabang harus dipilih.");
+            frappe.validated = false;
+            return;
+        }
+
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Kitchen Station",
+                filters: {
+                    branch: frm.doc.branch,
+                    status: "Active"
+                },
+                limit_page_length: 1
+            },
+            async: false,
+            callback: function (res) {
+                if (!res.message.length) {
+                    frappe.msgprint("❌ Tidak ada Kitchen Station aktif di cabang ini.");
+                    frappe.validated = false;
+                }
             }
         });
     }
