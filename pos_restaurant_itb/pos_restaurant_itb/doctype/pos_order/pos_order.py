@@ -1,228 +1,73 @@
-frappe.ui.form.on('POS Order', {
-    table: function (frm) {
-        if (!frm.doc.table) return;
+import frappe
+from frappe import _
+from frappe.model.document import Document
 
-        frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
-            if (r?.branch) {
-                frm.set_value('branch', r.branch);
+class POSOrder(Document):
+    def autoname(self):
+        if not self.branch:
+            frappe.throw(_("Branch is required to generate Order ID."))
 
-                // Cek apakah meja masih tersedia via API
-                frappe.call({
-                    method: "pos_restaurant_itb.api.get_available_tables",
-                    args: { branch: r.branch },
-                    callback: function (res) {
-                        const available_tables = res.message || [];
-                        const is_available = available_tables.some(t => t.name === frm.doc.table);
+        # Format: POS-YYYYMMDD-BRANCHCODE-####
+        today = frappe.utils.now().strftime("%Y%m%d")
 
-                        if (!is_available) {
-                            frappe.msgprint(`❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.`);
-                            frm.set_value("table", null);
-                            return;
-                        }
+        branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
+        if not branch_code:
+            frappe.throw(_("Branch must have a valid Branch Code."))
 
-                        // ✅ Jika tersedia → generate order ID
-                        frappe.call({
-                            method: "pos_restaurant_itb.api.get_new_order_id",
-                            args: { branch: r.branch },
-                            callback: function (res) {
-                                if (res?.message) {
-                                    frm.set_value("order_id", res.message);
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    },
+        branch_code = branch_code.strip().upper()
 
-    onload: function (frm) {
-        // 🔐 Filter cabang sesuai permission user
-        frm.set_query("branch", () => {
-            if (frappe.user.has_role("System Manager")) return {};
+        prefix = f"POS-{today}-{branch_code}"
 
-            const branches = frappe.user.get_perm("Branch") || [];
-            if (!branches.length) {
-                frappe.msgprint(__("⚠️ Anda tidak memiliki akses ke cabang manapun."));
-            }
+        last = frappe.db.sql(
+            """SELECT name FROM `tabPOS Order`
+               WHERE name LIKE %s
+               ORDER BY name DESC LIMIT 1""",
+            (prefix + "%",)
+        )
 
-            return {
-                filters: { name: ["in", branches] }
-            };
-        });
+        last_number = int(last[0][0].split("-")[-1]) if last else 0
+        self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
-        // 📛 Filter meja berdasarkan ketersediaan (via API)
-        frm.set_query("table", () => {
-            if (!frm.doc.branch) {
-              frappe.msgprint("Pilih cabang terlebih dahulu.");
-              return { filters: { name: ["=", ""] } };
-            }
+    def before_save(self):
+        if not self.branch:
+            frappe.throw(_("Branch harus diisi."))
+        validate_active_kitchen_station(self.branch)
 
-            return {
-              filters: [
-                ["POS Table", "branch", "=", frm.doc.branch],
-                ["POS Table", "is_active", "=", 1]
-              ]
-            };
-        });
+    def validate(self):
+        if not self.branch:
+            frappe.throw(_("Branch harus diisi sebelum menyimpan order."))
 
-        // 🧾 Filter item template saja
-        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
-            filters: {
-                variant_of: ["is", "not set"],
-                is_sales_item: 1,
-                disabled: 0
-            }
-        });
-    },
+        if not self.pos_order_items:
+            self.status = "Draft"
+            self.total_amount = 0
+            frappe.msgprint("📭 Order kosong. Status: Draft, Total: 0")
+            return
 
-    validate: function (frm) {
-        if (!frm.doc.branch) {
-            frappe.msgprint("Cabang harus dipilih.");
-            frappe.validated = false;
-            return;
-        }
+        total = 0
+        item_statuses = []
 
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Kitchen Station",
-                filters: {
-                    branch: frm.doc.branch,
-                    status: "Active"
-                },
-                limit_page_length: 1
-            },
-            async: false,
-            callback: function (res) {
-                if (!res.message.length) {
-                    frappe.msgprint("❌ Tidak ada Kitchen Station aktif di cabang ini.");
-                    frappe.validated = false;
-                }
-            }
-        });
-    }
-});
+        for item in self.pos_order_items:
+            if item.cancelled:
+                continue
+            item.validate()
+            total += item.amount
+            item_statuses.append(item.kot_status or "Draft")
 
-frappe.ui.form.on('POS Order Item', {
-    item_code: function (frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
-        if (!row.item_code) return;
+        self.total_amount = total
 
-        // Cek apakah item punya varian
-        frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
-            if (r?.has_variants) {
-                frappe.call({
-                    method: "pos_restaurant_itb.api.get_attributes_for_item",
-                    args: { item_code: row.item_code },
-                    callback: function (res) {
-                        if (!res.message) return;
+        new_status = "Draft"
+        if all(s == "Ready" for s in item_statuses):
+            new_status = "Ready for Billing"
+        elif any(s in ["Cooking", "Queued"] for s in item_statuses):
+            new_status = "In Progress"
 
-                        const fields = res.message.map(attr => ({
-                            label: attr.attribute,
-                            fieldname: attr.attribute,
-                            fieldtype: "Select",
-                            options: (attr.values || []).join("\n"),
-                            reqd: 1
-                        }));
+        if self.status != new_status:
+            self.status = new_status
+            frappe.msgprint(f"🔁 Status updated to: {self.status}")
 
-                        const d = new frappe.ui.Dialog({
-                            title: 'Pilih Atribut',
-                            fields: fields,
-                            primary_action_label: 'Simpan',
-                            primary_action(values) {
-                                const item_row = locals[row.doctype][row.name];
-                                item_row.dynamic_attributes = [];
+        frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
 
-                                for (const [key, value] of Object.entries(values)) {
-                                    item_row.dynamic_attributes.push({
-                                        attribute_name: key,
-                                        attribute_value: value
-                                    });
-                                }
-
-                                frm.refresh_field("pos_order_items");
-                                frappe.show_alert("✔️ Atribut ditambahkan.");
-                                resolve_variant_after_save(frm, row, values);
-                                d.hide();
-                            }
-                        });
-
-                        d.show();
-                    }
-                });
-            }
-        });
-
-        // Ambil harga dari price list
-        const price_list = frm.doc.selling_price_list || 'Standard Selling';
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Item Price",
-                filters: {
-                    item_code: row.item_code,
-                    price_list: price_list
-                },
-                fields: ["price_list_rate"],
-                limit_page_length: 1
-            },
-            callback: function (res) {
-                const rate = res.message?.[0]?.price_list_rate || 0;
-                frappe.model.set_value(cdt, cdn, 'rate', rate);
-                if (rate === 0) {
-                    frappe.msgprint(__('Harga tidak ditemukan di Price List: ' + price_list));
-                }
-            }
-        });
-    },
-
-    qty: update_item_amount_and_total,
-    rate: update_item_amount_and_total
-});
-
-function resolve_variant_after_save(frm, row, attributes) {
-    const attr_array = Object.entries(attributes).map(([key, value]) => ({
-        attribute_name: key,
-        attribute_value: value
-    }));
-
-    frappe.call({
-        method: "pos_restaurant_itb.api.resolve_variant",
-        args: {
-            template: row.item_code,
-            attributes: attr_array
-        },
-        callback: function (r) {
-            if (r.message) {
-                frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.item_code);
-                frappe.model.set_value(row.doctype, row.name, 'item_name', r.message.item_name);
-                frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
-
-                frappe.show_alert({
-                    message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
-                    indicator: 'green'
-                });
-            }
-        }
-    });
-}
-
-function update_item_amount_and_total(frm, cdt, cdn) {
-    const row = locals[cdt][cdn];
-    if (!row) return;
-
-    const qty = row.qty || 0;
-    const rate = row.rate || 0;
-    const amount = qty * rate;
-
-    frappe.model.set_value(cdt, cdn, "amount", amount);
-
-    let total = 0;
-    (frm.doc.pos_order_items || []).forEach(item => {
-        total += item.amount || 0;
-    });
-
-    frm.set_value("total_amount", total);
-    frm.refresh_field("total_amount");
-}
+def validate_active_kitchen_station(branch):
+    """Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu."""
+    if not frappe.db.exists("Kitchen Station", {"branch": branch, "status": "Active"}):
+        frappe.throw(_("Tidak ada kitchen station yang aktif untuk cabang ini."))
