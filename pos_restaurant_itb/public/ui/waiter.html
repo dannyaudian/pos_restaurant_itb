@@ -1,384 +1,406 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>POS Order - Restaurant Management</title>
+    <title>POS Order</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Frappe framework dependencies -->
     <script src="/assets/frappe/js/frappe.min.js"></script>
     <link href="/assets/frappe/css/frappe.min.css" rel="stylesheet">
-    <!-- Additional CSS -->
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #2490ef;
-            --secondary-color: #6c757d;
-        }
-        
-        body {
-            font-family: sans-serif;
-            background-color: #f5f7fa;
+        .order-container {
             padding: 20px;
         }
         
-        .order-header {
-            background-color: white;
-            padding: 20px;
+        .order-section {
+            background: white;
             border-radius: 8px;
+            padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        .order-items {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .item-row {
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
         }
         
-        .status-badge {
-            font-size: 0.9rem;
-            padding: 6px 12px;
-            border-radius: 20px;
+        .item-row:last-child {
+            border-bottom: none;
         }
         
-        .table {
-            width: 100%;
-            margin-bottom: 1rem;
-            border-collapse: collapse;
+        .kot-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
         }
         
-        .table th, .table td {
-            padding: 0.75rem;
-            border: 1px solid #dee2e6;
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-        }
+        .kot-new { background: #fff3cd; color: #856404; }
+        .kot-in-progress { background: #cce5ff; color: #004085; }
+        .kot-ready { background: #d4edda; color: #155724; }
+        .kot-served { background: #d6d8db; color: #383d41; }
+        .kot-cancelled { background: #f8d7da; color: #721c24; }
         
         .cancelled-item {
             background-color: #fff3f3;
             text-decoration: line-through;
         }
-        
-        .kot-status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-        }
-        
-        .kot-status.served {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .kot-status.cancelled {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .required-field::after {
-            content: " *";
-            color: red;
-        }
     </style>
 </head>
 <body>
-    <div class="order-header">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label required-field">Order ID</label>
-                    <input type="text" class="form-control" id="order_id" required readonly>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Table</label>
-                    <select class="form-control" id="table">
-                        <option value="">Select Table</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label required-field">Branch</label>
-                    <select class="form-control" id="branch" required>
-                        <option value="">Select Branch</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label class="form-label">Order Type</label>
-                    <select class="form-control" id="order_type">
-                        <option value="Dine In">Dine In</option>
-                        <option value="Takeaway">Takeaway</option>
-                        <option value="Delivery">Delivery</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Customer</label>
-                    <select class="form-control" id="customer">
-                        <option value="">Select Customer</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <span class="status-badge badge bg-warning" id="status">Draft</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="order-items">
+    <div class="order-container">
+        <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4>Order Items</h4>
-            <button class="btn btn-primary" id="add_item">Add Item</button>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Item Code</th>
-                        <th>Item Name</th>
-                        <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Amount</th>
-                        <th>Attributes</th>
-                        <th>KOT Status</th>
-                        <th>Note</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="items_table"></tbody>
-            </table>
+            <h3 id="page_title">POS Order</h3>
+            <div>
+                <button class="btn btn-secondary me-2" onclick="window.location.href='/pos_order_list'">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </button>
+                <button class="btn btn-primary" id="save_order">
+                    <i class="fas fa-save"></i> Save Order
+                </button>
+            </div>
         </div>
 
-        <div class="total-section bg-light p-3 rounded mt-3">
+        <!-- Order Details Section -->
+        <div class="order-section">
             <div class="row">
-                <div class="col-md-8">
-                    <div id="kot_info"></div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Table Number</label>
+                        <input type="text" class="form-control" id="table_no" required>
+                    </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="d-flex justify-content-between">
-                        <strong>Total Amount:</strong>
-                        <span id="total_amount" class="h5 mb-0">0.00</span>
+                    <div class="form-group">
+                        <label class="form-label">Order Type</label>
+                        <select class="form-control" id="order_type">
+                            <option value="Dine In">Dine In</option>
+                            <option value="Takeaway">Takeaway</option>
+                            <option value="Delivery">Delivery</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label">Customer</label>
+                        <input type="text" class="form-control" id="customer">
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="action-buttons d-flex justify-content-end mt-3">
-        <button class="btn btn-secondary me-2" id="save_draft">Save as Draft</button>
-        <button class="btn btn-primary me-2" id="send_to_kitchen">Send to Kitchen</button>
-        <button class="btn btn-info me-2" id="print_kot">Print KOT</button>
-        <button class="btn btn-success me-2" id="print_receipt">Print Receipt</button>
-        <button class="btn btn-warning me-2" id="mark_all_served">Mark All Served</button>
-        <button class="btn btn-danger" id="cancel_order">Cancel Order</button>
+        <!-- Items Section -->
+        <div class="order-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Order Items</h4>
+                <button class="btn btn-primary btn-sm" id="add_item">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table" id="items_table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                            <th>Note</th>
+                            <th>KOT Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                            <td id="total_amount">0.00</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="order-section">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary me-2" id="print_kot">
+                    <i class="fas fa-print"></i> Print KOT
+                </button>
+                <button class="btn btn-primary me-2" id="send_to_kitchen">
+                    <i class="fas fa-utensils"></i> Send to Kitchen
+                </button>
+                <button class="btn btn-success" id="mark_all_served">
+                    <i class="fas fa-check-circle"></i> Mark All Served
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Item Modal -->
     <div class="modal" id="itemModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add/Edit Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label required-field">Item Code</label>
-                                <select class="form-control" id="modal_item_code" required>
-                                    <option value="">Select Item</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label required-field">Quantity</label>
-                                <input type="number" class="form-control" id="modal_qty" value="1" min="1">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Note</label>
-                                <textarea class="form-control" id="modal_note" rows="2"></textarea>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div id="dynamic_attributes_container">
-                                <!-- Dynamic attributes will be added here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="confirm_item">Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Cancel Item Modal -->
-    <div class="modal" id="cancelItemModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Cancel Item</h5>
+                    <h5 class="modal-title">Add Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label required-field">Cancellation Note</label>
-                        <textarea class="form-control" id="cancellation_note" rows="3" required></textarea>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Item</label>
+                        <select class="form-control" id="modal_item_code" required>
+                            <option value="">Select Item</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="modal_qty" value="1" min="1">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" id="modal_note" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-danger" id="confirm_cancel">Cancel Item</button>
+                    <button type="button" class="btn btn-primary" id="confirm_add_item">Add</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Include Frappe scripts -->
     <script>
         frappe.ready(function() {
-            // Initialize the POS Order page
             class POSOrder {
                 constructor() {
-                    this.bindEvents();
-                    this.setupFilters();
+                    this.orderId = frappe.get_url_arg('name');
+                    this.items = [];
+                    this.initialize();
                 }
 
-                bindEvents() {
-                    $('#table').on('change', () => this.onTableChange());
+                async initialize() {
+                    await this.loadOrderData();
+                    this.setupEventHandlers();
+                    await this.loadItems();
+                }
+
+                async loadOrderData() {
+                    if (this.orderId) {
+                        const result = await frappe.call({
+                            method: "pos_restaurant_itb.api.pos_order_controller.get_order_context",
+                            args: { order_name: this.orderId }
+                        });
+                        
+                        if (result.message?.doc) {
+                            const order = result.message.doc;
+                            $('#page_title').text(`Edit Order - ${order.name}`);
+                            $('#table_no').val(order.table);
+                            $('#order_type').val(order.order_type);
+                            $('#customer').val(order.customer);
+                            this.items = order.items || [];
+                            this.renderItems();
+                        }
+                    }
+                }
+
+                setupEventHandlers() {
+                    $('#add_item').on('click', () => this.showItemModal());
+                    $('#confirm_add_item').on('click', () => this.addItem());
                     $('#send_to_kitchen').on('click', () => this.sendToKitchen());
                     $('#mark_all_served').on('click', () => this.markAllServed());
-                    $(document).on('click', '.cancel-item-btn', (e) => this.showCancelDialog(e));
+                    $('#save_order').on('click', () => this.saveOrder());
                 }
 
-                setupFilters() {
-                    // Setup branch filter
-                    frappe.call({
-                        method: 'frappe.client.get_list',
+                async loadItems() {
+                    const result = await frappe.call({
+                        method: "frappe.client.get_list",
                         args: {
-                            doctype: 'Branch',
-                            fields: ['name'],
-                            filters: { is_active: 1 }
-                        },
-                        callback: (r) => {
-                            const branches = r.message || [];
-                            this.populateBranchSelect(branches);
+                            doctype: "Item",
+                            fields: ["name", "item_name", "standard_rate"],
+                            filters: { is_sales_item: 1 }
                         }
                     });
 
-                    // Setup table filter based on branch
-                    $('#branch').on('change', (e) => {
-                        this.loadTables(e.target.value);
+                    const select = $('#modal_item_code');
+                    select.empty().append('<option value="">Select Item</option>');
+                    
+                    result.message?.forEach(item => {
+                        select.append(`<option value="${item.name}" data-rate="${item.standard_rate}">
+                            ${item.item_name}
+                        </option>`);
                     });
+                }
+
+                showItemModal() {
+                    $('#itemModal').modal('show');
+                }
+
+                addItem() {
+                    const itemCode = $('#modal_item_code').val();
+                    const qty = parseInt($('#modal_qty').val()) || 1;
+                    const note = $('#modal_note').val();
+                    const rate = parseFloat($('#modal_item_code option:selected').data('rate')) || 0;
+
+                    if (!itemCode) {
+                        frappe.msgprint('Please select an item');
+                        return;
+                    }
+
+                    const item = {
+                        item_code: itemCode,
+                        item_name: $('#modal_item_code option:selected').text().trim(),
+                        qty: qty,
+                        rate: rate,
+                        amount: qty * rate,
+                        note: note,
+                        kot_status: 'New'
+                    };
+
+                    this.items.push(item);
+                    this.renderItems();
+                    $('#itemModal').modal('hide');
+                    this.resetItemModal();
+                }
+
+                renderItems() {
+                    const tbody = $('#items_table tbody');
+                    tbody.empty();
+
+                    let total = 0;
+                    this.items.forEach((item, index) => {
+                        if (!item.cancelled) {
+                            total += item.amount;
+                        }
+
+                        const row = `
+                            <tr class="${item.cancelled ? 'cancelled-item' : ''}">
+                                <td>${item.item_name}</td>
+                                <td>${item.qty}</td>
+                                <td>${frappe.format_currency(item.rate)}</td>
+                                <td>${frappe.format_currency(item.amount)}</td>
+                                <td>${item.note || ''}</td>
+                                <td>
+                                    <span class="kot-status kot-${item.kot_status.toLowerCase().replace(/\s+/g, '-')}">
+                                        ${item.kot_status}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${!item.cancelled ? `
+                                        <button class="btn btn-danger btn-sm" onclick="window.posOrder.cancelItem(${index})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    ` : ''}
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(row);
+                    });
+
+                    $('#total_amount').text(frappe.format_currency(total));
                 }
 
                 async sendToKitchen() {
-                    const orderId = $('#order_id').val();
-                    if (!orderId) return;
+                    if (!this.orderId) {
+                        frappe.msgprint('Please save the order first');
+                        return;
+                    }
 
                     try {
                         const result = await frappe.call({
-                            method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
-                            args: { pos_order: orderId }
+                            method: "pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen",
+                            args: { pos_order: this.orderId }
                         });
 
                         if (result.message) {
-                            // Show KOT print preview
                             const printWindow = window.open('', '_blank');
                             printWindow.document.write(result.message);
                             printWindow.document.close();
-                            
-                            // Refresh the page
-                            location.reload();
+                            await this.loadOrderData();
                         }
                     } catch (error) {
-                        frappe.msgprint({
-                            title: __('Error'),
-                            indicator: 'red',
-                            message: __(error.message || 'Failed to send to kitchen')
-                        });
+                        frappe.msgprint(error.message);
                     }
                 }
 
                 async markAllServed() {
-                    const orderId = $('#order_id').val();
-                    if (!orderId) return;
+                    if (!this.orderId) {
+                        frappe.msgprint('Please save the order first');
+                        return;
+                    }
 
-                    frappe.confirm(
-                        'Are you sure you want to mark all items as served?',
-                        async () => {
-                            try {
-                                const result = await frappe.call({
-                                    method: 'pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served',
-                                    args: { pos_order_id: orderId }
-                                });
-
-                                if (result.message) {
-                                    frappe.show_alert({
-                                        message: result.message,
-                                        indicator: 'green'
-                                    });
-                                    location.reload();
-                                }
-                            } catch (error) {
-                                frappe.msgprint({
-                                    title: __('Error'),
-                                    indicator: 'red',
-                                    message: __(error.message || 'Failed to mark items as served')
-                                });
-                            }
-                        }
-                    );
-                }
-
-                showCancelDialog(event) {
-                    const row = $(event.target).closest('tr');
-                    const itemName = row.data('item-name');
-
-                    frappe.prompt([
-                        {
-                            label: 'Cancellation Note',
-                            fieldname: 'reason',
-                            fieldtype: 'Small Text',
-                            reqd: 1
-                        }
-                    ],
-                    (values) => {
-                        this.cancelItem(itemName, values.reason);
-                    },
-                    'Cancel Item',
-                    'Confirm'
-                    );
-                }
-
-                async cancelItem(itemName, reason) {
                     try {
                         const result = await frappe.call({
-                            method: 'pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item',
-                            args: {
-                                item_name: itemName,
-                                reason: reason
-                            }
+                            method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
+                            args: { pos_order_id: this.orderId }
                         });
 
                         if (result.message) {
                             frappe.show_alert({
-                                message: result.message.message,
+                                message: result.message,
                                 indicator: 'green'
                             });
-                            location.reload();
+                            await this.loadOrderData();
                         }
                     } catch (error) {
-                        frappe.msgprint({
-                            title: __('Error'),
-                            indicator: 'red',
-                            message: __(error.message || 'Failed to cancel item')
-                        });
+                        frappe.msgprint(error.message);
                     }
+                }
+
+                async saveOrder() {
+                    const orderData = {
+                        doctype: 'POS Order',
+                        table: $('#table_no').val(),
+                        order_type: $('#order_type').val(),
+                        customer: $('#customer').val(),
+                        items: this.items
+                    };
+
+                    try {
+                        const result = await frappe.call({
+                            method: "pos_restaurant_itb.api.pos_order_controller.create_or_update_order",
+                            args: {
+                                order_data: orderData,
+                                order_name: this.orderId
+                            }
+                        });
+
+                        if (result.message?.status === 'success') {
+                            frappe.show_alert({
+                                message: 'Order saved successfully',
+                                indicator: 'green'
+                            });
+                            
+                            if (!this.orderId) {
+                                window.location.href = `/pos_order/${result.message.order_name}`;
+                            }
+                        } else {
+                            frappe.msgprint(result.message?.message || 'Failed to save order');
+                        }
+                    } catch (error) {
+                        frappe.msgprint(error.message);
+                    }
+                }
+
+                cancelItem(index) {
+                    frappe.confirm(
+                        'Are you sure you want to cancel this item?',
+                        () => {
+                            this.items[index].cancelled = true;
+                            this.items[index].amount = 0;
+                            this.renderItems();
+                        }
+                    );
+                }
+
+                resetItemModal() {
+                    $('#modal_item_code').val('');
+                    $('#modal_qty').val(1);
+                    $('#modal_note').val('');
                 }
             }
 
