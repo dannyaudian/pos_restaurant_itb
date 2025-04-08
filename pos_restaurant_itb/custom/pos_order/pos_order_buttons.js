@@ -7,14 +7,14 @@ frappe.ui.form.on('POS Order', {
         if (isDraft && status === "Draft") {
             frm.add_custom_button(__('Kirim ke Dapur'), () => {
                 sendToKitchen(frm);
-            }, __("Actions"));
+            }, __("Actions")).addClass("btn-primary");
         }
 
         // 🔘 Tombol: Kirim Tambahan ke Dapur (saat In Progress)
         if (isDraft && status === "In Progress") {
             frm.add_custom_button(__('Kirim Tambahan ke Dapur'), () => {
                 sendToKitchen(frm);
-            }, __("Actions"));
+            }, __("Actions")).addClass("btn-primary");
         }
 
         // 🔘 Tombol: Print KOT
@@ -126,6 +126,13 @@ frappe.ui.form.on('POS Order', {
                 });
             }, __("Actions"));
         }
+
+        // Update status tombol
+        updateSendToKitchenButton(frm);
+    },
+    validate(frm) {
+        // Update status tombol sebelum save
+        updateSendToKitchenButton(frm);
     }
 });
 
@@ -195,4 +202,19 @@ function sendToKitchen(frm) {
             });
         }
     );
+}
+
+// Fungsi untuk memperbarui status tombol "Send to Kitchen"
+function updateSendToKitchenButton(frm) {
+    const isDraft = frm.doc.docstatus === 0;
+    const sendToKitchenBtn = frm.get_custom_buttons().find(btn => btn[0].innerText === 'Kirim ke Dapur');
+    const sendAdditionalToKitchenBtn = frm.get_custom_buttons().find(btn => btn[0].innerText === 'Kirim Tambahan ke Dapur');
+
+    if (sendToKitchenBtn) {
+        sendToKitchenBtn.prop('disabled', !isDraft);
+    }
+
+    if (sendAdditionalToKitchenBtn) {
+        sendAdditionalToKitchenBtn.prop('disabled', !isDraft);
+    }
 }
