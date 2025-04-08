@@ -1,367 +1,823 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>POS Orders</title>
+    <title>POS Order Entry</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="/assets/frappe/js/frappe.min.js"></script>
     <script src="/assets/js/control.min.js"></script>
     <link href="/assets/frappe/css/frappe.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .order-list-container {
-            padding: 20px;
-            max-width: 100%;
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --background-color: #f1f5f9;
+            --surface-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --danger-color: #dc2626;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --border-radius: 12px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--background-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .pos-container {
+            max-width: 1600px;
             margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
         }
-        
-        .filters-section {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
+
+        /* Left Sidebar */
+        .order-sidebar {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .order-header {
             margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
-        .list-table {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow-x: auto;
+
+        .order-info {
+            display: grid;
+            gap: 15px;
         }
-        
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
             font-weight: 500;
         }
-        
-        /* Status colors matching doctype status options */
-        .status-draft { background: #fff3cd; color: #856404; }
-        .status-in-progress { background: #cce5ff; color: #004085; }
-        .status-ready-for-billing { background: #d4edda; color: #155724; }
-        .status-paid { background: #c3e6cb; color: #155724; }
-        .status-cancelled { background: #f8d7da; color: #721c24; }
-        
-        .action-buttons {
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Order Summary */
+        .order-summary {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .summary-item {
             display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.875rem;
+        }
+
+        .summary-item.total {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e2e8f0;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Categories and Items */
+        .categories {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .category-btn {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .item-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 0.875rem;
+        }
+
+        .item-price {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Cart Section */
+        .cart-items {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .cart-item-info {
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .cart-item-name {
+            font-weight: 500;
+        }
+
+        .cart-item-price {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .quantity-control {
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
-        .table td {
-            white-space: nowrap;
-            vertical-align: middle;
+        .quantity-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: #f1f5f9;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
         }
 
-        .refresh-btn {
-            margin-left: 10px;
+        .quantity-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .pos-container {
+                grid-template-columns: 1fr;
+            }
+
+            .order-sidebar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: auto;
+                z-index: 100;
+                border-radius: var(--border-radius) var(--border-radius) 0 0;
+            }
+
+            .main-content {
+                margin-bottom: 300px;
+            }
         }
 
         @media (max-width: 768px) {
-            .filters-section .row > div {
-                margin-bottom: 10px;
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            color: white;
+            max-width: 350px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        .toast-success {
+            background: var(--success-color);
+        }
+
+        .toast-error {
+            background: var(--danger-color);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="order-list-container">
-        <!-- Header Section -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="d-inline">POS Orders</h3>
-                <button class="btn btn-default refresh-btn" id="refresh_list">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
+    <div class="pos-container">
+        <!-- Left Sidebar -->
+        <div class="order-sidebar">
+            <div class="order-header">
+                <h2>New Order</h2>
+                <p class="text-muted">Order #<span id="order-number">...</span></p>
             </div>
-            <button class="btn btn-primary" id="new_order">
-                <i class="fas fa-plus"></i> New Order
-            </button>
-        </div>
 
-        <!-- Filters Section -->
-        <div class="filters-section">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Branch</label>
-                        <select class="form-control" id="branch_filter"></select>
-                    </div>
+            <div class="order-info">
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-building"></i>
+                        Branch
+                    </label>
+                    <select class="form-control" id="branch">
+                        <!-- Dynamically populated -->
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select class="form-control" id="status_filter">
-                            <option value="">All Status</option>
-                            <option value="Draft">Draft</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Ready for Billing">Ready for Billing</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-utensils"></i>
+                        Table
+                    </label>
+                    <select class="form-control" id="table">
+                        <!-- Dynamically populated -->
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Order Type</label>
-                        <select class="form-control" id="order_type_filter">
-                            <option value="">All Types</option>
-                            <option value="Dine In">Dine In</option>
-                            <option value="Takeaway">Takeaway</option>
-                            <option value="Delivery">Delivery</option>
-                        </select>
-                    </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-shopping-bag"></i>
+                        Order Type
+                    </label>
+                    <select class="form-control" id="order-type">
+                        <option value="Dine In">Dine In</option>
+                        <option value="Takeaway">Takeaway</option>
+                        <option value="Delivery">Delivery</option>
+                    </select>
                 </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label>Date</label>
-                        <input type="date" class="form-control" id="date_filter">
-                    </div>
+
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-user"></i>
+                        Customer
+                    </label>
+                    <input type="text" class="form-control" id="customer" placeholder="Search customer...">
                 </div>
             </div>
+
+            <div class="cart-items" id="cart-items">
+                <!-- Cart items will be dynamically added here -->
+            </div>
+
+            <div class="order-summary">
+                <div class="summary-item">
+                    <span>Subtotal</span>
+                    <span id="subtotal">₹0.00</span>
+                </div>
+                <div class="summary-item">
+                    <span>Tax (18%)</span>
+                    <span id="tax">₹0.00</span>
+                </div>
+                <div class="summary-item total">
+                    <span>Total</span>
+                    <span id="total">₹0.00</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="cancelOrder()">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="saveOrder()">
+                        <i class="fas fa-save"></i>
+                        Save Order
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- List Table -->
-        <div class="list-table">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Branch</th>
-                        <th>Table</th>
-                        <th>Order Type</th>
-                        <th>Customer</th>
-                        <th>Status</th>
-                        <th>Total Amount</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="orders_list"></tbody>
-            </table>
-            <div id="pagination" class="text-center p-3"></div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="categories" id="categories">
+                <!-- Categories will be dynamically added here -->
+            </div>
+
+            <div class="items-grid" id="items-grid">
+                <!-- Items will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Templates -->
+    <div class="modal" id="quantity-modal">
+        <div class="modal-content">
+            <h3>Set Quantity</h3>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" class="form-control" id="quantity-input" min="1" value="1">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea class="form-control" id="item-notes" rows="2"></textarea>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('quantity-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
+            </div>
         </div>
     </div>
 
     <script>
+        let currentOrder = {
+            items: [],
+            total: 0,
+            branch: '',
+            table: '',
+            orderType: 'Dine In',
+            customer: ''
+        };
+
         frappe.ready(function() {
-            class POSOrderList {
-                constructor() {
-                    this.filters = {
-                        branch: '',
-                        status: '',
-                        order_type: '',
-                        date: '',
-                        start: 0,
-                        page_length: 20
-                    };
-                    this.userBranches = [];
-                    this.initialize();
-                }
+            initializePOS();
+        });
 
-                async initialize() {
-                    if (!this.checkPermissions()) return;
-                    await this.loadUserPermissions();
-                    this.setupEventHandlers();
-                    this.loadOrders();
-                }
+        async function initializePOS() {
+            await loadBranches();
+            await loadCategories();
+            await loadItems();
+            setupEventListeners();
+            generateOrderNumber();
+        }
 
-                checkPermissions() {
-                    const allowedRoles = ['System Manager', 'Sales User', 'Waiter'];
-                    const hasPermission = allowedRoles.some(role => frappe.user.has_role(role));
-                    
-                    if (!hasPermission) {
-                        frappe.msgprint('You do not have permission to access this page');
-                        return false;
+        function generateOrderNumber() {
+            const timestamp = new Date().getTime().toString().slice(-6);
+            document.getElementById('order-number').textContent = `POS${timestamp}`;
+        }
+
+        async function loadBranches() {
+            try {
+                const result = await frappe.call({
+                    method: "frappe.client.get_list",
+                    args: {
+                        doctype: "Branch",
+                        fields: ["name"],
+                        filters: { is_active: 1 }
                     }
-                    return true;
-                }
+                });
 
-                async loadUserPermissions() {
-                    try {
-                        const result = await frappe.call({
-                            method: "frappe.client.get_list",
-                            args: {
-                                doctype: "User Permission",
-                                filters: {
-                                    user: frappe.session.user,
-                                    allow: "Branch"
-                                },
-                                fields: ["for_value"]
-                            }
-                        });
+                const branchSelect = document.getElementById('branch');
+                result.message.forEach(branch => {
+                    const option = new Option(branch.name, branch.name);
+                    branchSelect.add(option);
+                });
+            } catch (error) {
+                showToast('Error loading branches', 'error');
+            }
+        }
 
-                        this.userBranches = result.message?.map(p => p.for_value) || [];
-                        await this.setupBranchFilter();
-                    } catch (error) {
-                        console.error("Error loading permissions:", error);
-                        frappe.msgprint("Error loading branch permissions");
+        async function loadCategories() {
+            try {
+                const result = await frappe.call({
+                    method: "frappe.client.get_list",
+                    args: {
+                        doctype: "Item Group",
+                        fields: ["name"],
+                        filters: { is_group: 0 }
                     }
-                }
+                });
 
-                async setupBranchFilter() {
-                    const branchSelect = $('#branch_filter');
-                    branchSelect.empty();
+                const categoriesContainer = document.getElementById('categories');
+                result.message.forEach(category => {
+                    const button = document.createElement('button');
+                    button.className = 'category-btn';
+                    button.textContent = category.name;
+                    button.onclick = () => filterItems(category.name);
+                    categoriesContainer.appendChild(button);
+                });
+            } catch (error) {
+                showToast('Error loading categories', 'error');
+            }
+        }
 
-                    if (!frappe.user.has_role("System Manager")) {
-                        if (this.userBranches.length === 1) {
-                            branchSelect.append(`<option value="${this.userBranches[0]}">${this.userBranches[0]}</option>`);
-                            this.filters.branch = this.userBranches[0];
-                        } else if (this.userBranches.length > 1) {
-                            branchSelect.append('<option value="">All Permitted Branches</option>');
-                            this.userBranches.forEach(branch => {
-                                branchSelect.append(`<option value="${branch}">${branch}</option>`);
-                            });
-                        }
-                    } else {
-                        branchSelect.append('<option value="">All Branches</option>');
-                        const branches = await this.getAllBranches();
-                        branches.forEach(branch => {
-                            branchSelect.append(`<option value="${branch.name}">${branch.name}</option>`);
-                        });
+        async function loadItems() {
+            try {
+                const result = await frappe.call({
+                    method: "frappe.client.get_list",
+                    args: {
+                        doctype: "Item",
+                        fields: ["name", "item_name", "item_group", "standard_rate", "image"],
+                        filters: { is_sales_item: 1 }
                     }
-                }
+                });
 
-                setupEventHandlers() {
-                    $('#new_order').on('click', () => {
-                        window.location.href = '/pos_restaurant_itb/public/ui/pos_order';
-                    });
+                window.allItems = result.message;
+                renderItems(result.message);
+            } catch (error) {
+                showToast('Error loading items', 'error');
+            }
+        }
 
-                    $('#refresh_list').on('click', () => this.loadOrders());
+        function renderItems(items) {
+            const grid = document.getElementById('items-grid');
+            grid.innerHTML = '';
 
-                    $('#branch_filter, #status_filter, #order_type_filter, #date_filter').on('change', (e) => {
-                        const field = e.target.id.replace('_filter', '');
-                        this.filters[field] = e.target.value;
-                        this.loadOrders();
-                    });
-                }
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.onclick = () => showQuantityModal(item);
 
-                async loadOrders() {
-                    const filters = [];
+                card.innerHTML = `
+                    <img src="${item.image || '/assets/pos_restaurant_itb/images/no-image.png'}" 
+                         alt="${item.item_name}" 
+                         class="item-image">
+                    <div class="item-name">${item.item_name}</div>
+                    <div class="item-price">${frappe.format_currency(item.standard_rate)}</div>
+                `;
 
-                    // Apply filters based on user permissions
-                    if (!frappe.user.has_role("System Manager") && this.userBranches.length > 0) {
-                        filters.push(["branch", "in", this.userBranches]);
-                    }
+                grid.appendChild(card);
+            });
+        }
 
-                    // Apply UI filters
-                    if (this.filters.branch) filters.push(["branch", "=", this.filters.branch]);
-                    if (this.filters.status) filters.push(["status", "=", this.filters.status]);
-                    if (this.filters.order_type) filters.push(["order_type", "=", this.filters.order_type]);
-                    if (this.filters.date) filters.push(["creation", ">=", this.filters.date]);
+        function filterItems(category) {
+            const filteredItems = window.allItems.filter(item => item.item_group === category);
+            renderItems(filteredItems);
 
-                    try {
-                        const result = await frappe.call({
-                            method: "frappe.client.get_list",
-                            args: {
-                                doctype: "POS Order",
-                                fields: ["order_id", "branch", "table", "order_type", 
-                                        "customer", "status", "total_amount", "final_billed"],
-                                filters: filters,
-                                order_by: "creation desc",
-                                start: this.filters.start,
-                                page_length: this.filters.page_length
-                            }
-                        });
+            // Update active category
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === category);
+            });
+        }
 
-                        this.renderOrders(result.message || []);
-                    } catch (error) {
-                        console.error("Error loading orders:", error);
-                        frappe.msgprint("Error loading orders");
-                    }
-                }
+        let selectedItem = null;
 
-                renderOrders(orders) {
-                    const tbody = $('#orders_list');
-                    tbody.empty();
+        function showQuantityModal(item) {
+            selectedItem = item;
+            document.getElementById('quantity-modal').style.display = 'flex';
+            document.getElementById('quantity-input').value = '1';
+            document.getElementById('item-notes').value = '';
+        }
 
-                    if (orders.length === 0) {
-                        tbody.append(`
-                            <tr>
-                                <td colspan="8" class="text-center">No orders found</td>
-                            </tr>
-                        `);
-                        return;
-                    }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
 
-                    orders.forEach(order => {
-                        const row = `
-                            <tr>
-                                <td>${order.order_id}</td>
-                                <td>${order.branch}</td>
-                                <td>${order.table || '-'}</td>
-                                <td>${order.order_type || 'Dine In'}</td>
-                                <td>${order.customer || '-'}</td>
-                                <td>
-                                    <span class="status-badge status-${order.status.toLowerCase().replace(/\s+/g, '-')}">
-                                        ${order.status}
-                                    </span>
-                                </td>
-                                <td>${frappe.format_currency(order.total_amount)}</td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a href="/pos_restaurant_itb/public/ui/pos_order?name=${order.order_id}" 
-                                           class="btn btn-xs btn-primary">
-                                            Edit
-                                        </a>
-                                        ${!order.final_billed ? `
-                                            <button class="btn btn-xs btn-default"
-                                                    onclick="window.posOrderList.printKOT('${order.order_id}')">
-                                                KOT
-                                            </button>
-                                        ` : ''}
-                                        <button class="btn btn-xs btn-default"
-                                                onclick="window.posOrderList.printReceipt('${order.order_id}')">
-                                            Receipt
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                        tbody.append(row);
-                    });
-                }
+        function addToCart() {
+            const quantity = parseInt(document.getElementById('quantity-input').value);
+            const notes = document.getElementById('item-notes').value;
 
-                async getAllBranches() {
-                    const result = await frappe.call({
-                        method: "frappe.client.get_list",
-                        args: {
-                            doctype: "Branch",
-                            fields: ["name"],
-                            filters: { is_active: 1 }
-                        }
-                    });
-                    return result.message || [];
-                }
-
-                async printKOT(orderId) {
-                    const result = await frappe.call({
-                        method: "pos_restaurant_itb.api.print_kot",
-                        args: { name: orderId }
-                    });
-
-                    if (result.message) {
-                        const w = window.open();
-                        w.document.write(result.message);
-                        w.document.close();
-                    }
-                }
-
-                async printReceipt(orderId) {
-                    const result = await frappe.call({
-                        method: "pos_restaurant_itb.api.print_receipt",
-                        args: { name: orderId }
-                    });
-
-                    if (result.message) {
-                        const w = window.open();
-                        w.document.write(result.message);
-                        w.document.close();
-                    }
-                }
+            if (quantity < 1) {
+                showToast('Please enter a valid quantity', 'error');
+                return;
             }
 
-            // Initialize the list view
-            window.posOrderList = new POSOrderList();
-        });
+            const cartItem = {
+                item: selectedItem.name,
+                item_name: selectedItem.item_name,
+                quantity: quantity,
+                rate: selectedItem.standard_rate,
+                notes: notes,
+                amount: quantity * selectedItem.standard_rate
+            };
+
+            currentOrder.items.push(cartItem);
+            updateCart();
+            closeModal('quantity-modal');
+            showToast('Item added to cart', 'success');
+        }
+
+        function updateCart() {
+            const cartContainer = document.getElementById('cart-items');
+            cartContainer.innerHTML = '';
+
+            currentOrder.items.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.item_name}</div>
+                        <div class="cart-item-price">${frappe.format_currency(item.rate)} × ${item.quantity}</div>
+                        ${item.notes ? `<small class="text-muted">${item.notes}</small>` : ''}
+                    </div>
+                    <div class="quantity-control">
+                        <button class="quantity-btn" onclick="updateItemQuantity(${index}, -1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span>${item.quantity}</span>
+                        <button class="quantity-btn" onclick="updateItemQuantity(${index}, 1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="quantity-btn" onclick="removeItem(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                cartContainer.appendChild(itemElement);
+            });
+
+            updateOrderSummary();
+        }
+
+        function updateItemQuantity(index, change) {
+            const item = currentOrder.items[index];
+            const newQuantity = item.quantity + change;
+
+            if (newQuantity < 1) {
+                removeItem(index);
+                return;
+            }
+
+            item.quantity = newQuantity;
+            item.amount = item.quantity * item.rate;
+            updateCart();
+        }
+
+        function removeItem(index) {
+            currentOrder.items.splice(index, 1);
+            updateCart();
+            showToast('Item removed from cart', 'success');
+        }
+
+        function updateOrderSummary() {
+            const subtotal = currentOrder.items.reduce((sum, item) => sum + item.amount, 0);
+            const tax = subtotal * 0.18; // 18% tax
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = frappe.format_currency(subtotal);
+            document.getElementById('tax').textContent = frappe.format_currency(tax);
+            document.getElementById('total').textContent = frappe.format_currency(total);
+
+            currentOrder.total = total;
+        }
+
+        async function saveOrder() {
+            if (currentOrder.items.length === 0) {
+                showToast('Please add items to the order', 'error');
+                return;
+            }
+
+            try {
+                const orderDoc = {
+                    doctype: 'POS Order',
+                    order_id: document.getElementById('order-number').textContent,
+                    branch: document.getElementById('branch').value,
+                    table: document.getElementById('table').value,
+                    order_type: document.getElementById('order-type').value,
+                    customer: document.getElementById('customer').value,
+                    total_amount: currentOrder.total,
+                    status: 'Draft',
+                    pos_order_items: currentOrder.items.map(item => ({
+                        item: item.item,
+                        quantity: item.quantity,
+                        rate: item.rate,
+                        amount: item.amount,
+                        notes: item.notes
+                    }))
+                };
+
+                await frappe.call({
+                    method: 'frappe.client.insert',
+                    args: {
+                        doc: orderDoc
+                    },
+                    callback: function(r) {
+                        if (!r.exc) {
+                            showToast('Order saved successfully', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
+                            }, 1000);
+                        }
+                    }
+                });
+            } catch (error) {
+                showToast('Error saving order', 'error');
+                console.error(error);
+            }
+        }
+
+        function cancelOrder() {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                window.location.href = '/pos_restaurant_itb/public/ui/pos_order_list.html';
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('branch').addEventListener('change', async (e) => {
+                const branch = e.target.value;
+                await loadTables(branch);
+            });
+
+            // Add more event listeners as needed
+        }
+
+        async function loadTables(branch) {
+            try {
+                const result = await frappe.call({
+                    method: "frappe.client.get_list",
+                    args: {
+                        doctype: "POS Table",
+                        fields: ["name", "table_number"],
+                        filters: { branch: branch, is_active: 1 }
+                    }
+                });
+
+                const tableSelect = document.getElementById('table');
+                tableSelect.innerHTML = '<option value="">Select Table</option>';
+                result.message.forEach(table => {
+                    const option = new Option(`Table ${table.table_number}`, table.name);
+                    tableSelect.add(option);
+                });
+            } catch (error) {
+                showToast('Error loading tables', 'error');
+            }
+        }
     </script>
 </body>
 </html>
