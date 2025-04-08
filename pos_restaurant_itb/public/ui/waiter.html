@@ -1,311 +1,390 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>POS Waiter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .section { margin-bottom: 20px; }
-    label { display: block; margin: 5px 0 2px; }
-    input, select, button { padding: 5px; width: 100%; max-width: 400px; }
-    .item-row { margin: 5px 0; padding: 5px; border: 1px solid #ddd; }
-    .sent { color: green; font-weight: bold; }
-    .pending { color: red; }
-    #main_ui { display: none; }
-    #btn_served { display: none; margin-top: 10px; background: #1d4ed8; color: white; }
-  </style>
+    <title>POS Order - Restaurant Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Frappe framework dependencies -->
+    <script src="/assets/frappe/js/frappe.min.js"></script>
+    <link href="/assets/frappe/css/frappe.min.css" rel="stylesheet">
+    <!-- Additional CSS -->
+    <style>
+        :root {
+            --primary-color: #2490ef;
+            --secondary-color: #6c757d;
+        }
+        
+        body {
+            font-family: sans-serif;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .order-header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .order-items {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        
+        .table {
+            width: 100%;
+            margin-bottom: 1rem;
+            border-collapse: collapse;
+        }
+        
+        .table th, .table td {
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+        }
+        
+        .cancelled-item {
+            background-color: #fff3f3;
+            text-decoration: line-through;
+        }
+        
+        .kot-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .kot-status.served {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .kot-status.cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+    </style>
 </head>
 <body>
-
-<!-- LOGIN -->
-<div id="login_ui">
-  <h2>Login</h2>
-  <div class="section">
-    <label for="username">Username</label>
-    <input type="text" id="username">
-  </div>
-  <div class="section">
-    <label for="password">Password</label>
-    <input type="password" id="password">
-  </div>
-  <div class="section">
-    <button onclick="doLogin()">Login</button>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div id="main_ui">
-  <div class="section" id="branch_select_container" style="display:none;">
-    <label>Select Branch</label>
-    <select id="branch_select"></select>
-  </div>
-
-  <div class="section">
-    <h3>Meja Aktif</h3>
-    <div id="table_list"></div>
-    <button onclick="newOrderPrompt()">+ Buat Order Baru</button>
-  </div>
-
-  <div id="order_section" style="display:none;">
-    <h3>Order</h3>
-    <div class="section">
-      <strong>Meja: </strong><span id="current_table_display"></span><br>
-      <strong>Order ID: </strong><span id="current_order_display"></span>
+    <div class="order-header">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label required-field">Order ID</label>
+                    <input type="text" class="form-control" id="order_id" required readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Table</label>
+                    <select class="form-control" id="table">
+                        <option value="">Select Table</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required-field">Branch</label>
+                    <select class="form-control" id="branch" required>
+                        <option value="">Select Branch</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="form-label">Order Type</label>
+                    <select class="form-control" id="order_type">
+                        <option value="Dine In">Dine In</option>
+                        <option value="Takeaway">Takeaway</option>
+                        <option value="Delivery">Delivery</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Customer</label>
+                    <select class="form-control" id="customer">
+                        <option value="">Select Customer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <span class="status-badge badge bg-warning" id="status">Draft</span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="section" id="new_item_form">
-      <h4>Tambah Item</h4>
-      <label>Item Code</label>
-      <input type="text" id="item_code">
-      <label>Item Name</label>
-      <input type="text" id="item_name">
-      <label>Qty</label>
-      <input type="number" id="qty" value="1">
-      <label>Note (opsional)</label>
-      <input type="text" id="note">
-      <button onclick="addItem()">Tambah</button>
+    <div class="order-items">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4>Order Items</h4>
+            <button class="btn btn-primary" id="add_item">Add Item</button>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Attributes</th>
+                        <th>KOT Status</th>
+                        <th>Note</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="items_table"></tbody>
+            </table>
+        </div>
+
+        <div class="total-section bg-light p-3 rounded mt-3">
+            <div class="row">
+                <div class="col-md-8">
+                    <div id="kot_info"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex justify-content-between">
+                        <strong>Total Amount:</strong>
+                        <span id="total_amount" class="h5 mb-0">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="item_list" class="section"></div>
-
-    <div class="section">
-      <button onclick="saveOrder()">💾 Simpan</button>
-      <button onclick="sendToKitchen()">🚀 Kirim ke Dapur</button>
-      <button id="btn_served" onclick="markAsServed()">✅ Tandai Sudah Diantar</button>
+    <div class="action-buttons d-flex justify-content-end mt-3">
+        <button class="btn btn-secondary me-2" id="save_draft">Save as Draft</button>
+        <button class="btn btn-primary me-2" id="send_to_kitchen">Send to Kitchen</button>
+        <button class="btn btn-info me-2" id="print_kot">Print KOT</button>
+        <button class="btn btn-success me-2" id="print_receipt">Print Receipt</button>
+        <button class="btn btn-warning me-2" id="mark_all_served">Mark All Served</button>
+        <button class="btn btn-danger" id="cancel_order">Cancel Order</button>
     </div>
-  </div>
-</div>
 
-<script>
-let currentItems = [];
-let currentOrderId = "";
-let currentTable = "";
-let loggedInUser = "";
-let selectedBranch = "";
+    <!-- Item Modal -->
+    <div class="modal" id="itemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add/Edit Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label required-field">Item Code</label>
+                                <select class="form-control" id="modal_item_code" required>
+                                    <option value="">Select Item</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label required-field">Quantity</label>
+                                <input type="number" class="form-control" id="modal_qty" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Note</label>
+                                <textarea class="form-control" id="modal_note" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="dynamic_attributes_container">
+                                <!-- Dynamic attributes will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="confirm_item">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-let autoRefreshInterval = null;
+    <!-- Cancel Item Modal -->
+    <div class="modal" id="cancelItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancel Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label required-field">Cancellation Note</label>
+                        <textarea class="form-control" id="cancellation_note" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" id="confirm_cancel">Cancel Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function startAutoRefresh() {
-  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-  autoRefreshInterval = setInterval(() => {
-    if (currentOrderId) loadOrder();
-  }, 10000); // auto-refresh tiap 10 detik
-}
+    <!-- Include Frappe scripts -->
+    <script>
+        frappe.ready(function() {
+            // Initialize the POS Order page
+            class POSOrder {
+                constructor() {
+                    this.bindEvents();
+                    this.setupFilters();
+                }
 
+                bindEvents() {
+                    $('#table').on('change', () => this.onTableChange());
+                    $('#send_to_kitchen').on('click', () => this.sendToKitchen());
+                    $('#mark_all_served').on('click', () => this.markAllServed());
+                    $(document).on('click', '.cancel-item-btn', (e) => this.showCancelDialog(e));
+                }
 
-async function doLogin() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+                setupFilters() {
+                    // Setup branch filter
+                    frappe.call({
+                        method: 'frappe.client.get_list',
+                        args: {
+                            doctype: 'Branch',
+                            fields: ['name'],
+                            filters: { is_active: 1 }
+                        },
+                        callback: (r) => {
+                            const branches = r.message || [];
+                            this.populateBranchSelect(branches);
+                        }
+                    });
 
-  const res = await fetch("/api/method/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `usr=${username}&pwd=${password}`
-  });
+                    // Setup table filter based on branch
+                    $('#branch').on('change', (e) => {
+                        this.loadTables(e.target.value);
+                    });
+                }
 
-  const data = await res.json();
-  if (data.message === "Logged In") {
-    loggedInUser = username;
-    document.getElementById("login_ui").style.display = "none";
-    document.getElementById("main_ui").style.display = "block";
-    checkRoleAndLoadBranches();
-  } else {
-    alert("Login gagal.");
-  }
-}
+                async sendToKitchen() {
+                    const orderId = $('#order_id').val();
+                    if (!orderId) return;
 
-async function checkRoleAndLoadBranches() {
-  const res = await fetch(`/api/resource/User/${loggedInUser}`);
-  const userData = await res.json();
-  const roles = userData.data.roles.map(r => r.role);
+                    try {
+                        const result = await frappe.call({
+                            method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
+                            args: { pos_order: orderId }
+                        });
 
-  if (!roles.includes("System Manager")) {
-    const permRes = await fetch(`/api/method/frappe.client.get_list`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        doctype: "User Permission",
-        filters: { user: loggedInUser, allow: "Branch" },
-        fields: ["for_value"]
-      })
-    });
+                        if (result.message) {
+                            // Show KOT print preview
+                            const printWindow = window.open('', '_blank');
+                            printWindow.document.write(result.message);
+                            printWindow.document.close();
+                            
+                            // Refresh the page
+                            location.reload();
+                        }
+                    } catch (error) {
+                        frappe.msgprint({
+                            title: __('Error'),
+                            indicator: 'red',
+                            message: __(error.message || 'Failed to send to kitchen')
+                        });
+                    }
+                }
 
-    const permData = await permRes.json();
-    const allowed = permData.message.map(x => x.for_value);
-    if (!allowed.length) return alert("Tidak ada cabang yang diizinkan.");
+                async markAllServed() {
+                    const orderId = $('#order_id').val();
+                    if (!orderId) return;
 
-    const select = document.getElementById("branch_select");
-    select.innerHTML = "";
-    allowed.forEach(branch => {
-      const opt = document.createElement("option");
-      opt.value = branch;
-      opt.textContent = branch;
-      select.appendChild(opt);
-    });
+                    frappe.confirm(
+                        'Are you sure you want to mark all items as served?',
+                        async () => {
+                            try {
+                                const result = await frappe.call({
+                                    method: 'pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served',
+                                    args: { pos_order_id: orderId }
+                                });
 
-    document.getElementById("branch_select_container").style.display = "block";
-    selectedBranch = allowed[0];
-    select.addEventListener("change", () => {
-      selectedBranch = select.value;
-      loadActiveTables();
-    });
-  }
-  loadActiveTables();
-}
+                                if (result.message) {
+                                    frappe.show_alert({
+                                        message: result.message,
+                                        indicator: 'green'
+                                    });
+                                    location.reload();
+                                }
+                            } catch (error) {
+                                frappe.msgprint({
+                                    title: __('Error'),
+                                    indicator: 'red',
+                                    message: __(error.message || 'Failed to mark items as served')
+                                });
+                            }
+                        }
+                    );
+                }
 
-async function loadActiveTables() {
-  const res = await fetch(`/api/resource/POS Order?fields=["name","table","status","branch"]&limit_page_length=50`);
-  const data = await res.json();
-  const list = document.getElementById("table_list");
-  list.innerHTML = "";
+                showCancelDialog(event) {
+                    const row = $(event.target).closest('tr');
+                    const itemName = row.data('item-name');
 
-  data.data.forEach(order => {
-    if (order.branch !== selectedBranch) return;
-    const btn = document.createElement("button");
-    btn.textContent = `Meja ${order.table} (${order.status})`;
-    btn.onclick = () => { currentOrderId = order.name; loadOrder(); };
-    list.appendChild(btn);
-  });
-}
+                    frappe.prompt([
+                        {
+                            label: 'Cancellation Note',
+                            fieldname: 'reason',
+                            fieldtype: 'Small Text',
+                            reqd: 1
+                        }
+                    ],
+                    (values) => {
+                        this.cancelItem(itemName, values.reason);
+                    },
+                    'Cancel Item',
+                    'Confirm'
+                    );
+                }
 
-function newOrderPrompt() {
-  const meja = prompt("Nomor Meja?");
-  if (!meja) return;
+                async cancelItem(itemName, reason) {
+                    try {
+                        const result = await frappe.call({
+                            method: 'pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item',
+                            args: {
+                                item_name: itemName,
+                                reason: reason
+                            }
+                        });
 
-  clearInterval(autoRefreshInterval);
+                        if (result.message) {
+                            frappe.show_alert({
+                                message: result.message.message,
+                                indicator: 'green'
+                            });
+                            location.reload();
+                        }
+                    } catch (error) {
+                        frappe.msgprint({
+                            title: __('Error'),
+                            indicator: 'red',
+                            message: __(error.message || 'Failed to cancel item')
+                        });
+                    }
+                }
+            }
 
-  currentTable = meja;
-  currentItems = [];
-  currentOrderId = "";
-  document.getElementById("order_section").style.display = "block";
-  document.getElementById("current_table_display").textContent = meja;
-  document.getElementById("current_order_display").textContent = "-";
-  document.getElementById("item_list").innerHTML = "";
-  document.getElementById("btn_served").style.display = "none";
-}
-
-function addItem() {
-  const item = {
-    item_code: document.getElementById("item_code").value,
-    item_name: document.getElementById("item_name").value,
-    qty: parseFloat(document.getElementById("qty").value),
-    note: document.getElementById("note").value,
-    sent_to_kitchen: 0
-  };
-  currentItems.push(item);
-  renderItems();
-}
-
-async function saveOrder() {
-  if (!currentTable || !selectedBranch) return alert("Isi data terlebih dahulu.");
-
-  const payload = {
-    doctype: "POS Order",
-    branch: selectedBranch,
-    table: currentTable,
-    pos_order_items: currentItems
-  };
-
-  const res = await fetch("/api/resource/POS Order" + (currentOrderId ? "/" + currentOrderId : ""), {
-    method: currentOrderId ? "PUT" : "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-  if (data.data) {
-    currentOrderId = data.data.name;
-    document.getElementById("current_order_display").textContent = currentOrderId;
-    alert("Order berhasil disimpan.");
-    loadActiveTables();
-  } else {
-    alert("Gagal menyimpan order.");
-  }
-}
-
-async function loadOrder() {
-  const res = await fetch(`/api/resource/POS Order/${currentOrderId}`);
-  const data = await res.json();
-  if (!data.data) return alert("Order tidak ditemukan.");
-
-  currentItems = data.data.pos_order_items || [];
-  currentTable = data.data.table;
-
-  document.getElementById("current_table_display").textContent = currentTable;
-  document.getElementById("current_order_display").textContent = currentOrderId;
-  document.getElementById("order_section").style.display = "block";
-  renderItems();
-
-  startAutoRefresh();
-}
-
-function renderItems() {
-  const container = document.getElementById("item_list");
-  container.innerHTML = "";
-  let allReady = true;
-
-  currentItems.forEach(item => {
-    const isSent = item.sent_to_kitchen;
-    const kotStatus = item.kot_status || (isSent ? "Sent" : "Pending");
-
-    const row = document.createElement("div");
-    row.className = "item-row";
-    row.innerHTML = `
-      <strong>${item.item_name}</strong> (x${item.qty})<br>
-      ${item.note ? "Note: " + item.note + "<br>" : ""}
-      Status: ${isSent ? `<span class="sent">${kotStatus}</span>` : `<span class="pending">${kotStatus}</span>`}
-    `;
-    container.appendChild(row);
-
-    // Cek apakah semua item "Ready"
-    if (isSent && kotStatus !== "Ready") {
-      allReady = false;
-    }
-  });
-
-  const btnServed = document.getElementById("btn_served");
-  btnServed.style.display = (allReady && currentItems.length > 0) ? "inline-block" : "none";
-}
-
-async function sendToKitchen() {
-  if (!currentOrderId) return alert("Order belum disimpan.");
-  const res = await fetch("/api/method/pos_restaurant_itb.api.send_to_kitchen", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pos_order: currentOrderId })
-  });
-  const data = await res.json();
-  if (data.message) {
-    alert("Dikirim ke dapur: " + data.message);
-    loadOrder();
-  } else {
-    alert("Gagal kirim.");
-  }
-}
-
-async function markAsServed() {
-  const confirmMark = confirm("Tandai semua item sudah diantar dan ubah status ke 'Served'?");
-  if (!confirmMark) return;
-
-  const res = await fetch(`/api/resource/Kitchen Display Order?filters=[["kot_id","=","${currentOrderId}"]]`);
-  const data = await res.json();
-  if (!data.data || !data.data.length) return alert("KDS tidak ditemukan.");
-
-  const kdsDoc = data.data[0];
-  const update = await fetch(`/api/resource/Kitchen Display Order/${kdsDoc.name}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "Served" })
-  });
-
-  const updated = await update.json();
-  if (updated.data) {
-    alert("Berhasil ditandai sebagai 'Served'.");
-    loadOrder();
-  } else {
-    alert("Gagal update status.");
-  }
-}
-</script>
+            // Initialize POS Order
+            window.posOrder = new POSOrder();
+        });
+    </script>
 </body>
 </html>
