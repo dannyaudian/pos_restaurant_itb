@@ -1,1 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POS Order List</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/assets/css/frappe.css" rel="stylesheet">
+    <style>
+        .order-list-container {
+            padding: 20px;
+        }
+        
+        .filters-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .list-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-draft { background: #fff3cd; color: #856404; }
+        .status-in-progress { background: #cce5ff; color: #004085; }
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-billed { background: #d6d8db; color: #383d41; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="order-list-container">
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>POS Orders</h3>
+            <button class="btn btn-primary" id="new_order">
+                <i class="fa fa-plus"></i> New Order
+            </button>
+        </div>
 
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Branch</label>
+                        <select class="form-control" id="branch_filter"></select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-control" id="status_filter">
+                            <option value="">All Status</option>
+                            <option value="Draft">Draft</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Ready for Billing">Ready for Billing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>From Date</label>
+                        <input type="date" class="form-control" id="date_filter">
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-secondary w-100" id="apply_filters">
+                        <i class="fa fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Table -->
+        <div class="list-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Branch</th>
+                        <th>Table</th>
+                        <th>Status</th>
+                        <th>Total Amount</th>
+                        <th>Created On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orders_list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/assets/frappe/js/frappe.min.js"></script>
+    <script>
+        frappe.ready(function() {
+            class POSOrderList {
+                constructor() {
+                    this.filters = {
+                        branch: '',
+                        status: '',
+                        date: ''
+                    };
+                    this.userBranches = [];
+                    this.initialize();
+                }
+
+                async initialize() {
+                    await this.loadUserPermissions();
+                    this.setupEventHandlers();
+                    this.loadOrders();
+                }
+
+                async loadUserPermissions() {
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.client.get_list",
+                            args: {
+                                doctype: "User Permission",
+                                filters: {
+                                    user: frappe.session.user,
+                                    allow: "Branch"
+                                },
+                                fields: ["for_value"]
+                            }
+                        });
+
+                        this.userBranches = result.message?.map(p => p.for_value) || [];
+                        
+                        // Populate branch filter
+                        const branchSelect = $('#branch_filter');
+                        branchSelect.empty();
+
+                        if (!frappe.user.has_role("System Manager")) {
+                            if (this.userBranches.length === 1) {
+                                branchSelect.append(`<option value="${this.userBranches[0]}">${this.userBranches[0]}</option>`);
+                                this.filters.branch = this.userBranches[0];
+                            } else if (this.userBranches.length > 1) {
+                                branchSelect.append('<option value="">All Permitted Branches</option>');
+                                this.userBranches.forEach(branch => {
+                                    branchSelect.append(`<option value="${branch}">${branch}</option>`);
+                                });
+                            }
+                        } else {
+                            // System Manager sees all branches
+                            branchSelect.append('<option value="">All Branches</option>');
+                            const branches = await this.getAllBranches();
+                            branches.forEach(branch => {
+                                branchSelect.append(`<option value="${branch.name}">${branch.name}</option>`);
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error loading permissions:", error);
+                        frappe.msgprint("Error loading branch permissions");
+                    }
+                }
+
+                setupEventHandlers() {
+                    // New Order button
+                    $('#new_order').on('click', () => {
+                        window.location.href = '/pos_order/new';
+                    });
+
+                    // Filter handlers
+                    $('#apply_filters').on('click', () => {
+                        this.filters.branch = $('#branch_filter').val();
+                        this.filters.status = $('#status_filter').val();
+                        this.filters.date = $('#date_filter').val();
+                        this.loadOrders();
+                    });
+                }
+
+                async loadOrders() {
+                    const filters = [
+                        ["status", "not in", ["Final Billed", "Cancelled"]]
+                    ];
+
+                    if (this.filters.branch) {
+                        filters.push(["branch", "=", this.filters.branch]);
+                    } else if (!frappe.user.has_role("System Manager") && this.userBranches.length > 0) {
+                        filters.push(["branch", "in", this.userBranches]);
+                    }
+
+                    if (this.filters.status) {
+                        filters.push(["status", "=", this.filters.status]);
+                    }
+
+                    if (this.filters.date) {
+                        filters.push(["creation", ">=", this.filters.date]);
+                    }
+
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.client.get_list",
+                            args: {
+                                doctype: "POS Order",
+                                fields: ["name", "branch", "table", "status", "total_amount", "creation", "owner"],
+                                filters: filters,
+                                order_by: "creation desc"
+                            }
+                        });
+
+                        this.renderOrders(result.message || []);
+                    } catch (error) {
+                        console.error("Error loading orders:", error);
+                        frappe.msgprint("Error loading orders");
+                    }
+                }
+
+                renderOrders(orders) {
+                    const tbody = $('#orders_list');
+                    tbody.empty();
+
+                    orders.forEach(order => {
+                        const row = `
+                            <tr>
+                                <td>${order.name}</td>
+                                <td>${order.branch}</td>
+                                <td>${order.table || '-'}</td>
+                                <td>
+                                    <span class="status-badge status-${order.status.toLowerCase().replace(/\s+/g, '-')}">
+                                        ${order.status}
+                                    </span>
+                                </td>
+                                <td>${frappe.format_currency(order.total_amount)}</td>
+                                <td>${frappe.format_date(order.creation)}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="/pos_order/${order.name}" class="btn btn-sm btn-primary">
+                                            Edit
+                                        </a>
+                                        <button class="btn btn-sm btn-secondary" 
+                                                onclick="window.open('/printview?doctype=POS%20Order&name=${order.name}&format=Standard&no_letterhead=1&_lang=en')">
+                                            Print
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(row);
+                    });
+                }
+
+                async getAllBranches() {
+                    const result = await frappe.call({
+                        method: "frappe.client.get_list",
+                        args: {
+                            doctype: "Branch",
+                            fields: ["name"],
+                            filters: { is_active: 1 }
+                        }
+                    });
+                    return result.message || [];
+                }
+            }
+
+            // Initialize
+            window.posOrderList = new POSOrderList();
+        });
+    </script>
+</body>
+</html>
