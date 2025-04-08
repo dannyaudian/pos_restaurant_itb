@@ -1,0 +1,166 @@
+// Add this to your JavaScript file to handle kitchen and cancellation operations
+
+class KitchenOperations {
+    constructor() {
+        this.setupEventHandlers();
+    }
+
+    setupEventHandlers() {
+        // Send to Kitchen button handler
+        $('#send_to_kitchen').on('click', () => this.sendToKitchen());
+
+        // Cancel Item button handler
+        $('.cancel-item-btn').on('click', (e) => this.showCancelDialog(e));
+
+        // Mark all as served button handler
+        $('#mark_all_served').on('click', () => this.markAllServed());
+
+        // Confirm cancel item handler
+        $('#confirm_cancel_item').on('click', () => this.cancelItem());
+    }
+
+    async sendToKitchen() {
+        const posOrderId = $('#order_id').val();
+        if (!posOrderId) {
+            this.showError('Order ID tidak valid');
+            return;
+        }
+
+        try {
+            const result = await frappe.call({
+                method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
+                args: {
+                    pos_order: posOrderId
+                },
+                freeze: true,
+                freeze_message: 'Mengirim ke dapur...'
+            });
+
+            if (result.message) {
+                // Open KOT print preview in new window
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(result.message);
+                printWindow.document.close();
+                
+                // Refresh current page
+                location.reload();
+            }
+        } catch (error) {
+            this.showError(error.message || 'Gagal mengirim ke dapur');
+        }
+    }
+
+    showCancelDialog(event) {
+        const itemRow = $(event.target).closest('tr');
+        const itemName = itemRow.data('item-name');
+        const itemCode = itemRow.data('item-code');
+
+        // Check role first
+        frappe.call({
+            method: 'frappe.client.has_role',
+            args: {
+                role: 'Outlet Manager'
+            },
+            callback: (r) => {
+                if (!r.message) {
+                    frappe.msgprint('Hanya Outlet Manager yang boleh membatalkan item.');
+                    return;
+                }
+
+                // Show cancel dialog
+                const dialog = new frappe.ui.Dialog({
+                    title: 'Cancel Item',
+                    fields: [
+                        {
+                            label: 'Item Code',
+                            fieldname: 'item_code',
+                            fieldtype: 'Data',
+                            read_only: 1,
+                            default: itemCode
+                        },
+                        {
+                            label: 'Reason',
+                            fieldname: 'reason',
+                            fieldtype: 'Small Text',
+                            reqd: 1
+                        }
+                    ],
+                    primary_action_label: 'Cancel Item',
+                    primary_action: (values) => {
+                        this.cancelItem(itemName, values.reason);
+                        dialog.hide();
+                    }
+                });
+
+                dialog.show();
+            }
+        });
+    }
+
+    async cancelItem(itemName, reason) {
+        try {
+            const result = await frappe.call({
+                method: 'pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item',
+                args: {
+                    item_name: itemName,
+                    reason: reason
+                },
+                freeze: true,
+                freeze_message: 'Membatalkan item...'
+            });
+
+            if (result.message) {
+                frappe.show_alert({
+                    message: result.message.message,
+                    indicator: 'green'
+                });
+                location.reload();
+            }
+        } catch (error) {
+            this.showError(error.message || 'Gagal membatalkan item');
+        }
+    }
+
+    async markAllServed() {
+        const posOrderId = $('#order_id').val();
+        if (!posOrderId) return;
+
+        frappe.confirm('Apakah Anda yakin ingin menandai semua item sebagai "Served"?',
+            async () => {
+                try {
+                    const result = await frappe.call({
+                        method: 'pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served',
+                        args: {
+                            pos_order_id: posOrderId
+                        },
+                        freeze: true,
+                        freeze_message: 'Menandai semua item...'
+                    });
+
+                    if (result.message) {
+                        frappe.show_alert({
+                            message: result.message,
+                            indicator: 'green'
+                        });
+                        location.reload();
+                    }
+                } catch (error) {
+                    this.showError(error.message || 'Gagal menandai item');
+                }
+            }
+        );
+    }
+
+    showError(message) {
+        frappe.msgprint({
+            title: __('Error'),
+            indicator: 'red',
+            message: __(message)
+        });
+    }
+}
+
+// Initialize
+$(document).ready(() => {
+    window.kitchenOps = new KitchenOperations();
+});
