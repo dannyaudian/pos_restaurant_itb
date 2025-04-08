@@ -49,3 +49,11 @@ rest_apis = [
         "URI": "/api/method/pos_restaurant_itb.api"
     }
 ]
+
+
+website_route_rules = [
+    {
+        "from_route": "/pos_restaurant_itb/public/ui/login",
+        "to_route": "pos_restaurant_itb/public/ui/login.html"
+    }
+]
