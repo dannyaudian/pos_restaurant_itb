@@ -72,5 +72,8 @@ class POSOrder(Document):
 
 def validate_active_kitchen_station(branch):
     """Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu."""
-    if not frappe.db.exists("Kitchen Station", {"branch": branch, "status": "Active"}):
-        frappe.throw(_("🚫 Tidak ada kitchen station yang aktif untuk cabang ini."))
+    found = frappe.db.exists("Kitchen Station Setup", {"branch": branch, "status": "Active"})
+
+    if not found:
+        frappe.logger().warning(f"[DEBUG] Tidak ditemukan Kitchen Station aktif untuk cabang: '{branch}'")
+        frappe.msgprint(_("⚠️ Tidak ada Kitchen Station aktif untuk cabang ini (dev mode)."))
