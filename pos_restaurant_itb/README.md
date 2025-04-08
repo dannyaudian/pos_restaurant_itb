@@ -198,9 +198,33 @@ Frappe app untuk mengelola operasional restoran modern.
 ### kot_status_update.py
 - `update_kds_status_from_kot(kds_name)`
 
+### api.py
+- `update_kot_item_status(order, item_code, status)`
+- `get_new_order_id(branch)`
+- `create_kds_from_kot(kot_id)`
+- `create_kds_from_kot_manual(kot_id)`
+
+---
+
+## Custom Folder
+
+### pos_restaurant_itb/custom/pos_order
+Folder ini berisi custom script dan konfigurasi untuk POS Order di aplikasi Restaurant Management.
+
+### pos_restaurant_itb/custom/kot
+Folder ini berisi custom script dan konfigurasi untuk Kitchen Order Ticket (KOT) di aplikasi Restaurant Management.
+
+### pos_restaurant_itb/custom/pos_profile
+Folder ini berisi custom script dan konfigurasi untuk POS Profile di aplikasi Restaurant Management.
+
+### pos_restaurant_itb/custom/kitchen_station
+Folder ini berisi custom script dan konfigurasi untuk Kitchen Station di aplikasi Restaurant Management.
+
+### pos_restaurant_itb/custom/kitchen_display_order
+Folder ini berisi custom script dan konfigurasi untuk Kitchen Display Order di aplikasi Restaurant Management.
+
 ---
 
 ## ERD
 
 ![ERD - POS Restaurant ITB](./pos_restaurant_itb_erd.png)
-
