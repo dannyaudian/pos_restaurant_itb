@@ -7,20 +7,31 @@ class POSOrder(Document):
         if not self.branch:
             frappe.throw(_("Branch is required to generate Order ID."))
 
+        # Format: POS-YYYYMMDD-BRANCHCODE-####
+        today = frappe.utils.now().strftime("%Y%m%d")
+
         branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
         if not branch_code:
             frappe.throw(_("Branch must have a valid Branch Code."))
 
         branch_code = branch_code.strip().upper()
 
-        if not self.order_id:
-            count = frappe.db.count("POS Order", {"branch": self.branch}) + 1
-            self.order_id = f"POS-{branch_code}-{count:05d}"
-            frappe.msgprint(f"✅ Generated Order ID: {self.order_id}")
+        prefix = f"POS-{today}-{branch_code}"
 
-        self.name = self.order_id
+        last = frappe.db.sql(
+            """SELECT name FROM `tabPOS Order`
+               WHERE name LIKE %s
+               ORDER BY name DESC LIMIT 1""",
+            (prefix + "%",)
+        )
+
+        last_number = int(last[0][0].split("-")[-1]) if last else 0
+        self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
     def validate(self):
+        # Panggil fungsi validasi kitchen station aktif
+        validate_active_kitchen_station(self.branch)
+        
         if not self.pos_order_items:
             self.status = "Draft"
             self.total_amount = 0
@@ -49,3 +60,10 @@ class POSOrder(Document):
             frappe.msgprint(f"🔁 Status updated to: {self.status}")
 
         frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
+
+def validate_active_kitchen_station(branch):
+    """
+    Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu.
+    """
+    if not frappe.db.exists("Kitchen Station", {"branch": branch, "status": "Active"}):
+        frappe.throw(_("Tidak ada kitchen station yang aktif untuk cabang ini."))
