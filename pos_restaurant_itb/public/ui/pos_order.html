@@ -1,411 +1,366 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>POS Order</title>
+    <title>POS Orders</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Frappe framework dependencies -->
     <script src="/assets/frappe/js/frappe.min.js"></script>
-    <link href="/assets/frappe/css/frappe.min.css" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script src="/assets/js/control.min.js"></script>
+    <link href="/assets/frappe/css/frappe.css" rel="stylesheet">
     <style>
-        .order-container {
+        .order-list-container {
             padding: 20px;
+            max-width: 100%;
+            margin: 0 auto;
         }
         
-        .order-section {
+        .filters-section {
             background: white;
+            padding: 15px;
             border-radius: 8px;
-            padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        .item-row {
-            border-bottom: 1px solid #eee;
-            padding: 8px 0;
+        .list-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow-x: auto;
         }
         
-        .item-row:last-child {
-            border-bottom: none;
-        }
-        
-        .kot-status {
+        .status-badge {
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 500;
         }
         
-        .kot-new { background: #fff3cd; color: #856404; }
-        .kot-in-progress { background: #cce5ff; color: #004085; }
-        .kot-ready { background: #d4edda; color: #155724; }
-        .kot-served { background: #d6d8db; color: #383d41; }
-        .kot-cancelled { background: #f8d7da; color: #721c24; }
+        /* Status colors matching doctype status options */
+        .status-draft { background: #fff3cd; color: #856404; }
+        .status-in-progress { background: #cce5ff; color: #004085; }
+        .status-ready-for-billing { background: #d4edda; color: #155724; }
+        .status-paid { background: #c3e6cb; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
         
-        .cancelled-item {
-            background-color: #fff3f3;
-            text-decoration: line-through;
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .table td {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .refresh-btn {
+            margin-left: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .filters-section .row > div {
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="order-container">
+    <div class="order-list-container">
         <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 id="page_title">POS Order</h3>
             <div>
-                <button class="btn btn-secondary me-2" onclick="window.location.href='/pos_order_list'">
-                    <i class="fas fa-arrow-left"></i> Back to List
-                </button>
-                <button class="btn btn-primary" id="save_order">
-                    <i class="fas fa-save"></i> Save Order
+                <h3 class="d-inline">POS Orders</h3>
+                <button class="btn btn-default refresh-btn" id="refresh_list">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
+            <button class="btn btn-primary" id="new_order">
+                <i class="fas fa-plus"></i> New Order
+            </button>
         </div>
 
-        <!-- Order Details Section -->
-        <div class="order-section">
+        <!-- Filters Section -->
+        <div class="filters-section">
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label class="form-label">Table Number</label>
-                        <input type="text" class="form-control" id="table_no" required>
+                        <label>Branch</label>
+                        <select class="form-control" id="branch_filter"></select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label class="form-label">Order Type</label>
-                        <select class="form-control" id="order_type">
+                        <label>Status</label>
+                        <select class="form-control" id="status_filter">
+                            <option value="">All Status</option>
+                            <option value="Draft">Draft</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Ready for Billing">Ready for Billing</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Order Type</label>
+                        <select class="form-control" id="order_type_filter">
+                            <option value="">All Types</option>
                             <option value="Dine In">Dine In</option>
                             <option value="Takeaway">Takeaway</option>
                             <option value="Delivery">Delivery</option>
                         </select>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
-                        <label class="form-label">Customer</label>
-                        <input type="text" class="form-control" id="customer">
+                        <label>Date</label>
+                        <input type="date" class="form-control" id="date_filter">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Items Section -->
-        <div class="order-section">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4>Order Items</h4>
-                <button class="btn btn-primary btn-sm" id="add_item">
-                    <i class="fas fa-plus"></i> Add Item
-                </button>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table" id="items_table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Rate</th>
-                            <th>Amount</th>
-                            <th>Note</th>
-                            <th>KOT Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                            <td id="total_amount">0.00</td>
-                            <td colspan="3"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="order-section">
-            <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-secondary me-2" id="print_kot">
-                    <i class="fas fa-print"></i> Print KOT
-                </button>
-                <button class="btn btn-primary me-2" id="send_to_kitchen">
-                    <i class="fas fa-utensils"></i> Send to Kitchen
-                </button>
-                <button class="btn btn-success" id="mark_all_served">
-                    <i class="fas fa-check-circle"></i> Mark All Served
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Item Modal -->
-    <div class="modal" id="itemModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group mb-3">
-                        <label class="form-label">Item</label>
-                        <select class="form-control" id="modal_item_code" required>
-                            <option value="">Select Item</option>
-                        </select>
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-control" id="modal_qty" value="1" min="1">
-                    </div>
-                    <div class="form-group mb-3">
-                        <label class="form-label">Note</label>
-                        <textarea class="form-control" id="modal_note" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="confirm_add_item">Add</button>
-                </div>
-            </div>
+        <!-- List Table -->
+        <div class="list-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Branch</th>
+                        <th>Table</th>
+                        <th>Order Type</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Total Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orders_list"></tbody>
+            </table>
+            <div id="pagination" class="text-center p-3"></div>
         </div>
     </div>
 
     <script>
         frappe.ready(function() {
-            class POSOrder {
+            class POSOrderList {
                 constructor() {
-                    this.orderId = frappe.get_url_arg('name');
-                    this.items = [];
+                    this.filters = {
+                        branch: '',
+                        status: '',
+                        order_type: '',
+                        date: '',
+                        start: 0,
+                        page_length: 20
+                    };
+                    this.userBranches = [];
                     this.initialize();
                 }
 
                 async initialize() {
-                    await this.loadOrderData();
+                    if (!this.checkPermissions()) return;
+                    await this.loadUserPermissions();
                     this.setupEventHandlers();
-                    await this.loadItems();
+                    this.loadOrders();
                 }
 
-                async loadOrderData() {
-                    if (this.orderId) {
+                checkPermissions() {
+                    const allowedRoles = ['System Manager', 'Sales User', 'Waiter'];
+                    const hasPermission = allowedRoles.some(role => frappe.user.has_role(role));
+                    
+                    if (!hasPermission) {
+                        frappe.msgprint('You do not have permission to access this page');
+                        return false;
+                    }
+                    return true;
+                }
+
+                async loadUserPermissions() {
+                    try {
                         const result = await frappe.call({
-                            method: "pos_restaurant_itb.api.pos_order_controller.get_order_context",
-                            args: { order_name: this.orderId }
+                            method: "frappe.client.get_list",
+                            args: {
+                                doctype: "User Permission",
+                                filters: {
+                                    user: frappe.session.user,
+                                    allow: "Branch"
+                                },
+                                fields: ["for_value"]
+                            }
                         });
-                        
-                        if (result.message?.doc) {
-                            const order = result.message.doc;
-                            $('#page_title').text(`Edit Order - ${order.name}`);
-                            $('#table_no').val(order.table);
-                            $('#order_type').val(order.order_type);
-                            $('#customer').val(order.customer);
-                            this.items = order.items || [];
-                            this.renderItems();
+
+                        this.userBranches = result.message?.map(p => p.for_value) || [];
+                        await this.setupBranchFilter();
+                    } catch (error) {
+                        console.error("Error loading permissions:", error);
+                        frappe.msgprint("Error loading branch permissions");
+                    }
+                }
+
+                async setupBranchFilter() {
+                    const branchSelect = $('#branch_filter');
+                    branchSelect.empty();
+
+                    if (!frappe.user.has_role("System Manager")) {
+                        if (this.userBranches.length === 1) {
+                            branchSelect.append(`<option value="${this.userBranches[0]}">${this.userBranches[0]}</option>`);
+                            this.filters.branch = this.userBranches[0];
+                        } else if (this.userBranches.length > 1) {
+                            branchSelect.append('<option value="">All Permitted Branches</option>');
+                            this.userBranches.forEach(branch => {
+                                branchSelect.append(`<option value="${branch}">${branch}</option>`);
+                            });
                         }
+                    } else {
+                        branchSelect.append('<option value="">All Branches</option>');
+                        const branches = await this.getAllBranches();
+                        branches.forEach(branch => {
+                            branchSelect.append(`<option value="${branch.name}">${branch.name}</option>`);
+                        });
                     }
                 }
 
                 setupEventHandlers() {
-                    $('#add_item').on('click', () => this.showItemModal());
-                    $('#confirm_add_item').on('click', () => this.addItem());
-                    $('#send_to_kitchen').on('click', () => this.sendToKitchen());
-                    $('#mark_all_served').on('click', () => this.markAllServed());
-                    $('#save_order').on('click', () => this.saveOrder());
-                }
-
-                async loadItems() {
-                    const result = await frappe.call({
-                        method: "frappe.client.get_list",
-                        args: {
-                            doctype: "Item",
-                            fields: ["name", "item_name", "standard_rate"],
-                            filters: { is_sales_item: 1 }
-                        }
+                    $('#new_order').on('click', () => {
+                        window.location.href = '/pos_restaurant_itb/public/ui/pos_order';
                     });
 
-                    const select = $('#modal_item_code');
-                    select.empty().append('<option value="">Select Item</option>');
-                    
-                    result.message?.forEach(item => {
-                        select.append(`<option value="${item.name}" data-rate="${item.standard_rate}">
-                            ${item.item_name}
-                        </option>`);
+                    $('#refresh_list').on('click', () => this.loadOrders());
+
+                    $('#branch_filter, #status_filter, #order_type_filter, #date_filter').on('change', (e) => {
+                        const field = e.target.id.replace('_filter', '');
+                        this.filters[field] = e.target.value;
+                        this.loadOrders();
                     });
                 }
 
-                showItemModal() {
-                    $('#itemModal').modal('show');
+                async loadOrders() {
+                    const filters = [];
+
+                    // Apply filters based on user permissions
+                    if (!frappe.user.has_role("System Manager") && this.userBranches.length > 0) {
+                        filters.push(["branch", "in", this.userBranches]);
+                    }
+
+                    // Apply UI filters
+                    if (this.filters.branch) filters.push(["branch", "=", this.filters.branch]);
+                    if (this.filters.status) filters.push(["status", "=", this.filters.status]);
+                    if (this.filters.order_type) filters.push(["order_type", "=", this.filters.order_type]);
+                    if (this.filters.date) filters.push(["creation", ">=", this.filters.date]);
+
+                    try {
+                        const result = await frappe.call({
+                            method: "frappe.client.get_list",
+                            args: {
+                                doctype: "POS Order",
+                                fields: ["order_id", "branch", "table", "order_type", 
+                                        "customer", "status", "total_amount", "final_billed"],
+                                filters: filters,
+                                order_by: "creation desc",
+                                start: this.filters.start,
+                                page_length: this.filters.page_length
+                            }
+                        });
+
+                        this.renderOrders(result.message || []);
+                    } catch (error) {
+                        console.error("Error loading orders:", error);
+                        frappe.msgprint("Error loading orders");
+                    }
                 }
 
-                addItem() {
-                    const itemCode = $('#modal_item_code').val();
-                    const qty = parseInt($('#modal_qty').val()) || 1;
-                    const note = $('#modal_note').val();
-                    const rate = parseFloat($('#modal_item_code option:selected').data('rate')) || 0;
+                renderOrders(orders) {
+                    const tbody = $('#orders_list');
+                    tbody.empty();
 
-                    if (!itemCode) {
-                        frappe.msgprint('Please select an item');
+                    if (orders.length === 0) {
+                        tbody.append(`
+                            <tr>
+                                <td colspan="8" class="text-center">No orders found</td>
+                            </tr>
+                        `);
                         return;
                     }
 
-                    const item = {
-                        item_code: itemCode,
-                        item_name: $('#modal_item_code option:selected').text().trim(),
-                        qty: qty,
-                        rate: rate,
-                        amount: qty * rate,
-                        note: note,
-                        kot_status: 'New'
-                    };
-
-                    this.items.push(item);
-                    this.renderItems();
-                    $('#itemModal').modal('hide');
-                    this.resetItemModal();
-                }
-
-                renderItems() {
-                    const tbody = $('#items_table tbody');
-                    tbody.empty();
-
-                    let total = 0;
-                    this.items.forEach((item, index) => {
-                        if (!item.cancelled) {
-                            total += item.amount;
-                        }
-
+                    orders.forEach(order => {
                         const row = `
-                            <tr class="${item.cancelled ? 'cancelled-item' : ''}">
-                                <td>${item.item_name}</td>
-                                <td>${item.qty}</td>
-                                <td>${frappe.format_currency(item.rate)}</td>
-                                <td>${frappe.format_currency(item.amount)}</td>
-                                <td>${item.note || ''}</td>
+                            <tr>
+                                <td>${order.order_id}</td>
+                                <td>${order.branch}</td>
+                                <td>${order.table || '-'}</td>
+                                <td>${order.order_type || 'Dine In'}</td>
+                                <td>${order.customer || '-'}</td>
                                 <td>
-                                    <span class="kot-status kot-${item.kot_status.toLowerCase().replace(/\s+/g, '-')}">
-                                        ${item.kot_status}
+                                    <span class="status-badge status-${order.status.toLowerCase().replace(/\s+/g, '-')}">
+                                        ${order.status}
                                     </span>
                                 </td>
+                                <td>${frappe.format_currency(order.total_amount)}</td>
                                 <td>
-                                    ${!item.cancelled ? `
-                                        <button class="btn btn-danger btn-sm" onclick="window.posOrder.cancelItem(${index})">
-                                            <i class="fas fa-times"></i>
+                                    <div class="action-buttons">
+                                        <a href="/pos_restaurant_itb/public/ui/pos_order?name=${order.order_id}" 
+                                           class="btn btn-xs btn-primary">
+                                            Edit
+                                        </a>
+                                        ${!order.final_billed ? `
+                                            <button class="btn btn-xs btn-default"
+                                                    onclick="window.posOrderList.printKOT('${order.order_id}')">
+                                                KOT
+                                            </button>
+                                        ` : ''}
+                                        <button class="btn btn-xs btn-default"
+                                                onclick="window.posOrderList.printReceipt('${order.order_id}')">
+                                            Receipt
                                         </button>
-                                    ` : ''}
+                                    </div>
                                 </td>
                             </tr>
                         `;
                         tbody.append(row);
                     });
-
-                    $('#total_amount').text(frappe.format_currency(total));
                 }
 
-                async sendToKitchen() {
-                    if (!this.orderId) {
-                        frappe.msgprint('Please save the order first');
-                        return;
-                    }
-
-                    try {
-                        const result = await frappe.call({
-                            method: "pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen",
-                            args: { pos_order: this.orderId }
-                        });
-
-                        if (result.message) {
-                            const printWindow = window.open('', '_blank');
-                            printWindow.document.write(result.message);
-                            printWindow.document.close();
-                            await this.loadOrderData();
+                async getAllBranches() {
+                    const result = await frappe.call({
+                        method: "frappe.client.get_list",
+                        args: {
+                            doctype: "Branch",
+                            fields: ["name"],
+                            filters: { is_active: 1 }
                         }
-                    } catch (error) {
-                        frappe.msgprint(error.message);
+                    });
+                    return result.message || [];
+                }
+
+                async printKOT(orderId) {
+                    const result = await frappe.call({
+                        method: "pos_restaurant_itb.api.print_kot",
+                        args: { name: orderId }
+                    });
+
+                    if (result.message) {
+                        const w = window.open();
+                        w.document.write(result.message);
+                        w.document.close();
                     }
                 }
 
-                async markAllServed() {
-                    if (!this.orderId) {
-                        frappe.msgprint('Please save the order first');
-                        return;
+                async printReceipt(orderId) {
+                    const result = await frappe.call({
+                        method: "pos_restaurant_itb.api.print_receipt",
+                        args: { name: orderId }
+                    });
+
+                    if (result.message) {
+                        const w = window.open();
+                        w.document.write(result.message);
+                        w.document.close();
                     }
-
-                    try {
-                        const result = await frappe.call({
-                            method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
-                            args: { pos_order_id: this.orderId }
-                        });
-
-                        if (result.message) {
-                            frappe.show_alert({
-                                message: result.message,
-                                indicator: 'green'
-                            });
-                            await this.loadOrderData();
-                        }
-                    } catch (error) {
-                        frappe.msgprint(error.message);
-                    }
-                }
-
-                async saveOrder() {
-                    const orderData = {
-                        doctype: 'POS Order',
-                        table: $('#table_no').val(),
-                        order_type: $('#order_type').val(),
-                        customer: $('#customer').val(),
-                        items: this.items
-                    };
-
-                    try {
-                        const result = await frappe.call({
-                            method: "pos_restaurant_itb.api.pos_order_controller.create_or_update_order",
-                            args: {
-                                order_data: orderData,
-                                order_name: this.orderId
-                            }
-                        });
-
-                        if (result.message?.status === 'success') {
-                            frappe.show_alert({
-                                message: 'Order saved successfully',
-                                indicator: 'green'
-                            });
-                            
-                            if (!this.orderId) {
-                                window.location.href = `/pos_order/${result.message.order_name}`;
-                            }
-                        } else {
-                            frappe.msgprint(result.message?.message || 'Failed to save order');
-                        }
-                    } catch (error) {
-                        frappe.msgprint(error.message);
-                    }
-                }
-
-                cancelItem(index) {
-                    frappe.confirm(
-                        'Are you sure you want to cancel this item?',
-                        () => {
-                            this.items[index].cancelled = true;
-                            this.items[index].amount = 0;
-                            this.renderItems();
-                        }
-                    );
-                }
-
-                resetItemModal() {
-                    $('#modal_item_code').val('');
-                    $('#modal_qty').val(1);
-                    $('#modal_note').val('');
                 }
             }
 
-            // Initialize POS Order
-            window.posOrder = new POSOrder();
+            // Initialize the list view
+            window.posOrderList = new POSOrderList();
         });
     </script>
 </body>
