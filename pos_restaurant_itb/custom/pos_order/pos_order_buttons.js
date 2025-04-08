@@ -126,19 +126,11 @@ frappe.ui.form.on('POS Order', {
                 });
             }, __("Actions"));
         }
-
-        // Update status tombol
-        updateSendToKitchenButton(frm);
-    },
-    validate(frm) {
-        // Update status tombol sebelum save
-        updateSendToKitchenButton(frm);
     }
 });
 
 // 🔄 Fungsi Kirim ke Dapur (digunakan untuk draft dan tambahan)
 function sendToKitchen(frm) {
-    // Validasi sebelum kirim
     if (frm.doc.docstatus === 0) {
         frappe.msgprint({
             title: __("Validasi"),
@@ -157,7 +149,6 @@ function sendToKitchen(frm) {
         return;
     }
 
-    // Cek item yang belum dikirim
     const itemsToSend = frm.doc.pos_order_items.filter(
         item => !item.sent_to_kitchen && !item.cancelled
     );
@@ -171,7 +162,6 @@ function sendToKitchen(frm) {
         return;
     }
 
-    // Tampilkan konfirmasi dengan detail item
     const itemList = itemsToSend.map(
         item => `${item.qty}x ${item.item_name}`
     ).join('\n');
@@ -181,12 +171,10 @@ function sendToKitchen(frm) {
         () => {
             frappe.call({
                 method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
-                args: { 
-                    pos_order_id: frm.doc.name 
-                },
+                args: { pos_order_id: frm.doc.name },
                 freeze: true,
                 freeze_message: __('Mengirim ke dapur...'),
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message) {
                         frm.reload_doc();
                         frappe.show_alert({
@@ -195,10 +183,8 @@ function sendToKitchen(frm) {
                         });
                     }
                 },
-                error: function(r) {
-                    // Log error untuk debugging
+                error: function (r) {
                     console.error("KOT Error:", r);
-                    
                     frappe.msgprint({
                         title: __('Error'),
                         indicator: 'red',
@@ -211,19 +197,4 @@ function sendToKitchen(frm) {
             });
         }
     );
-}
-
-// Fungsi untuk memperbarui status tombol "Send to Kitchen"
-function updateSendToKitchenButton(frm) {
-    const isDraft = frm.doc.docstatus === 0;
-    const sendToKitchenBtn = frm.get_custom_buttons().find(btn => btn[0].innerText === 'Kirim ke Dapur');
-    const sendAdditionalToKitchenBtn = frm.get_custom_buttons().find(btn => btn[0].innerText === 'Kirim Tambahan ke Dapur');
-
-    if (sendToKitchenBtn) {
-        sendToKitchenBtn.prop('disabled', !isDraft);
-    }
-
-    if (sendAdditionalToKitchenBtn) {
-        sendAdditionalToKitchenBtn.prop('disabled', !isDraft);
-    }
 }
