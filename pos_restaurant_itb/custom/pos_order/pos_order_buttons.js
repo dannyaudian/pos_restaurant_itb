@@ -23,9 +23,9 @@ frappe.ui.form.on('POS Order', {
 
 function addKitchenButton(frm, label) {
     const btn = frm.add_custom_button(__(label), async () => {
-        const isDraftStatus = frm.doc.docstatus === 0 && frm.doc.status === "Draft";
+        const needsOrderId = frm.doc.docstatus === 0 && !frm.doc.order_id && frm.doc.branch;
 
-        if (isDraftStatus && !frm.doc.order_id && frm.doc.branch) {
+        if (needsOrderId) {
             const res = await frappe.call({
                 method: "pos_restaurant_itb.api.get_new_order_id",
                 args: { branch: frm.doc.branch }
@@ -33,21 +33,14 @@ function addKitchenButton(frm, label) {
 
             if (res.message) {
                 await frm.set_value("order_id", res.message);
+                await frm.save();
             } else {
                 frappe.msgprint("❌ Gagal generate Order ID.");
                 return;
             }
-
-            frappe.msgprint({
-                title: __("Validasi"),
-                indicator: 'yellow',
-                message: __('Menyimpan order sebelum mengirim ke dapur...')
-            });
-
-            await frm.save();
         }
 
-        sendToKitchen(frm);
+        await sendToKitchen(frm);
     }, __("Actions"));
 
     if (btn?.addClass) {
@@ -85,7 +78,13 @@ function addCancelItemButton(frm) {
             return;
         }
 
-        const row = selected[0];
+        const row = locals["POS Order Item"][selected[0]];
+
+        if (!row?.name) {
+            frappe.msgprint("Item tidak valid.");
+            return;
+        }
+
         frappe.prompt([
             {
                 label: 'Alasan Pembatalan',
@@ -116,13 +115,12 @@ function addMarkServedButtons(frm) {
 
     grid.add_custom_button(__('Mark as Served'), () => {
         const selected = grid.get_selected();
-
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
 
-        const row = selected[0];
+        const row = locals["POS Order Item"][selected[0]];
 
         frappe.call({
             method: "pos_restaurant_itb.api.update_kot_item_status",
@@ -147,7 +145,7 @@ function addMarkServedButtons(frm) {
                 args: { pos_order_id: frm.doc.name },
                 callback(res) {
                     if (res.message) {
-                        frappe.show_alert("✅ Semua item telah ditandai sebagai 'Served'.");
+                        frappe.show_alert(res.message);
                         frm.reload_doc();
                     }
                 }
@@ -156,7 +154,7 @@ function addMarkServedButtons(frm) {
     }, __("Actions"));
 }
 
-function sendToKitchen(frm) {
+async function sendToKitchen(frm) {
     const items = frm.doc.pos_order_items || [];
 
     if (!items.length) {
@@ -183,30 +181,30 @@ function sendToKitchen(frm) {
 
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
-        () => {
-            frappe.call({
-                method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
-                args: { pos_order_id: frm.doc.name },
-                freeze: true,
-                freeze_message: __('Mengirim ke dapur...'),
-                callback(r) {
-                    if (r.message) {
-                        frm.reload_doc();
-                        frappe.show_alert({
-                            message: `✅ KOT dibuat: ${r.message}`,
-                            indicator: 'green'
-                        });
-                    }
-                },
-                error(r) {
-                    console.error("KOT Error:", r);
-                    frappe.msgprint({
-                        title: __('Error'),
-                        indicator: 'red',
-                        message: `Gagal mengirim ke dapur. Detail:\n${r.exc_message || r._server_messages || r.message || 'Unknown error'}`
+        async () => {
+            try {
+                const r = await frappe.call({
+                    method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                    args: { pos_order_id: frm.doc.name },
+                    freeze: true,
+                    freeze_message: __('Mengirim ke dapur...')
+                });
+
+                if (r.message) {
+                    frm.reload_doc();
+                    frappe.show_alert({
+                        message: `✅ KOT dibuat: ${r.message}`,
+                        indicator: 'green'
                     });
                 }
-            });
+            } catch (r) {
+                console.error("KOT Error:", r);
+                frappe.msgprint({
+                    title: __('Error'),
+                    indicator: 'red',
+                    message: `Gagal mengirim ke dapur. Detail:\n${r?.message || r._server_messages || 'Unknown error'}`
+                });
+            }
         }
     );
 }
