@@ -1,35 +1,51 @@
 frappe.ui.form.on('POS Order', {
     refresh(frm) {
-        const { docstatus, status } = frm.doc;
+        const { docstatus, status, final_billed } = frm.doc;
 
-        console.log('Current Status:', status);
-        console.log('Docstatus:', docstatus);
+        console.log('Refresh UI. Status:', status, 'Docstatus:', docstatus, 'Final Billed:', final_billed);
 
-        if (status === "In Progress") {
-            if (frm.doc.docstatus === 1) {
-                addKitchenButton(frm, 'Kirim Tambahan ke Dapur');
-            } else if (docstatus === 0) {
-                addKitchenButton(frm, 'Kirim ke Dapur');
-            }
-        }
+        const excludedStatuses = ["Paid", "Cancelled"];
 
-        if (docstatus === 0 && status === "Draft") {
-            addKitchenButton(frm, 'Kirim ke Dapur');
+        if (!excludedStatuses.includes(status) && !final_billed) {
+            ensureAddItemButton(frm);
+    const items = frm.doc.pos_order_items || [];
+            const hasSentItems = items.some(item => item.sent_to_kitchen);
+
+            const buttonLabel = hasSentItems ? 'Kirim Tambahan ke Dapur' : 'Kirim ke Dapur';
+
+            addKitchenButton(frm, buttonLabel);
         }
 
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
-        addCancelItemButton(frm);
 
-        if (["In Progress", "Ready for Billing"].includes(status)) {
+        if (!excludedStatuses.includes(status) && !final_billed) {
+            addCancelItemButton(frm);
+        }
+
+        if (["In Progress", "Ready for Billing"].includes(status) && !final_billed) {
             addMarkServedButtons(frm);
         }
     }
 });
 
+function ensureAddItemButton(frm) {
+    frm.add_custom_button(__('Add Item'), () => {
+        const item = frm.add_child('pos_order_items', {});
+        frm.refresh_field('pos_order_items');
+
+        setTimeout(() => {
+            const gridRows = frm.fields_dict.pos_order_items.grid.grid_rows;
+            if (gridRows && gridRows.length > 0) {
+                gridRows[gridRows.length - 1].toggle_view(true);
+            }
+        }, 100);
+    }, __("Actions")).addClass("btn-secondary");
+}
+
 function addKitchenButton(frm, label) {
     frm.add_custom_button(__(label), async () => {
-        if (frm.doc.docstatus === 0 && !frm.doc.order_id && frm.doc.branch) {
+        if (!frm.doc.order_id && frm.doc.branch) {
             const res = await frappe.call({
                 method: "pos_restaurant_itb.api.get_new_order_id",
                 args: { branch: frm.doc.branch }
@@ -40,8 +56,8 @@ function addKitchenButton(frm, label) {
                 await frm.save();
             } else {
                 frappe.msgprint("❌ Gagal generate Order ID.");
-                return;
-            }
+        return;
+    }
         }
 
         await sendToKitchen(frm);
@@ -59,7 +75,7 @@ function addPrintButton(frm, label, method) {
                     if (win) {
                         win.document.write(r.message);
                         win.document.close();
-                    }
+                }
                 } else {
                     frappe.msgprint(__('Tidak ada output untuk dicetak.'));
                 }
@@ -100,8 +116,8 @@ function addCancelItemButton(frm) {
                     if (res.message) {
                         frappe.show_alert(res.message);
                         frm.reload_doc();
-                    }
-                }
+            }
+        }
             });
         }, 'Konfirmasi Pembatalan', 'Batalkan');
     });
