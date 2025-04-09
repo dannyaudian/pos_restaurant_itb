@@ -18,18 +18,35 @@ frappe.ui.form.on('POS Order', {
      */
     refresh(frm) {
         const { docstatus, status, final_billed } = frm.doc;
-        console.log('Refresh UI. Status:', status, 'Docstatus:', docstatus, 'Final Billed:', final_billed);
+
+        console.log('DEBUG - Refresh UI:', {
+            status: status,
+            docstatus: docstatus,
+            final_billed: final_billed || false,
+            excludedStatuses: ["Paid", "Cancelled"],
+            shouldShowButtons: !["Paid", "Cancelled"].includes(status) && !(final_billed || false)
+        });
+
         const excludedStatuses = ["Paid", "Cancelled"];
-        if (!excludedStatuses.includes(status) && !final_billed) {
+        const isFinalBilled = final_billed || false;
+        if (!excludedStatuses.includes(status) && !isFinalBilled) {
+            console.log('DEBUG - Menampilkan tombol Add Item dan Kirim ke Dapur');
             ensureAddItemButton(frm);
             addKitchenButton(frm, 'Kirim ke Dapur');
+        } else {
+            console.log('DEBUG - Tidak menampilkan tombol karena:', {
+                statusExcluded: excludedStatuses.includes(status),
+                isFinalBilled: isFinalBilled
+            });
         }
+
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
-        if (!excludedStatuses.includes(status) && !final_billed) {
+        if (!excludedStatuses.includes(status) && !isFinalBilled) {
             addCancelItemButton(frm);
         }
-        if (["In Progress", "Ready for Billing"].includes(status) && !final_billed) {
+
+        if (["In Progress", "Ready for Billing"].includes(status) && !isFinalBilled) {
             addMarkServedButtons(frm);
         }
     }
@@ -66,6 +83,7 @@ function addKitchenButton(frm, label) {
                 method: "pos_restaurant_itb.api.get_new_order_id",
                 args: { branch: frm.doc.branch }
             });
+
             if (res.message) {
                 await frm.set_value("order_id", res.message);
                 await frm.save();
@@ -114,15 +132,18 @@ function addCancelItemButton(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
     grid.add_custom_button(__('Cancel Item'), () => {
         const selected = grid.get_selected();
+
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
+
         const row = locals["POS Order Item"][selected[0]];
         if (!row?.name) {
             frappe.msgprint("Item tidak valid.");
             return;
         }
+
         frappe.prompt({
             label: 'Alasan Pembatalan',
             fieldname: 'cancellation_note',
@@ -160,6 +181,7 @@ function addMarkServedButtons(frm) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
+
         const row = locals["POS Order Item"][selected[0]];
         frappe.call({
             method: "pos_restaurant_itb.api.update_kot_item_status",
@@ -176,6 +198,7 @@ function addMarkServedButtons(frm) {
             }
         });
     });
+
     frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
         frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
             frappe.call({
@@ -201,6 +224,7 @@ function addMarkServedButtons(frm) {
  */
 async function sendToKitchen(frm) {
     const items = frm.doc.pos_order_items || [];
+
     if (!items.length) {
         frappe.msgprint({
             title: __("Validasi"),
@@ -209,7 +233,9 @@ async function sendToKitchen(frm) {
         });
         return;
     }
+
     const itemsToSend = items.filter(item => !item.sent_to_kitchen && !item.cancelled);
+
     if (!itemsToSend.length) {
         frappe.msgprint({
             title: __("Informasi"),
@@ -218,7 +244,9 @@ async function sendToKitchen(frm) {
         });
         return;
     }
+
     const itemList = itemsToSend.map(item => `${item.qty}x ${item.item_name}`).join('\n');
+
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         async () => {
@@ -226,12 +254,14 @@ async function sendToKitchen(frm) {
                 if (frm.doc.docstatus === 0) {
                     await frm.save('Submit');
                 }
+
                 const r = await frappe.call({
                     method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
                     args: { pos_order_id: frm.doc.name },
                     freeze: true,
                     freeze_message: __('Mengirim ke dapur...')
                 });
+
                 if (r.message) {
                     frm.reload_doc();
                     frappe.show_alert({
