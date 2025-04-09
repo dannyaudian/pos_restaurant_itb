@@ -22,17 +22,30 @@ frappe.ui.form.on('POS Order', {
     }
 });
 
-// 🔘 Tombol Kirim ke Dapur
+// 🔘 Kirim ke Dapur
 function addKitchenButton(frm, label) {
     const btn = frm.add_custom_button(__(label), async () => {
         const isDraftStatus = frm.doc.docstatus === 0 && frm.doc.status === "Draft";
 
-        if (isDraftStatus) {
+        if (isDraftStatus && !frm.doc.order_id && frm.doc.branch) {
+            const res = await frappe.call({
+                method: "pos_restaurant_itb.api.get_new_order_id",
+                args: { branch: frm.doc.branch }
+            });
+
+            if (res.message) {
+                await frm.set_value("order_id", res.message);
+            } else {
+                frappe.msgprint("❌ Gagal generate Order ID.");
+                return;
+            }
+
             frappe.msgprint({
                 title: __("Validasi"),
                 indicator: 'yellow',
-                message: __('POS Order dalam status Draft. Menyimpan terlebih dahulu sebelum mengirim ke dapur...')
+                message: __('Menyimpan order sebelum mengirim ke dapur...')
             });
+
             await frm.save();
         }
 
@@ -42,13 +55,13 @@ function addKitchenButton(frm, label) {
     btn?.addClass?.("btn-primary");
 }
 
-// 🖨️ Tombol Print
+// 🖨️ Print Button (KOT & Receipt)
 function addPrintButton(frm, label, method) {
     frm.add_custom_button(__(label), () => {
         frappe.call({
             method,
             args: { name: frm.doc.name },
-            callback(r) {
+            callback: (r) => {
                 if (r.message) {
                     const win = window.open('', '_blank');
                     win?.document.write(r.message);
@@ -61,10 +74,11 @@ function addPrintButton(frm, label, method) {
     }, __("Actions"));
 }
 
-// ❌ Cancel Item
+// ❌ Cancel Per Item
 function addCancelItemButton(frm) {
-    frm.fields_dict.pos_order_items.grid.add_custom_button(__('Cancel Item'), () => {
-        const selected = frm.fields_dict.pos_order_items.grid.get_selected();
+    const grid = frm.fields_dict.pos_order_items.grid;
+    grid.add_custom_button(__('Cancel Item'), () => {
+        const selected = grid.get_selected();
 
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
@@ -72,31 +86,28 @@ function addCancelItemButton(frm) {
         }
 
         const row = selected[0];
-        frappe.prompt(
-            [{
+        frappe.prompt([
+            {
                 label: 'Alasan Pembatalan',
                 fieldname: 'cancellation_note',
                 fieldtype: 'Small Text',
                 reqd: 1
-            }],
-            (values) => {
-                frappe.call({
-                    method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
-                    args: {
-                        item_name: row.name,
-                        reason: values.cancellation_note
-                    },
-                    callback(res) {
-                        if (res.message) {
-                            frappe.show_alert(res.message);
-                            frm.reload_doc();
-                        }
+            }
+        ], (values) => {
+            frappe.call({
+                method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
+                args: {
+                    item_name: row.name,
+                    reason: values.cancellation_note
+                },
+                callback(res) {
+                    if (res.message) {
+                        frappe.show_alert(res.message);
+                        frm.reload_doc();
                     }
-                });
-            },
-            'Konfirmasi Pembatalan',
-            'Batalkan'
-        );
+                }
+            });
+        }, 'Konfirmasi Pembatalan', 'Batalkan');
     });
 }
 
