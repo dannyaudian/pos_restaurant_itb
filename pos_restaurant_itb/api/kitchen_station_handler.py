@@ -1,6 +1,9 @@
+# pos_restaurant_itb/api/kitchen_station_handler.py
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
+# Import fungsi get_attribute_summary di awal file
+from pos_restaurant_itb.api.kitchen_station import get_attribute_summary
 
 @frappe.whitelist()
 def get_kitchen_items_by_station(branch, item_group):
@@ -21,6 +24,7 @@ def get_kitchen_items_by_station(branch, item_group):
             k.pos_order,
             ki.item_code,
             ki.item_name,
+            ki.dynamic_attributes,  -- Ambil dynamic_attributes juga
             ki.attribute_summary,
             ki.note,
             ki.kot_status,
@@ -38,6 +42,20 @@ def get_kitchen_items_by_station(branch, item_group):
         AND ki.cancelled = 0
         ORDER BY k.kot_time ASC, ki.creation ASC
     """, (branch, item_group), as_dict=True)
+
+    # Proses attribute_summary untuk hasil dari SQL query
+    for item in kot_items:
+        # Lebih baik mengecek jika ada dynamic_attributes dulu 
+        # untuk mengurangi overhead jika attribute_summary sudah ada
+        if not item.get("attribute_summary") and item.get("dynamic_attributes"):
+            try:
+                item["attribute_summary"] = get_attribute_summary(item["dynamic_attributes"])
+            except Exception as e:
+                frappe.log_error(f"Error generating attribute_summary: {str(e)}")
+                item["attribute_summary"] = ""
+        elif not item.get("attribute_summary"):
+            # Pastikan attribute_summary selalu ada, meski kosong
+            item["attribute_summary"] = ""
 
     return kot_items
 

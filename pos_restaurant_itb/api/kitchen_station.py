@@ -1,14 +1,30 @@
+# pos_restaurant_itb/api/kitchen_station.py
 import frappe
 import json
 from frappe import _
 from frappe.utils import now_datetime
 
 def get_attribute_summary(dynamic_attributes_json):
+    """
+    Mengkonversi dynamic_attributes dalam format JSON ke string yang mudah dibaca
+    """
     try:
-        attrs = json.loads(dynamic_attributes_json or "[]")
-        return ", ".join(f"{d.get('attribute_name')}: {d.get('attribute_value')}" for d in attrs)
+        if not dynamic_attributes_json:
+            return ""
+            
+        if isinstance(dynamic_attributes_json, str):
+            attrs = json.loads(dynamic_attributes_json or "[]")
+        else:
+            attrs = dynamic_attributes_json or []
+            
+        attr_pairs = [
+            f"{attr.get('attribute_name')}: {attr.get('attribute_value')}" 
+            for attr in attrs 
+            if attr.get('attribute_name') and attr.get('attribute_value')
+        ]
+        return ", ".join(attr_pairs)
     except Exception:
-        return ""
+        return str(dynamic_attributes_json) if dynamic_attributes_json else ""
 
 @frappe.whitelist()
 def create_kitchen_station_items_from_kot(kot_id):
@@ -26,7 +42,19 @@ def create_kitchen_station_items_from_kot(kot_id):
         if item.cancelled:
             continue
 
-        attribute_summary = item.attribute_summary or get_attribute_summary(item.dynamic_attributes)
+        # Tangani kasus ketika attribute_summary tidak ada
+        try:
+            # Pertama coba menggunakan property attribute_summary jika tersedia
+            if hasattr(item, "attribute_summary") and callable(getattr(item, "attribute_summary", None)):
+                attribute_summary = item.attribute_summary()
+            elif hasattr(item, "attribute_summary") and item.attribute_summary:
+                attribute_summary = item.attribute_summary
+            else:
+                # Fallback ke dynamic_attributes
+                attribute_summary = get_attribute_summary(item.dynamic_attributes)
+        except Exception:
+            # Fallback jika terjadi error
+            attribute_summary = get_attribute_summary(item.dynamic_attributes)
 
         existing_count = frappe.db.count("Kitchen Station", {
             "kot_id": kot_doc.name,

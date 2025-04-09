@@ -1,6 +1,9 @@
+# pos_restaurant_itb/pos_restaurant_itb/doctype/kot/kot.py
 import frappe
 from frappe.model.document import Document
 from frappe import _
+from frappe.utils import now
+from pos_restaurant_itb.utils.kot_helpers import get_waiter_from_user
 
 class KOT(Document):
     def autoname(self):
@@ -46,7 +49,7 @@ class KOT(Document):
                             "qty": item.qty,
                             "note": item.note,
                             "kot_status": "Queued",
-                            "kot_last_update": frappe.utils.now(),
+                            "kot_last_update": now(),
                             "dynamic_attributes": frappe.as_json(item.dynamic_attributes or []),
                             "order_id": pos_order.order_id,
                             "branch": pos_order.branch,
@@ -59,9 +62,29 @@ class KOT(Document):
 
         if not self.kot_items:
             frappe.throw(_("Tidak ada item KOT yang valid untuk dibuat."))
-
-
-def get_waiter_from_user(user_id):
-    # Jika user punya Employee, ambil nama-nya
-    emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name")
-    return emp or user_id  # fallback ke user_id jika bukan karyawan (misal System Manager)
+            
+    def after_insert(self):
+        """
+        Setelah KOT disimpan, update POS Order Items yang terkait
+        """
+        if self.pos_order:
+            # Get all item codes in this KOT
+            kot_item_codes = [item.item_code for item in self.kot_items]
+            
+            # Update POS Order Items
+            pos_order_items = frappe.get_all(
+                "POS Order Item", 
+                filters={
+                    "parent": self.pos_order,
+                    "item_code": ["in", kot_item_codes],
+                    "sent_to_kitchen": 0,
+                    "cancelled": 0
+                },
+                fields=["name"]
+            )
+            
+            for item in pos_order_items:
+                frappe.db.set_value("POS Order Item", item.name, {
+                    "sent_to_kitchen": 1,
+                    "kot_id": self.name
+                })

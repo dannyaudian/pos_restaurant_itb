@@ -39,6 +39,13 @@ pengelolaan order, dapur, meja, dan printer.
 
 ---
 
+## Utility Functions
+
+| File                        | Fungsi                                      |
+|-----------------------------|---------------------------------------------|
+| `utility.py`                | Fungsi utilitas tambahan                    |
+---
+
 ## POS Order
 
 ### Fungsi
@@ -59,14 +66,11 @@ pengelolaan order, dapur, meja, dan printer.
 | System Manager | CRUD      |
 | Sales User     | CRU       |
 | Waiter         | CRU       |
-
 ---
 
 ## POS Table
-
 ### Field
 - `table_id`, `branch`, `is_active`
-
 ### Akses
 - System Manager: CRUD
 
@@ -85,6 +89,9 @@ pengelolaan order, dapur, meja, dan printer.
 ### Status
 - New → In Progress → Ready → Served / Cancelled
 
+### Hooks
+- After Insert: Tambahan fungsi otomatis setelah KOT dibuat
+
 ### Akses
 | Role           | Hak Akses |
 |----------------|-----------|
@@ -100,8 +107,18 @@ pengelolaan order, dapur, meja, dan printer.
 - `kot_status`, `cancelled`, `cancellation_note`
 - `dynamic_attributes`, `waiter`, `order_id`, `branch`
 
+### Properti Tambahan
+- `attribute_summary`
+
 ### Akses
 - System Manager: CRUD
+
+---
+
+## Dynamic Attributes
+
+- Format data dan contoh penggunaan
+- Implementasi untuk penanganan dan pemrosesan ATTRIBUTES
 
 ---
 
@@ -173,6 +190,16 @@ pengelolaan order, dapur, meja, dan printer.
 
 ### Akses
 - System Manager: CRUD
+
+---
+
+## Troubleshooting
+
+### Masalah Umum
+- "KOTItem object has no attribute 'attribute_summary'"
+
+### Solusi
+- Memastikan bahwa pembaruan terhadap `KOTItem` menambahkan dan memproses `attribute_summary` dengan benar
 
 ---
 

@@ -1,7 +1,9 @@
+# pos_restaurant_itb/api/create_kot.py
 import frappe
 from frappe import _
 from frappe.utils import now
 from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_from_kot
+from pos_restaurant_itb.utils.kot_helpers import get_waiter_from_user
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id: str) -> str:
@@ -26,11 +28,9 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         if not items_to_send:
             frappe.throw(_("Semua item sudah dikirim ke dapur atau dibatalkan."))
 
-        kot_id = generate_kot_id(pos_order.branch)
-
+        # Buat KOT menggunakan DocType yang sudah ada - memanfaatkan validasi yang ada
         kot = frappe.new_doc("KOT")
         kot.update({
-            "kot_id": kot_id,
             "pos_order": pos_order.name,
             "table": pos_order.table,
             "branch": pos_order.branch,
@@ -39,31 +39,13 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
             "waiter": get_waiter_from_user(frappe.session.user)
         })
 
-        for item in items_to_send:
-            kot.append("kot_items", {
-                "item_code": item.item_code,
-                "item_name": item.item_name,
-                "qty": item.qty,
-                "note": item.note,
-                "kot_status": "Queued",
-                "kot_last_update": now(),
-                "dynamic_attributes": frappe.as_json(item.dynamic_attributes or []),
-                "order_id": pos_order.order_id,
-                "branch": pos_order.branch,
-                "waiter": kot.waiter
-            })
+        # DocType KOT akan melakukan autoname dan validasi sendiri
 
         try:
             kot.insert(ignore_permissions=True)
         except frappe.MandatoryError as e:
             frappe.log_error(f"KOT Mandatory Field Error: {str(e)}", "KOT Creation Error")
             frappe.throw(_("KOT creation failed due to missing mandatory field: {0}").format(str(e)))
-
-        for item in items_to_send:
-            frappe.db.set_value("POS Order Item", item.name, {
-                "sent_to_kitchen": 1,
-                "kot_id": kot.name
-            })
 
         frappe.db.commit()
 
@@ -80,26 +62,6 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         frappe.db.rollback()
         log_error(e, pos_order_id)
         raise
-
-def generate_kot_id(branch: str) -> str:
-    import datetime
-
-    today = datetime.datetime.now()
-    date_str = today.strftime('%Y%m%d')
-
-    latest_kot = frappe.db.sql("""
-        SELECT kot_id FROM `tabKOT`
-        WHERE kot_id LIKE %s
-        ORDER BY creation DESC LIMIT 1
-    """, f"KOT-{branch}-{date_str}-%")
-
-    if latest_kot:
-        last_id = latest_kot[0][0]
-        seq = int(last_id.split('-')[-1]) + 1
-    else:
-        seq = 1
-
-    return f"KOT-{branch}-{date_str}-{seq:04d}"
 
 @frappe.whitelist()
 def cancel_pos_order_item(item_name: str = None, reason: str = None) -> dict:
@@ -152,10 +114,6 @@ def mark_all_served(pos_order_id: str) -> str:
         return "✅ Semua item telah ditandai sebagai 'Served'."
 
     return "Tidak ada item yang perlu diubah."
-
-def get_waiter_from_user(user_id: str) -> str:
-    emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name", cache=True)
-    return emp or user_id
 
 def log_error(error: Exception, pos_order_id: str) -> None:
     error_msg = f"""

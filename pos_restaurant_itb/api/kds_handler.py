@@ -29,13 +29,14 @@ def create_kds_from_kot(kot_id):
     kds.last_updated = now_datetime()
 
     for item in kot.kot_items:
+        # Gunakan property attribute_summary yang sudah kita buat di KOTItem
         kds.append("item_list", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "note": item.note,
             "kot_status": item.kot_status,
             "kot_last_update": item.kot_last_update,
-            "attribute_summary": item.attribute_summary or "",
+            "attribute_summary": item.attribute_summary or "",  # Menggunakan property dari KOTItem
             "cancelled": item.cancelled,
             "cancellation_note": item.cancellation_note
         })

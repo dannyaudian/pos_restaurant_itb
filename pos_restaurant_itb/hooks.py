@@ -1,6 +1,7 @@
+# pos_restaurant_itb/hooks.py
 app_name = "pos_restaurant_itb"
 app_title = "POS Restaurant"
-app_publisher = "PT. Innovasi Terbaik Bangsa"
+app_publisher = "PT. Innovasi Terbai k Bangsa"
 app_description = "Restaurant POS Module"
 app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
@@ -50,7 +51,6 @@ rest_apis = [
     }
 ]
 
-
 website_route_rules = [
     {
         "from_route": "/pos_restaurant_itb/public/ui/login",
@@ -63,4 +63,25 @@ whitelisted_methods = {
     "frappe.auth.get_logged_user": True,
     "frappe.auth.login": True,
     "frappe.client.get": True
+}
+
+# Document hook handlers for additional processing
+doc_events = {
+    "KOT Item": {
+        "validate": "pos_restaurant_itb.utils.kot_helpers.validate_kot_item",
+        "after_insert": "pos_restaurant_itb.utils.kot_helpers.process_kot_item_insert"
+    },
+    "KOT": {
+        "after_insert": "pos_restaurant_itb.api.kitchen_station.create_kitchen_station_items_from_kot"
+    }
+}
+
+# Boot Info - menambahkan konfigurasi POS Restaurant
+boot_session = "pos_restaurant_itb.boot.boot_session"
+
+# Scheduler tasks - jika diperlukan untuk proses background
+scheduler_events = {
+    "hourly": [
+        "pos_restaurant_itb.utils.cleanup.clear_old_kitchen_sessions"
+    ]
 }

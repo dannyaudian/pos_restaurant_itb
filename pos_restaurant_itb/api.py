@@ -1,7 +1,9 @@
+# pos_restaurant_itb/api.py
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+from pos_restaurant_itb.api.kitchen_station import get_attribute_summary
 
 @frappe.whitelist()
 def update_kot_item_status(order, item_code, status):
@@ -93,12 +95,38 @@ def create_kds_from_kot(kot_id):
     for item in kot.kot_items:
         if item.cancelled:
             continue
+            
+        # Penanganan attribute_summary yang lebih komprehensif
+        try:
+            # Coba beberapa cara untuk mendapatkan attribute_summary
+            if hasattr(item, "attribute_summary") and callable(getattr(item, "attribute_summary", None)):
+                # Jika itu adalah property/method
+                attribute_summary = item.attribute_summary()
+            elif hasattr(item, "attribute_summary") and item.attribute_summary:
+                # Jika itu adalah atribut biasa
+                attribute_summary = item.attribute_summary
+            elif hasattr(item, "dynamic_attributes") and item.dynamic_attributes:
+                # Gunakan dynamic_attributes jika attribute_summary tidak ada
+                attribute_summary = get_attribute_summary(item.dynamic_attributes)
+            else:
+                attribute_summary = ""
+        except Exception as e:
+            frappe.log_error(f"Error saat menghasilkan attribute_summary: {str(e)}")
+            # Fallback ke dynamic_attributes, atau string kosong
+            try:
+                if hasattr(item, "dynamic_attributes") and item.dynamic_attributes:
+                    attribute_summary = get_attribute_summary(item.dynamic_attributes)
+                else:
+                    attribute_summary = ""
+            except:
+                attribute_summary = ""
+            
         kds.append("item_list", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "kot_status": item.kot_status,
             "kot_last_update": item.kot_last_update,
-            "attribute_summary": item.dynamic_attributes,
+            "attribute_summary": attribute_summary,  # Gunakan nilai yang sudah diolah
             "note": item.note,
             "cancelled": item.cancelled,
             "cancellation_note": item.cancellation_note
@@ -124,7 +152,11 @@ def create_kds_from_kot_manual(kot_id):
     if existing:
         return existing
 
-    kds = frappe.get_doc("Kitchen Display Order", kot_id)
+    try:
+        # Periksa apakah kot_id adalah ID KDS yang valid
+        kds = frappe.get_doc("Kitchen Display Order", kot_id)
+    except frappe.DoesNotExistError:
+        frappe.throw(_("KDS dengan ID {0} tidak ditemukan").format(kot_id))
 
     new_kds = frappe.new_doc("Kitchen Display Order")
     new_kds.kot_id = kds.kot_id
@@ -134,12 +166,15 @@ def create_kds_from_kot_manual(kot_id):
     new_kds.last_updated = now_datetime()
 
     for item in kds.item_list:
+        # Pastikan attribute_summary ada
+        attribute_summary = item.attribute_summary if hasattr(item, "attribute_summary") and item.attribute_summary else ""
+        
         new_kds.append("item_list", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "kot_status": item.kot_status,
             "kot_last_update": item.kot_last_update,
-            "attribute_summary": item.attribute_summary,
+            "attribute_summary": attribute_summary,
             "note": item.note,
             "cancelled": item.cancelled,
             "cancellation_note": item.cancellation_note
