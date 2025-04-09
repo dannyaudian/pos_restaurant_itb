@@ -1,19 +1,31 @@
 frappe.ui.form.on('POS Order', {
     refresh(frm) {
-        if (frm.doc.docstatus === 0) {
-            if (frm.doc.status === "Draft") {
-                addKitchenButton(frm, 'Kirim ke Dapur');
-            }
-            if (frm.doc.status === "In Progress") {
+        const { docstatus, status } = frm.doc;
+
+        // Debugging to check document values
+        console.log('Current Status:', status);
+        console.log('Docstatus:', docstatus);
+
+        // Set conditions when buttons should be visible/active
+        const isDraft = docstatus === 0;
+        if (status === "In Progress") {
+            if (frm.doc.docstatus === 1) {
                 addKitchenButton(frm, 'Kirim Tambahan ke Dapur');
+            } else if (isDraft) {
+                addKitchenButton(frm, 'Kirim ke Dapur');
             }
         }
 
+        if (isDraft && status === "Draft") {
+            addKitchenButton(frm, 'Kirim ke Dapur');
+        }
+
+        // Always provide print and cancel functionalities
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
         addCancelItemButton(frm);
 
-        if (["In Progress", "Ready for Billing"].includes(frm.doc.status)) {
+        if (["In Progress", "Ready for Billing"].includes(status)) {
             addMarkServedButtons(frm);
         }
     }
@@ -108,6 +120,7 @@ function addMarkServedButtons(frm) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
+
         const row = locals["POS Order Item"][selected[0]];
 
         frappe.call({
@@ -171,13 +184,12 @@ async function sendToKitchen(frm) {
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         async () => {
             try {
-                // Submit jika masih draft
                 if (frm.doc.docstatus === 0) {
                     await frm.save('Submit');
                 }
 
                 const r = await frappe.call({
-                    method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                    method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
                     args: { pos_order_id: frm.doc.name },
                     freeze: true,
                     freeze_message: __('Mengirim ke dapur...')
@@ -190,12 +202,12 @@ async function sendToKitchen(frm) {
                         indicator: 'green'
                     });
                 }
-            } catch (r) {
-                console.error("KOT Error:", r);
+            } catch (err) {
+                console.error("KOT Error:", err);
                 frappe.msgprint({
                     title: __('Error'),
                     indicator: 'red',
-                    message: `Gagal mengirim ke dapur. Detail:\n${r?.message || r._server_messages || 'Unknown error'}`
+                    message: `Gagal mengirim ke dapur. Detail:\n${err?.message || err._server_messages || 'Unknown error'}`
                 });
             }
         }

@@ -3,23 +3,38 @@ from frappe import _
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
 
 @frappe.whitelist()
-def send_to_kitchen(pos_order: str) -> str:
+def send_to_kitchen(pos_order_id: str) -> str:
     """
-    Mengirim item dalam pesanan POS ke dapur.
+    Mengirim item yang belum dikirim dalam pesanan POS ke KOT dapur.
 
-    :param pos_order: ID dari pesanan POS yang akan dikirim.
-    :return: Template HTML untuk pencetakan.
-    :raises: Pengecualian jika tidak ada item tambahan untuk dikirim.
+    :param pos_order_id: ID dari pesanan POS.
+    :return: Template HTML yang dirender untuk pencetakan.
+    :raises: FrappeThrow jika tidak ada item yang perlu dikirim.
     """
     from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
 
-    kot_name = create_kot_from_pos_order(pos_order_id=pos_order)
+    pos_order_doc = frappe.get_doc("POS Order", pos_order_id)
+    items_to_kitchen = []
 
-    if not kot_name:
+    for item in pos_order_doc.pos_order_items:
+        if not item.sent_to_kitchen and not item.cancelled:
+            items_to_kitchen.append(item)
+
+    if not items_to_kitchen:
         frappe.throw(_("❌ Tidak ada item tambahan yang perlu dikirim ke dapur."))
 
-    kot_doc = frappe.get_doc("KOT", kot_name)
+    kot_name = create_kot_from_pos_order(pos_order_id=pos_order_id, items=items_to_kitchen)
 
+    if not kot_name:
+        frappe.throw(_("❌ Tidak bisa membuat KOT untuk item yang dipilih."))
+
+    for item in items_to_kitchen:
+        item.sent_to_kitchen = True
+        item.db_update()
+
+    pos_order_doc.save()
+
+    kot_doc = frappe.get_doc("KOT", kot_name)
     return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
 
 
@@ -31,7 +46,7 @@ def cancel_pos_order_item(item_name: str, reason: str = "Cancelled manually") ->
     :param item_name: Nama item yang akan dibatalkan.
     :param reason: Alasan pembatalan.
     :return: Dictionary dengan status dan pesan.
-    :raises: Pengecualian jika pengguna tidak memiliki otorisasi.
+    :raises: FrappeThrow jika pengguna tidak memiliki otorisasi.
     """
     if not item_name:
         frappe.throw(_("Item name is required."))
