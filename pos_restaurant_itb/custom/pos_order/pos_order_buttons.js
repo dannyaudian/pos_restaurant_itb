@@ -1,7 +1,7 @@
 frappe.ui.form.on('POS Order', {
     refresh(frm) {
-        const isDraft = frm.doc.docstatus === 0;
-        const status = frm.doc.status;
+        const { docstatus, status } = frm.doc;
+        const isDraft = docstatus === 0;
 
         if (isDraft && status === "Draft") {
             addKitchenButton(frm, 'Kirim ke Dapur');
@@ -22,81 +22,99 @@ frappe.ui.form.on('POS Order', {
     }
 });
 
+// 🔘 Tombol Kirim ke Dapur
 function addKitchenButton(frm, label) {
-    const btn = frm.add_custom_button(__(label), () => {
-        if (frm.doc.docstatus === 0 && frm.doc.status === "Draft") {
+    const btn = frm.add_custom_button(__(label), async () => {
+        const isDraftStatus = frm.doc.docstatus === 0 && frm.doc.status === "Draft";
+
+        if (isDraftStatus) {
             frappe.msgprint({
                 title: __("Validasi"),
                 indicator: 'yellow',
                 message: __('POS Order dalam status Draft. Menyimpan terlebih dahulu sebelum mengirim ke dapur...')
             });
-            frm.save().then(() => sendToKitchen(frm));
-        } else {
-            sendToKitchen(frm);
+            await frm.save();
         }
+
+        sendToKitchen(frm);
     }, __("Actions"));
+
     btn?.addClass?.("btn-primary");
 }
 
+// 🖨️ Tombol Print
 function addPrintButton(frm, label, method) {
     frm.add_custom_button(__(label), () => {
         frappe.call({
-            method: method,
+            method,
             args: { name: frm.doc.name },
             callback(r) {
                 if (r.message) {
-                    const win = window.open();
-                    win.document.write(r.message);
-                    win.document.close();
+                    const win = window.open('', '_blank');
+                    win?.document.write(r.message);
+                    win?.document.close();
+                } else {
+                    frappe.msgprint(__('Tidak ada output untuk dicetak.'));
                 }
             }
         });
     }, __("Actions"));
 }
 
+// ❌ Cancel Item
 function addCancelItemButton(frm) {
     frm.fields_dict.pos_order_items.grid.add_custom_button(__('Cancel Item'), () => {
         const selected = frm.fields_dict.pos_order_items.grid.get_selected();
+
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
 
         const row = selected[0];
-        frappe.prompt([
-            {
+        frappe.prompt(
+            [{
                 label: 'Alasan Pembatalan',
                 fieldname: 'cancellation_note',
                 fieldtype: 'Small Text',
                 reqd: 1
-            }
-        ], (values) => {
-            frappe.call({
-                method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
-                args: {
-                    item_name: row.name,
-                    reason: values.cancellation_note
-                },
-                callback(res) {
-                    if (res.message) {
-                        frappe.show_alert(res.message);
-                        frm.reload_doc();
+            }],
+            (values) => {
+                frappe.call({
+                    method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
+                    args: {
+                        item_name: row.name,
+                        reason: values.cancellation_note
+                    },
+                    callback(res) {
+                        if (res.message) {
+                            frappe.show_alert(res.message);
+                            frm.reload_doc();
+                        }
                     }
-                }
-            });
-        }, 'Konfirmasi Pembatalan', 'Batalkan');
+                });
+            },
+            'Konfirmasi Pembatalan',
+            'Batalkan'
+        );
     });
 }
 
+// ✅ Mark as Served (per item & semua)
 function addMarkServedButtons(frm) {
-    frm.fields_dict.pos_order_items.grid.add_custom_button(__('Mark as Served'), () => {
-        const selected = frm.fields_dict.pos_order_items.grid.get_selected();
+    const grid = frm.fields_dict.pos_order_items.grid;
+
+    // Per item
+    grid.add_custom_button(__('Mark as Served'), () => {
+        const selected = grid.get_selected();
+
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
 
         const row = selected[0];
+
         frappe.call({
             method: "pos_restaurant_itb.api.update_kot_item_status",
             args: {
@@ -113,6 +131,7 @@ function addMarkServedButtons(frm) {
         });
     });
 
+    // Semua item
     frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
         frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
             frappe.call({
@@ -129,32 +148,29 @@ function addMarkServedButtons(frm) {
     }, __("Actions"));
 }
 
+// 🔄 Kirim ke Dapur
 function sendToKitchen(frm) {
-    if (!frm.doc.pos_order_items || !frm.doc.pos_order_items.length) {
-        frappe.msgprint({
+    const items = frm.doc.pos_order_items || [];
+
+    if (!items.length) {
+        return frappe.msgprint({
             title: __("Validasi"),
             indicator: 'red',
             message: __('Tidak ada item untuk dikirim ke dapur.')
         });
-        return;
     }
 
-    const itemsToSend = frm.doc.pos_order_items.filter(
-        item => !item.sent_to_kitchen && !item.cancelled
-    );
+    const itemsToSend = items.filter(item => !item.sent_to_kitchen && !item.cancelled);
 
     if (!itemsToSend.length) {
-        frappe.msgprint({
+        return frappe.msgprint({
             title: __("Informasi"),
             indicator: 'yellow',
             message: __('Semua item sudah dikirim ke dapur atau dibatalkan.')
         });
-        return;
     }
 
-    const itemList = itemsToSend.map(
-        item => `${item.qty}x ${item.item_name}`
-    ).join('\n');
+    const itemList = itemsToSend.map(item => `${item.qty}x ${item.item_name}`).join('\n');
 
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
@@ -164,7 +180,7 @@ function sendToKitchen(frm) {
                 args: { pos_order_id: frm.doc.name },
                 freeze: true,
                 freeze_message: __('Mengirim ke dapur...'),
-                callback: function (r) {
+                callback(r) {
                     if (r.message) {
                         frm.reload_doc();
                         frappe.show_alert({
@@ -173,7 +189,7 @@ function sendToKitchen(frm) {
                         });
                     }
                 },
-                error: function (r) {
+                error(r) {
                     console.error("KOT Error:", r);
                     frappe.msgprint({
                         title: __('Error'),
