@@ -2,25 +2,21 @@ frappe.ui.form.on('POS Order', {
     refresh(frm) {
         const { docstatus, status } = frm.doc;
 
-        // Debugging to check document values
         console.log('Current Status:', status);
         console.log('Docstatus:', docstatus);
 
-        // Set conditions when buttons should be visible/active
-        const isDraft = docstatus === 0;
         if (status === "In Progress") {
             if (frm.doc.docstatus === 1) {
                 addKitchenButton(frm, 'Kirim Tambahan ke Dapur');
-            } else if (isDraft) {
+            } else if (docstatus === 0) {
                 addKitchenButton(frm, 'Kirim ke Dapur');
             }
         }
 
-        if (isDraft && status === "Draft") {
+        if (docstatus === 0 && status === "Draft") {
             addKitchenButton(frm, 'Kirim ke Dapur');
         }
 
-        // Always provide print and cancel functionalities
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
         addCancelItemButton(frm);

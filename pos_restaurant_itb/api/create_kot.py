@@ -51,7 +51,10 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
                 "waiter": kot.waiter
             })
 
-        kot.insert(ignore_permissions=True)
+        try:
+            kot.insert(ignore_permissions=True)
+        except frappe.MandatoryError as e:
+            frappe.throw(_("KOT creation failed due to missing mandatory fields."))
 
         for item in pos_order.pos_order_items:
             if item in items_to_send:
@@ -133,8 +136,8 @@ def get_waiter_from_user(user_id: str) -> str:
 
 def log_error(error: Exception, pos_order_id: str) -> None:
     error_msg = f"""
-    Error saat membuat KOT
-    ----------------------
+    Error during KOT creation
+    --------------------------
     POS Order: {pos_order_id}
     User: {frappe.session.user}
     Time: {now()}
