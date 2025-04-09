@@ -5,6 +5,12 @@ from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id: str) -> str:
+    """
+    Membuat Kitchen Order Ticket (KOT) dari POS Order yang diberikan.
+
+    :param pos_order_id: ID dari POS Order yang akan dibuat KOT-nya
+    :return: Nama KOT yang berhasil dibuat
+    """
     try:
         if not pos_order_id:
             frappe.throw(_("POS Order tidak boleh kosong."))
@@ -34,11 +40,11 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
             "kot_id": kot_id,
             "pos_order": pos_order.name,
             "table": pos_order.table,
-                "branch": pos_order.branch,
+            "branch": pos_order.branch,
             "kot_time": now(),
             "status": "New",
             "waiter": get_waiter_from_user(frappe.session.user)
-            })
+        })
 
         for item in items_to_send:
             kot.append("kot_items", {
@@ -61,10 +67,11 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
             frappe.throw(_("KOT creation failed due to missing mandatory field: {0}").format(str(e)))
 
         for item in items_to_send:
-                item.sent_to_kitchen = 1
-                item.kot_id = kot.name
+            frappe.db.set_value("POS Order Item", item.name, {
+                "sent_to_kitchen": 1,
+                "kot_id": kot.name
+            })
 
-        pos_order.save(ignore_permissions=True)
         frappe.db.commit()
 
         try:
@@ -82,6 +89,12 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         raise
 
 def generate_kot_id(branch: str) -> str:
+    """
+    Generate ID unik untuk KOT dengan format KOT-{BRANCH}-{TANGGAL}-{SEQ}
+
+    :param branch: Kode cabang
+    :return: ID KOT yang unik
+    """
     import datetime
 
     today = datetime.datetime.now()
