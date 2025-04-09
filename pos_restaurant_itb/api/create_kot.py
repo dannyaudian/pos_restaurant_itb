@@ -5,12 +5,6 @@ from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id: str) -> str:
-    """
-    Membuat Kitchen Order Ticket (KOT) dari POS Order yang diberikan.
-
-    :param pos_order_id: ID dari POS Order yang akan dibuat KOT-nya
-    :return: Nama KOT yang berhasil dibuat
-    """
     try:
         if not pos_order_id:
             frappe.throw(_("POS Order tidak boleh kosong."))
@@ -22,11 +16,11 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         except frappe.DoesNotExistError:
             frappe.throw(_("POS Order {0} tidak ditemukan.").format(pos_order_id))
 
-        if pos_order.docstatus != 1:
-            frappe.throw(_("POS Order harus disubmit sebelum dikirim ke dapur."))
+        async def get_pos_order_doc(order_id):
+            return await frappe.model.get_doc("POS Order", order_id)
 
-        items_to_send = [
-            item for item in pos_order.pos_order_items
+        pos_order = get_pos_order_doc(pos_order_id).result
+        if pos_order.docstatus != 1:
             if not item.sent_to_kitchen and not item.cancelled
         ]
 
@@ -89,12 +83,6 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         raise
 
 def generate_kot_id(branch: str) -> str:
-    """
-    Generate ID unik untuk KOT dengan format KOT-{BRANCH}-{TANGGAL}-{SEQ}
-
-    :param branch: Kode cabang
-    :return: ID KOT yang unik
-    """
     import datetime
 
     today = datetime.datetime.now()
@@ -181,3 +169,19 @@ def log_error(error: Exception, pos_order_id: str) -> None:
     Traceback: {frappe.get_traceback()}
     """
     frappe.log_error(message=error_msg, title="❌ KOT Creation Error")
+
+
+frappe.ui.form.on('POS Order', {
+    refresh(frm) {
+        frm.add_custom_button(__('Debug - Kirim ke Dapur'), async () => {
+            alert("Tombol Debug Berfungsi!");
+        }, __("Actions")).addClass("btn-warning");
+    }
+})
+frappe.ui.form.on('POS Order', {
+    refresh(frm) {
+        frm.add_custom_button(__('Debug - Kirim ke Dapur'), async () => {
+            alert("Tombol Debug Berfungsi!");
+        }, __("Actions")).addClass("btn-warning");
+    }
+})
