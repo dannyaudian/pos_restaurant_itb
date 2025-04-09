@@ -2,14 +2,8 @@ import frappe
 from frappe import _
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
 
-
 @frappe.whitelist()
 def send_to_kitchen(pos_order):
-    """
-    Alias backward compatibility:
-    Tetap panggil create_kot_from_pos_order dari API resmi (bukan dari doctype langsung).
-    """
-
     from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
 
     kot_name = create_kot_from_pos_order(pos_order_id=pos_order)
@@ -19,15 +13,12 @@ def send_to_kitchen(pos_order):
 
     kot_doc = frappe.get_doc("KOT", kot_name)
 
-    # Render HTML template KOT
     return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
 
-
 @frappe.whitelist()
-def cancel_pos_order_item(item_name, reason=None):
-    """
-    Batalkan satu item di POS Order. Hanya bisa dilakukan oleh Outlet Manager.
-    """
+def cancel_pos_order_item(item_name=None, reason=None):
+    if not item_name:
+        frappe.throw(_("Item name is required."))
 
     if not frappe.has_role("Outlet Manager"):
         frappe.throw(_("Hanya Outlet Manager yang boleh membatalkan item."))
@@ -40,7 +31,6 @@ def cancel_pos_order_item(item_name, reason=None):
     doc.amount = 0
     doc.save()
 
-    # Rehitung total di parent
     parent = frappe.get_doc("POS Order", doc.parent)
     total = sum(i.amount for i in parent.pos_order_items if not i.cancelled)
     parent.total_amount = total
@@ -53,14 +43,8 @@ def cancel_pos_order_item(item_name, reason=None):
         "message": _(f"Item {doc.item_code} dibatalkan.")
     }
 
-
 @frappe.whitelist()
 def mark_all_served(pos_order_id):
-    """
-    Tandai semua item dalam POS Order sebagai Served.
-    Biasanya dipakai saat makanan sudah selesai dan diantar semua.
-    """
-
     doc = frappe.get_doc("POS Order", pos_order_id)
     updated = False
     kot_id = None
@@ -81,6 +65,6 @@ def mark_all_served(pos_order_id):
             if kds_name:
                 update_kds_status_from_kot(kds_name)
 
-        return f"✅ Semua item telah ditandai sebagai 'Served'."
+        return "✅ Semua item telah ditandai sebagai 'Served'."
 
     return "Tidak ada item yang perlu diubah."

@@ -3,24 +3,18 @@ frappe.ui.form.on('POS Order', {
         const { docstatus, status } = frm.doc;
         const isDraft = docstatus === 0;
 
-        // Tombol Kirim ke Dapur muncul jika status Draft
         if (isDraft && status === "Draft") {
             addKitchenButton(frm, 'Kirim ke Dapur');
         }
 
-        // Tombol Kirim Tambahan muncul jika status In Progress
         if (isDraft && status === "In Progress") {
             addKitchenButton(frm, 'Kirim Tambahan ke Dapur');
         }
 
-        // Tombol cetak KOT dan Receipt
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
-
-        // Tombol pembatalan item
         addCancelItemButton(frm);
 
-        // Tombol Mark Served jika status order sedang jalan atau siap tagih
         if (["In Progress", "Ready for Billing"].includes(status)) {
             addMarkServedButtons(frm);
         }
@@ -31,7 +25,6 @@ function addKitchenButton(frm, label) {
     const btn = frm.add_custom_button(__(label), async () => {
         const isDraftStatus = frm.doc.docstatus === 0 && frm.doc.status === "Draft";
 
-        // Generate order ID dulu jika belum ada dan masih draft
         if (isDraftStatus && !frm.doc.order_id && frm.doc.branch) {
             const res = await frappe.call({
                 method: "pos_restaurant_itb.api.get_new_order_id",
@@ -45,7 +38,6 @@ function addKitchenButton(frm, label) {
                 return;
             }
 
-            // Tampilkan info simpan sebelum mengirim ke dapur
             frappe.msgprint({
                 title: __("Validasi"),
                 indicator: 'yellow',
@@ -55,19 +47,16 @@ function addKitchenButton(frm, label) {
             await frm.save();
         }
 
-        // Kirim ke dapur
         sendToKitchen(frm);
     }, __("Actions"));
 
-    // Tambahkan styling tombol
-    if (btn && typeof btn.addClass === 'function') {
+    if (btn?.addClass) {
         btn.addClass("btn-primary");
     }
 }
 
 function addPrintButton(frm, label, method) {
     frm.add_custom_button(__(label), () => {
-        // Call API dan buka hasil cetak dalam jendela baru
         frappe.call({
             method,
             args: { name: frm.doc.name },
@@ -97,7 +86,6 @@ function addCancelItemButton(frm) {
         }
 
         const row = selected[0];
-        // Prompt alasan pembatalan
         frappe.prompt([
             {
                 label: 'Alasan Pembatalan',
@@ -126,7 +114,6 @@ function addCancelItemButton(frm) {
 function addMarkServedButtons(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
 
-    // Tombol tandai item yang dipilih
     grid.add_custom_button(__('Mark as Served'), () => {
         const selected = grid.get_selected();
 
@@ -153,7 +140,6 @@ function addMarkServedButtons(frm) {
         });
     });
 
-    // Tombol tandai semua item
     frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
         frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
             frappe.call({
@@ -173,7 +159,6 @@ function addMarkServedButtons(frm) {
 function sendToKitchen(frm) {
     const items = frm.doc.pos_order_items || [];
 
-    // Validasi jika tidak ada item
     if (!items.length) {
         frappe.msgprint({
             title: __("Validasi"),
@@ -183,7 +168,6 @@ function sendToKitchen(frm) {
         return;
     }
 
-    // Filter item yang belum dikirim dan tidak dibatalkan
     const itemsToSend = items.filter(item => !item.sent_to_kitchen && !item.cancelled);
 
     if (!itemsToSend.length) {
@@ -197,7 +181,6 @@ function sendToKitchen(frm) {
 
     const itemList = itemsToSend.map(item => `${item.qty}x ${item.item_name}`).join('\n');
 
-    // Konfirmasi sebelum kirim ke dapur
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         () => {

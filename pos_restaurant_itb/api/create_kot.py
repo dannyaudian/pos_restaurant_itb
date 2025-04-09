@@ -2,85 +2,122 @@ import frappe
 from frappe import _
 from frappe.utils import now, cstr
 from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_from_kot
+from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+
+@frappe.whitelist()
+def send_to_kitchen(pos_order):
+    from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
+
+    kot_name = create_kot_from_pos_order(pos_order_id=pos_order)
+
+    if not kot_name:
+        frappe.throw(_("❌ Tidak ada item tambahan yang perlu dikirim ke dapur."))
+
+    kot_doc = frappe.get_doc("KOT", kot_name)
+
+    return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
+
+@frappe.whitelist()
+def cancel_pos_order_item(item_name=None, reason=None):
+    if not item_name:
+        frappe.throw(_("Item name is required."))
+
+    if not frappe.has_role("Outlet Manager"):
+        frappe.throw(_("Hanya Outlet Manager yang boleh membatalkan item."))
+
+    doc = frappe.get_doc("POS Order Item", item_name)
+    doc.cancelled = 1
+    doc.cancellation_note = reason or "Cancelled manually"
+    doc.rate = 0
+    doc.amount = 0
+    doc.save()
+
+    parent = frappe.get_doc("POS Order", doc.parent)
+    total = sum(i.amount for i in parent.pos_order_items if not i.cancelled)
+    parent.total_amount = total
+    parent.save()
+
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "message": _(f"Item {doc.item_code} dibatalkan.")
+    }
+
+@frappe.whitelist()
+def mark_all_served(pos_order_id):
+    doc = frappe.get_doc("POS Order", pos_order_id)
+    updated = False
+    kot_id = None
+
+    for item in doc.pos_order_items:
+        if item.kot_status not in ("Served", "Cancelled"):
+            item.kot_status = "Served"
+            item.kot_last_update = frappe.utils.now_datetime()
+            kot_id = item.kot_id
+            updated = True
+
+    if updated:
+        doc.save()
+        frappe.db.commit()
+
+        if kot_id:
+            kds_name = frappe.db.get_value("Kitchen Display Order", {"kot_id": kot_id})
+            if kds_name:
+                update_kds_status_from_kot(kds_name)
+
+        return "✅ Semua item telah ditandai sebagai 'Served'."
+
+    return "Tidak ada item yang perlu diubah."
 
 @frappe.whitelist()
 def create_kot_from_pos_order(pos_order_id):
-    """
-    Membuat Kitchen Order Ticket (KOT) dari POS Order
-    
-    Args:
-        pos_order_id (str): ID dari POS Order
-        
-    Returns:
-        str: Nama/ID dari KOT yang dibuat
-        
-    Raises:
-        frappe.ValidationError: Jika ada masalah validasi
-        frappe.DoesNotExistError: Jika POS Order tidak ditemukan
-    """
     try:
-        # Validasi input
         if not pos_order_id:
             frappe.throw(_("POS Order tidak boleh kosong."))
-        
-        # Log untuk tracking
+
         frappe.logger().debug(f"📝 Memulai pembuatan KOT untuk POS Order: {pos_order_id}")
-        
-        # Ambil POS Order
+
         try:
             pos_order = frappe.get_doc("POS Order", pos_order_id)
         except frappe.DoesNotExistError:
             frappe.throw(_("POS Order {0} tidak ditemukan.").format(pos_order_id))
 
-        # Validasi apakah POS Order sudah disave
         if pos_order.docstatus == 0:
             frappe.throw(_("POS Order belum disave. Silakan save terlebih dahulu sebelum mengirim item ke dapur."))
-        
-        # Validasi status dokumen
+
         validate_pos_order(pos_order)
-        
-        # Ambil item yang belum dikirim
+
         items_to_send = get_items_to_send(pos_order)
         if not items_to_send:
             frappe.throw(_("Semua item dalam order ini sudah dikirim ke dapur atau dibatalkan."))
-        
-        # Log detail item yang akan dikirim
+
         frappe.logger().debug(f"📝 Item yang akan dikirim: {items_to_send}")
-        
-        # Buat KOT
+
         kot = create_kot_document(pos_order, items_to_send)
-        
-        # Update POS Order
         update_pos_order_items(pos_order, kot.name, items_to_send)
-        
-        # Commit perubahan database
         frappe.db.commit()
-        
-        # Proses Kitchen Station
         process_kitchen_station(kot.name)
-        
+
         frappe.logger().info(f"✅ KOT berhasil dibuat: {kot.name}")
         return kot.name
-        
+
     except Exception as e:
         frappe.db.rollback()
         log_error(e, pos_order_id)
         raise
 
 def validate_pos_order(pos_order):
-    """Validasi status POS Order"""
-    if pos_order.docstatus != 0:
-        frappe.throw(_("POS Order sudah final dan tidak dapat dikirim ke dapur."))
+    if pos_order.docstatus != 1:
+        frappe.throw(_("POS Order harus disubmit untuk dikirim ke dapur."))
 
 def get_items_to_send(pos_order):
-    """Ambil item yang belum dikirim ke dapur"""
     return [
         item for item in pos_order.pos_order_items
         if not item.sent_to_kitchen and not item.cancelled
     ]
 
 def create_kot_document(pos_order, items_to_send):
-    """Buat dokumen KOT baru"""
     try:
         kot = frappe.new_doc("KOT")
         kot.update({
@@ -91,8 +128,7 @@ def create_kot_document(pos_order, items_to_send):
             "status": "New",
             "waiter": get_waiter_from_user(frappe.session.user)
         })
-        
-        # Tambahkan items
+
         for item in items_to_send:
             kot.append("kot_items", {
                 "item_code": item.item_code,
@@ -106,11 +142,11 @@ def create_kot_document(pos_order, items_to_send):
                 "branch": pos_order.branch,
                 "waiter": kot.waiter
             })
-        
+
         kot.insert(ignore_permissions=True)
         frappe.logger().info(f"✅ KOT document created: {kot.name}")
         return kot
-        
+
     except Exception as e:
         frappe.log_error(
             message=f"Gagal membuat KOT untuk POS Order {pos_order.name}: {str(e)}",
@@ -119,16 +155,15 @@ def create_kot_document(pos_order, items_to_send):
         raise
 
 def update_pos_order_items(pos_order, kot_name, items_to_send):
-    """Update status item di POS Order"""
     try:
         for item in pos_order.pos_order_items:
             if item in items_to_send:
                 item.sent_to_kitchen = 1
                 item.kot_id = kot_name
-        
+
         pos_order.save(ignore_permissions=True)
         frappe.logger().info(f"✅ POS Order items updated for KOT: {kot_name}")
-        
+
     except Exception as e:
         frappe.log_error(
             message=f"Gagal update POS Order {pos_order.name}: {str(e)}",
@@ -137,7 +172,6 @@ def update_pos_order_items(pos_order, kot_name, items_to_send):
         raise
 
 def process_kitchen_station(kot_name):
-    """Proses pembuatan Kitchen Station Items"""
     try:
         create_kitchen_station_items_from_kot(kot_name)
     except Exception as e:
@@ -150,25 +184,10 @@ def process_kitchen_station(kot_name):
         )
 
 def get_waiter_from_user(user_id):
-    """
-    Ambil nama Employee berdasarkan user_id.
-    
-    Args:
-        user_id (str): ID user yang sedang login
-        
-    Returns:
-        str: Nama employee atau user_id jika tidak ditemukan
-    """
-    emp = frappe.db.get_value(
-        "Employee",
-        {"user_id": user_id},
-        "name",
-        cache=True
-    )
+    emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name", cache=True)
     return emp or user_id
 
 def log_error(error, pos_order_id):
-    """Log error dengan detail"""
     error_msg = f"""
     Error saat membuat KOT
     ----------------------
@@ -178,7 +197,7 @@ def log_error(error, pos_order_id):
     Error: {str(error)}
     Traceback: {frappe.get_traceback()}
     """
-    
+
     frappe.log_error(
         message=error_msg,
         title="❌ KOT Creation Error"
