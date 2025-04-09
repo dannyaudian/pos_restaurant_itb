@@ -1,46 +1,41 @@
 import frappe
 from frappe import _
 from pos_restaurant_itb.api.kot_status_update import update_kds_status_from_kot
+from pos_restaurant_itb.api.kds import get_kds_status
+from pos_restaurant_itb.api.sendkitchenandcancel import create_kot_from_pos_order
 
 @frappe.whitelist()
 def send_to_kitchen(pos_order):
-    from pos_restaurant_itb.api.create_kot import create_kot_from_pos_order
-
     kot_name = create_kot_from_pos_order(pos_order_id=pos_order)
-
     if not kot_name:
         frappe.throw(_("❌ Tidak ada item tambahan yang perlu dikirim ke dapur."))
 
     kot_doc = frappe.get_doc("KOT", kot_name)
 
     return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
-
-
 @frappe.whitelist()
 def cancel_pos_order_item(item_name=None, reason=None):
     if not item_name:
         frappe.throw(_("Item name is required."))
 
-    # ✅ Hanya System Manager dan Outlet Manager yang diizinkan
     allowed_roles = {"System Manager", "Outlet Manager"}
     user_roles = set(frappe.get_roles())
 
     if not user_roles.intersection(allowed_roles):
         frappe.throw(_("Hanya System Manager atau Outlet Manager yang boleh membatalkan item."))
-
     doc = frappe.get_doc("POS Order Item", item_name)
     doc.cancelled = 1
     doc.cancellation_note = reason or "Cancelled manually"
     doc.rate = 0
     doc.amount = 0
-    doc.save()
+        doc.save()
 
     parent = frappe.get_doc("POS Order", doc.parent)
     total = sum(i.amount for i in parent.pos_order_items if not i.cancelled)
     parent.total_amount = total
     parent.save()
 
-    frappe.db.commit()
+        frappe.db.commit()
 
     return {
         "status": "success",

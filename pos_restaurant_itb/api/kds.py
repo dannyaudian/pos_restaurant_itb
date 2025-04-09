@@ -2,16 +2,20 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
+def send_kitchen_and_cancel(kds):
+    # Placeholder for the logic to send orders to the kitchen and handle cancellation
+    pass
+
+def update_kot_status(kot_id, status, last_updated):
+    kot = frappe.get_doc("KOT", kot_id)
+    kot.status = status
+    kot.last_updated = last_updated
+    kot.save(ignore_permissions=True)
+
 @frappe.whitelist()
 def create_kds_from_kot(kot_id):
-    """
-    Create Kitchen Display Order (KDS) from a given KOT ID.
-    Manual backup version, only used if automatic creation fails.
-    """
     if not kot_id:
         frappe.throw(_("KOT ID wajib diisi."))
-
-    # Cek apakah KDS sudah dibuat sebelumnya
     existing = frappe.db.exists("Kitchen Display Order", {"kot_id": kot_id})
     if existing:
         return existing
@@ -39,5 +43,8 @@ def create_kds_from_kot(kot_id):
 
     kds.insert(ignore_permissions=True)
     frappe.db.commit()
+
+    send_kitchen_and_cancel(kds)
+    update_kot_status(kot_id, "Processed", now_datetime())
 
     return kds.name

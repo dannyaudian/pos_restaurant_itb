@@ -37,13 +37,27 @@ pengelolaan order, dapur, meja, dan printer.
 | `kot_status_update.py`      | Update status KDS dari KOT                  |
 | `api.py`                    | API umum: update status, buat KDS, dsb      |
 
+### API Integration
+Semua API di sistem ini mengikuti pendekatan integrasi yang konsisten, memungkinkan update status dan pembuatan KDS dengan akurat dan cepat.
+
 ---
 
-## Utility Functions
+## Utility Functions (`pos_restaurant_itb/utils/`)
 
-| File                        | Fungsi                                      |
-|-----------------------------|---------------------------------------------|
-| `utility.py`                | Fungsi utilitas tambahan                    |
+| File                  | Fungsi                                           |
+|-----------------------|--------------------------------------------------|
+| `kot_helpers.py`      | Helper functions untuk KOT dan attribute_summary |
+| `cleanup.py`          | Pembersihan data lama secara otomatis            |
+| `boot.py`             | Konfigurasi boot untuk POS Restaurant            |
+
+### Helper Functions yang Penting
+
+**get_attribute_summary**: 
+- Tersedia di KOTItem class sebagai method instance
+- Tersedia di kot_helpers.py sebagai fungsi utility reusable
+- Digunakan untuk mengkonversi dynamic_attributes JSON ke string yang mudah dibaca
+- Memiliki penanganan error untuk memastikan tidak pernah gagal
+
 ---
 
 ## POS Order
@@ -66,11 +80,14 @@ pengelolaan order, dapur, meja, dan printer.
 | System Manager | CRUD      |
 | Sales User     | CRU       |
 | Waiter         | CRU       |
+
 ---
 
 ## POS Table
+
 ### Field
 - `table_id`, `branch`, `is_active`
+
 ### Akses
 - System Manager: CRUD
 
@@ -81,6 +98,7 @@ pengelolaan order, dapur, meja, dan printer.
 ### Fungsi
 - Dibuat otomatis dari POS Order
 - Menampung item yang perlu dimasak
+- Hooks after_insert untuk generate Kitchen Station items
 
 ### Field
 - `kot_id`, `pos_order`, `table`, `branch`
@@ -89,38 +107,47 @@ pengelolaan order, dapur, meja, dan printer.
 ### Status
 - New → In Progress → Ready → Served / Cancelled
 
-### Hooks
-- After Insert: Tambahan fungsi otomatis setelah KOT dibuat
-
 ### Akses
 | Role           | Hak Akses |
 |----------------|-----------|
 | System Manager | CRUD      |
 | Sales User     | CRU       |
 
+### Detail Document Events
+- Setiap event handler memastikan bahwa KOT diterjemahkan dengan benar ke dalam item Kitchen Station yang sesuai.
+
 ---
 
 ## KOT Item
 
-### Field
+### Field Database
 - `item_code`, `item_name`, `qty`, `note`
 - `kot_status`, `cancelled`, `cancellation_note`
-- `dynamic_attributes`, `waiter`, `order_id`, `branch`
+- `dynamic_attributes` (JSON string): Menyimpan atribut dinamis dalam format JSON
+- `waiter`, `order_id`, `branch`
 
-### Properti Tambahan
-- `attribute_summary`
+### Property Dinamis
+- `attribute_summary`: **Bukan field database**, melainkan property yang dihasilkan dari `dynamic_attributes` secara otomatis saat diakses
+- Diimplementasikan sebagai Python property dengan getter method `get_attribute_summary()`
+- Tersedia di semua instance KOTItem tanpa perlu disimpan di database
 
 ### Akses
 - System Manager: CRUD
 
 ---
 
-## Dynamic Attributes
+## Dynamic Attributes dan Attribute Summary
 
-- Format data dan contoh penggunaan
-- Implementasi untuk penanganan dan pemrosesan ATTRIBUTES
+### Konsep
+- **dynamic_attributes**: Field JSON yang menyimpan data atribut di database
+- **attribute_summary**: Property yang menghasilkan tampilan user-friendly dari atribut dengan multi-level fallback untuk memastikan data selalu tersedia
 
----
+### Format Dynamic Attributes (JSON)
+```json
+[
+  {"attribute_name": "Spice Level", "attribute_value": "Medium"},
+  {"attribute_name": "Toppings", "attribute_value": "Extra Cheese"}
+]
 
 ## Kitchen SLA Log
 - Logging performa dapur
@@ -199,9 +226,9 @@ pengelolaan order, dapur, meja, dan printer.
 - "KOTItem object has no attribute 'attribute_summary'"
 
 ### Solusi
-- Memastikan bahwa pembaruan terhadap `KOTItem` menambahkan dan memproses `attribute_summary` dengan benar
-
+- Memastikan bahwa pembaruan terhadap `KOTItem` menambahkan dan memproses `attribute_summary` dengan langkah-langkah yang akurat, memastikan bahwa seluruh data dipertahankan dan tersedia sebagaimana diperlukan.
 ---
 
 ## ERD
 ![ERD - POS Restaurant ITB](./pos_restaurant_itb_erd.png)
+
