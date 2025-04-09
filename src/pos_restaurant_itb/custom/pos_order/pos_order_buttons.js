@@ -1,39 +1,49 @@
+/**
+ * POS Order Buttons Script
+ *
+ * Script ini menambahkan tombol-tombol pada form POS Order seperti:
+ * - Tombol Add Item: untuk menambahkan item baru ke pesanan
+ * - Tombol Kirim ke Dapur: untuk mengirim item ke dapur (secara otomatis memeriksa item baru)
+ * - Tombol Print: untuk mencetak KOT dan receipt
+ * - Tombol Cancel Item: untuk membatalkan item
+ * - Tombol Mark as Served: untuk menandai item telah disajikan
+ */
+
 frappe.ui.form.on('POS Order', {
+    /**
+     * Event refresh yang dipanggil setiap kali form di-refresh
+     * Menambahkan tombol-tombol berdasarkan status dokumen
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     */
     refresh(frm) {
         const { docstatus, status, final_billed } = frm.doc;
-
         console.log('Refresh UI. Status:', status, 'Docstatus:', docstatus, 'Final Billed:', final_billed);
-
         const excludedStatuses = ["Paid", "Cancelled"];
-
         if (!excludedStatuses.includes(status) && !final_billed) {
             ensureAddItemButton(frm);
-    const items = frm.doc.pos_order_items || [];
-            const hasSentItems = items.some(item => item.sent_to_kitchen);
-
-            const buttonLabel = hasSentItems ? 'Kirim Tambahan ke Dapur' : 'Kirim ke Dapur';
-
-            addKitchenButton(frm, buttonLabel);
+            addKitchenButton(frm, 'Kirim ke Dapur');
         }
-
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
-
         if (!excludedStatuses.includes(status) && !final_billed) {
             addCancelItemButton(frm);
         }
-
         if (["In Progress", "Ready for Billing"].includes(status) && !final_billed) {
             addMarkServedButtons(frm);
         }
     }
 });
 
+/**
+ * Fungsi untuk menambahkan tombol Add Item ke form
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ */
 function ensureAddItemButton(frm) {
     frm.add_custom_button(__('Add Item'), () => {
         const item = frm.add_child('pos_order_items', {});
         frm.refresh_field('pos_order_items');
-
         setTimeout(() => {
             const gridRows = frm.fields_dict.pos_order_items.grid.grid_rows;
             if (gridRows && gridRows.length > 0) {
@@ -43,6 +53,13 @@ function ensureAddItemButton(frm) {
     }, __("Actions")).addClass("btn-secondary");
 }
 
+/**
+ * Fungsi untuk menambahkan tombol Kirim ke Dapur ke form
+ * Satu tombol yang selalu memeriksa item yang belum dikirim ke dapur
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ * @param {string} label - Label untuk tombol (Kirim ke Dapur)
+ */
 function addKitchenButton(frm, label) {
     frm.add_custom_button(__(label), async () => {
         if (!frm.doc.order_id && frm.doc.branch) {
@@ -50,20 +67,25 @@ function addKitchenButton(frm, label) {
                 method: "pos_restaurant_itb.api.get_new_order_id",
                 args: { branch: frm.doc.branch }
             });
-
             if (res.message) {
                 await frm.set_value("order_id", res.message);
                 await frm.save();
             } else {
                 frappe.msgprint("❌ Gagal generate Order ID.");
-        return;
-    }
+                return;
+            }
         }
-
         await sendToKitchen(frm);
     }, __("Actions")).addClass("btn-primary");
 }
 
+/**
+ * Fungsi untuk menambahkan tombol Print ke form
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ * @param {string} label - Label untuk tombol (Print KOT atau Print Receipt)
+ * @param {string} method - Metode API yang akan dipanggil untuk mencetak
+ */
 function addPrintButton(frm, label, method) {
     frm.add_custom_button(__(label), () => {
         frappe.call({
@@ -75,7 +97,7 @@ function addPrintButton(frm, label, method) {
                     if (win) {
                         win.document.write(r.message);
                         win.document.close();
-                }
+                    }
                 } else {
                     frappe.msgprint(__('Tidak ada output untuk dicetak.'));
                 }
@@ -84,22 +106,24 @@ function addPrintButton(frm, label, method) {
     }, __("Actions"));
 }
 
+/**
+ * Fungsi untuk menambahkan tombol Cancel Item ke grid item pesanan
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ */
 function addCancelItemButton(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
     grid.add_custom_button(__('Cancel Item'), () => {
         const selected = grid.get_selected();
-
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
-
         const row = locals["POS Order Item"][selected[0]];
         if (!row?.name) {
             frappe.msgprint("Item tidak valid.");
             return;
         }
-
         frappe.prompt({
             label: 'Alasan Pembatalan',
             fieldname: 'cancellation_note',
@@ -116,25 +140,28 @@ function addCancelItemButton(frm) {
                     if (res.message) {
                         frappe.show_alert(res.message);
                         frm.reload_doc();
-            }
-        }
+                    }
+                }
             });
         }, 'Konfirmasi Pembatalan', 'Batalkan');
     });
 }
 
+/**
+ * Fungsi untuk menambahkan tombol Mark as Served ke grid item
+ * dan tombol Mark Semua as Served ke form
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ */
 function addMarkServedButtons(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
-
     grid.add_custom_button(__('Mark as Served'), () => {
         const selected = grid.get_selected();
         if (!selected.length) {
             frappe.msgprint("Pilih item terlebih dahulu.");
             return;
         }
-
         const row = locals["POS Order Item"][selected[0]];
-
         frappe.call({
             method: "pos_restaurant_itb.api.update_kot_item_status",
             args: {
@@ -150,7 +177,6 @@ function addMarkServedButtons(frm) {
             }
         });
     });
-
     frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
         frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
             frappe.call({
@@ -167,9 +193,15 @@ function addMarkServedButtons(frm) {
     }, __("Actions"));
 }
 
+/**
+ * Fungsi untuk mengirim item ke dapur
+ * Memeriksa item yang belum dikirim, menampilkan konfirmasi,
+ * dan memanggil API untuk membuat KOT
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ */
 async function sendToKitchen(frm) {
     const items = frm.doc.pos_order_items || [];
-
     if (!items.length) {
         frappe.msgprint({
             title: __("Validasi"),
@@ -178,9 +210,7 @@ async function sendToKitchen(frm) {
         });
         return;
     }
-
     const itemsToSend = items.filter(item => !item.sent_to_kitchen && !item.cancelled);
-
     if (!itemsToSend.length) {
         frappe.msgprint({
             title: __("Informasi"),
@@ -189,9 +219,7 @@ async function sendToKitchen(frm) {
         });
         return;
     }
-
     const itemList = itemsToSend.map(item => `${item.qty}x ${item.item_name}`).join('\n');
-
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         async () => {
@@ -199,14 +227,12 @@ async function sendToKitchen(frm) {
                 if (frm.doc.docstatus === 0) {
                     await frm.save('Submit');
                 }
-
                 const r = await frappe.call({
                     method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
                     args: { pos_order_id: frm.doc.name },
                     freeze: true,
                     freeze_message: __('Mengirim ke dapur...')
                 });
-
                 if (r.message) {
                     frm.reload_doc();
                     frappe.show_alert({
