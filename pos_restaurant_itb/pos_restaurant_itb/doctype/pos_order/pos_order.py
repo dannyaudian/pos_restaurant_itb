@@ -77,3 +77,4 @@ def validate_active_kitchen_station(branch):
     if not found:
         frappe.logger().warning(f"[DEBUG] Tidak ditemukan Kitchen Station aktif untuk cabang: '{branch}'")
         frappe.msgprint(_("⚠️ Tidak ada Kitchen Station aktif untuk cabang ini (dev mode)."))
+        #asu
