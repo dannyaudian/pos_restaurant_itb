@@ -1,7 +1,7 @@
 # pos_restaurant_itb/hooks.py
 app_name = "pos_restaurant_itb"
 app_title = "POS Restaurant"
-app_publisher = "PT. Innovasi Terbai k Bangsa"
+app_publisher = "PT. Innovasi Terbaik Bangsa"  # Fixed typo
 app_description = "Restaurant POS Module"
 app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
@@ -14,7 +14,8 @@ fixtures = [
     "Property Setter",
     "Doctype",
     "Role",
-    "Custom DocPerm"
+    "Custom DocPerm",
+    {"dt": "Workspace", "filters": [["module", "=", "pos_restaurant_itb"]]}
 ]
 
 # Include JS per Doctype
@@ -77,7 +78,8 @@ doc_events = {
 }
 
 # Boot Info - menambahkan konfigurasi POS Restaurant
-boot_session = "pos_restaurant_itb.boot.boot_session"
+# Dinonaktifkan sementara untuk menghindari error
+# boot_session = "pos_restaurant_itb.boot.boot_session"
 
 # Scheduler tasks - jika diperlukan untuk proses background
 scheduler_events = {

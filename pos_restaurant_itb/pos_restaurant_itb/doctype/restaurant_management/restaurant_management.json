@@ -1,0 +1,215 @@
+{
+    "charts": [],
+    "content": [
+     {
+      "type": "header",
+      "data": {
+       "text": "Restaurant Operations",
+       "level": 4,
+       "is_quote": 0
+      }
+     },
+     {
+      "type": "paragraph",
+      "data": {
+       "text": "Manage restaurant operations efficiently."
+      }
+     },
+     {
+      "type": "shortcut",
+      "data": {
+       "shortcut_name": "POS Order",
+       "col": 4
+      }
+     },
+     {
+      "type": "shortcut",
+      "data": {
+       "shortcut_name": "KOT",
+       "col": 4
+      }
+     },
+     {
+      "type": "shortcut",
+      "data": {
+       "shortcut_name": "Kitchen Display Order",
+       "col": 4
+      }
+     },
+     {
+      "type": "card",
+      "data": {
+       "card_name": "Orders",
+       "col": 4
+      }
+     },
+     {
+      "type": "card",
+      "data": {
+       "card_name": "Kitchen",
+       "col": 4
+      }
+     },
+     {
+      "type": "card",
+      "data": {
+       "card_name": "Configuration",
+       "col": 4
+      }
+     }
+    ],
+    "creation": "2023-01-01 00:00:00.000000",
+    "custom_blocks": [],
+    "docstatus": 0,
+    "doctype": "Workspace",
+    "for_user": "",
+    "hide_custom": 0,
+    "icon": "restaurant",
+    "idx": 0,
+    "is_hidden": 0,
+    "label": "Restaurant Management",
+    "links": [
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Orders",
+      "link_count": 2,
+      "onboard": 0,
+      "type": "Card Break"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "POS Order",
+      "link_count": 0,
+      "link_to": "POS Order",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "POS Invoice",
+      "link_count": 0,
+      "link_to": "POS Invoice",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Kitchen",
+      "link_count": 2,
+      "onboard": 0,
+      "type": "Card Break"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "KOT",
+      "link_count": 0,
+      "link_to": "KOT",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Kitchen Display Order",
+      "link_count": 0,
+      "link_to": "Kitchen Display Order",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Configuration",
+      "link_count": 3,
+      "onboard": 0,
+      "type": "Card Break"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "POS Restaurant Config",
+      "link_count": 0,
+      "link_to": "POS Restaurant Config",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "POS Table",
+      "link_count": 0,
+      "link_to": "POS Table",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     },
+     {
+      "hidden": 0,
+      "is_query_report": 0,
+      "label": "Kitchen Station",
+      "link_count": 0,
+      "link_to": "Kitchen Station",
+      "link_type": "DocType",
+      "onboard": 0,
+      "type": "Link"
+     }
+    ],
+    "modified": "2023-01-01 00:00:00.000000",
+    "modified_by": "Administrator",
+    "module": "pos_restaurant_itb",
+    "name": "Restaurant Management",
+    "owner": "Administrator",
+    "parent_page": "",
+    "public": 1,
+    "quick_lists": [],
+    "restrict_to_domain": "",
+    "roles": [
+     {
+      "role": "System Manager"
+     },
+     {
+      "role": "Sales Manager"
+     },
+     {
+      "role": "Waiter"
+     },
+     {
+      "role": "Kitchen Staff"
+     }
+    ],
+    "sequence_id": 0,
+    "shortcuts": [
+     {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "POS Order",
+      "link_to": "POS Order",
+      "type": "DocType"
+     },
+     {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "KOT",
+      "link_to": "KOT",
+      "type": "DocType"
+     },
+     {
+      "color": "Grey",
+      "doc_view": "List",
+      "label": "Kitchen Display Order",
+      "link_to": "Kitchen Display Order",
+      "type": "DocType"
+     }
+    ],
+    "title": "Restaurant Management"
+   }
