@@ -1,208 +1,188 @@
 frappe.ui.form.on('POS Order', {
-    table: function (frm) {
-        if (!frm.doc.table) return;
+    refresh(frm) {
+        const isDraft = frm.doc.docstatus === 0;
+        const status = frm.doc.status;
 
-        frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
-            if (r?.branch) {
-                frm.set_value('branch', r.branch);
+        if (isDraft && status === "Draft") {
+            addPrimaryButton(frm, 'Kirim ke Dapur', () => sendToKitchen(frm));
+        }
 
-                // Cek apakah meja masih tersedia via API
-                frappe.call({
-                    method: "pos_restaurant_itb.api.get_available_tables",
-                    args: { branch: r.branch },
-                    callback: function (res) {
-                        const available_tables = res.message || [];
-                        const is_available = available_tables.some(t => t.name === frm.doc.table);
+        if (isDraft && status === "In Progress") {
+            addPrimaryButton(frm, 'Kirim Tambahan ke Dapur', () => sendToKitchen(frm));
+        }
 
-                        if (!is_available) {
-                            frappe.msgprint(`❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.`);
-                            frm.set_value("table", null);
-                            return;
-                        }
+        addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
+        addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
 
-                        // ✅ Jika tersedia → generate order ID
-                        frappe.call({
-                            method: "pos_restaurant_itb.api.get_new_order_id",
-                            args: { branch: r.branch },
-                            callback: function (res) {
-                                if (res?.message) {
-                                    frm.set_value("order_id", res.message);
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    },
+        addCancelItemButton(frm);
 
-    onload: function (frm) {
-        // 🔐 Filter cabang sesuai permission user
-        frm.set_query("branch", () => {
-            if (frappe.user.has_role("System Manager")) return {};
-
-            const branches = frappe.user.get_perm("Branch") || [];
-            if (!branches.length) {
-                frappe.msgprint(__("⚠️ Anda tidak memiliki akses ke cabang manapun."));
-            }
-
-            return {
-                filters: { name: ["in", branches] }
-            };
-        });
-
-        // 📛 Filter meja berdasarkan ketersediaan
-        frm.set_query("table", () => {
-            if (!frm.doc.branch) {
-                frappe.msgprint("Pilih cabang terlebih dahulu.");
-                return { filters: { name: ["=", ""] } };
-            }
-
-            return {
-                filters: [
-                    ["POS Table", "branch", "=", frm.doc.branch],
-                    ["POS Table", "is_active", "=", 1]
-                ]
-            };
-        });
-
-        // 🧾 Filter item template saja
-        frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
-            filters: {
-                variant_of: ["is", "not set"],
-                is_sales_item: 1,
-                disabled: 0
-            }
-        });
-    },
-
-    validate: function (frm) {
-        if (!frm.doc.branch) {
-            frappe.msgprint("Cabang harus dipilih.");
-            frappe.validated = false;
+        if (["In Progress", "Ready for Billing"].includes(status)) {
+            addMarkServedButtons(frm);
         }
     }
 });
 
-frappe.ui.form.on('POS Order Item', {
-    item_code: function (frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
-        if (!row.item_code) return;
+function addPrimaryButton(frm, label, action) {
+    const btn = frm.add_custom_button(__(label), action, __("Actions"));
+    btn?.addClass?.("btn-primary");
+}
 
-        // Cek apakah item punya varian
-        frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
-            if (r?.has_variants) {
-                frappe.call({
-                    method: "pos_restaurant_itb.api.get_attributes_for_item",
-                    args: { item_code: row.item_code },
-                    callback: function (res) {
-                        if (!res.message) return;
-
-                        const fields = res.message.map(attr => ({
-                            label: attr.attribute,
-                            fieldname: attr.attribute,
-                            fieldtype: "Select",
-                            options: (attr.values || []).join("\n"),
-                            reqd: 1
-                        }));
-
-                        const d = new frappe.ui.Dialog({
-                            title: 'Pilih Atribut',
-                            fields: fields,
-                            primary_action_label: 'Simpan',
-                            primary_action(values) {
-                                const item_row = locals[row.doctype][row.name];
-                                item_row.dynamic_attributes = [];
-
-                                for (const [key, value] of Object.entries(values)) {
-                                    item_row.dynamic_attributes.push({
-                                        attribute_name: key,
-                                        attribute_value: value
-                                    });
-                                }
-
-                                frm.refresh_field("pos_order_items");
-                                frappe.show_alert("✔️ Atribut ditambahkan.");
-                                resolve_variant_after_save(frm, row, values);
-                                d.hide();
-                            }
-                        });
-
-                        d.show();
-                    }
-                });
-            }
-        });
-
-        // Ambil harga dari price list
-        const price_list = frm.doc.selling_price_list || 'Standard Selling';
+function addPrintButton(frm, label, method) {
+    frm.add_custom_button(__(label), () => {
         frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Item Price",
-                filters: {
-                    item_code: row.item_code,
-                    price_list: price_list
-                },
-                fields: ["price_list_rate"],
-                limit_page_length: 1
-            },
-            callback: function (res) {
-                const rate = res.message?.[0]?.price_list_rate || 0;
-                frappe.model.set_value(cdt, cdn, 'rate', rate);
-                if (rate === 0) {
-                    frappe.msgprint(__('Harga tidak ditemukan di Price List: ' + price_list));
+            method: method,
+            args: { name: frm.doc.name },
+            callback(r) {
+                if (r.message) {
+                    const win = window.open();
+                    win.document.write(r.message);
+                    win.document.close();
                 }
             }
         });
-    },
+    }, __("Actions"));
+}
 
-    qty: update_item_amount_and_total,
-    rate: update_item_amount_and_total
-});
-
-function resolve_variant_after_save(frm, row, attributes) {
-    const attr_array = Object.entries(attributes).map(([key, value]) => ({
-        attribute_name: key,
-        attribute_value: value
-    }));
-
-    frappe.call({
-        method: "pos_restaurant_itb.api.resolve_variant",
-        args: {
-            template: row.item_code,
-            attributes: attr_array
-        },
-        callback: function (r) {
-            if (r.message) {
-                frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.item_code);
-                frappe.model.set_value(row.doctype, row.name, 'item_name', r.message.item_name);
-                frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
-
-                frappe.show_alert({
-                    message: `🔄 Diganti ke Variant: ${r.message.item_name}`,
-                    indicator: 'green'
-                });
-            }
+function addCancelItemButton(frm) {
+    frm.fields_dict.pos_order_items.grid.add_custom_button(__('Cancel Item'), () => {
+        const selected = frm.fields_dict.pos_order_items.grid.get_selected();
+        if (!selected.length) {
+            frappe.msgprint("Pilih item terlebih dahulu.");
+            return;
         }
+
+        const row = selected[0];
+        frappe.prompt([
+            {
+                label: 'Alasan Pembatalan',
+                fieldname: 'cancellation_note',
+                fieldtype: 'Small Text',
+                reqd: 1
+            }
+        ], (values) => {
+            frappe.call({
+                method: "pos_restaurant_itb.api.sendkitchenandcancel.cancel_pos_order_item",
+                args: {
+                    item_name: row.name,
+                    reason: values.cancellation_note
+                },
+                callback(res) {
+                    if (res.message) {
+                        frappe.show_alert(res.message);
+                        frm.reload_doc();
+                    }
+                }
+            });
+        }, 'Konfirmasi Pembatalan', 'Batalkan');
     });
 }
 
-function update_item_amount_and_total(frm, cdt, cdn) {
-    const row = locals[cdt][cdn];
-    if (!row) return;
+function addMarkServedButtons(frm) {
+    frm.fields_dict.pos_order_items.grid.add_custom_button(__('Mark as Served'), () => {
+        const selected = frm.fields_dict.pos_order_items.grid.get_selected();
+        if (!selected.length) {
+            frappe.msgprint("Pilih item terlebih dahulu.");
+            return;
+        }
 
-    const qty = row.qty || 0;
-    const rate = row.rate || 0;
-    const amount = qty * rate;
-
-    frappe.model.set_value(cdt, cdn, "amount", amount);
-
-    let total = 0;
-    (frm.doc.pos_order_items || []).forEach(item => {
-        total += item.amount || 0;
+        const row = selected[0];
+        frappe.call({
+            method: "pos_restaurant_itb.api.update_kot_item_status",
+            args: {
+                order: frm.doc.name,
+                item_code: row.item_code,
+                status: "Served"
+            },
+            callback(res) {
+                if (res.message) {
+                    frappe.show_alert("✅ Item ditandai sebagai 'Served'.");
+                    frm.reload_doc();
+                }
+            }
+        });
     });
 
-    frm.set_value("total_amount", total);
-    frm.refresh_field("total_amount");
+    frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
+        frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
+            frappe.call({
+                method: "pos_restaurant_itb.api.sendkitchenandcancel.mark_all_served",
+                args: { pos_order_id: frm.doc.name },
+                callback(res) {
+                    if (res.message) {
+                        frappe.show_alert("✅ Semua item telah ditandai sebagai 'Served'.");
+                        frm.reload_doc();
+                    }
+                }
+            });
+        });
+    }, __("Actions"));
+}
+
+function sendToKitchen(frm) {
+    if (frm.doc.docstatus === 0) {
+        frappe.msgprint({
+            title: __("Validasi"),
+            indicator: 'red',
+            message: __('POS Order belum disave. Silakan save terlebih dahulu sebelum mengirim item ke dapur.')
+        });
+        return;
+    }
+
+    if (!frm.doc.pos_order_items || !frm.doc.pos_order_items.length) {
+        frappe.msgprint({
+            title: __("Validasi"),
+            indicator: 'red',
+            message: __('Tidak ada item untuk dikirim ke dapur.')
+        });
+        return;
+    }
+
+    const itemsToSend = frm.doc.pos_order_items.filter(
+        item => !item.sent_to_kitchen && !item.cancelled
+    );
+
+    if (!itemsToSend.length) {
+        frappe.msgprint({
+            title: __("Informasi"),
+            indicator: 'yellow',
+            message: __('Semua item sudah dikirim ke dapur atau dibatalkan.')
+        });
+        return;
+    }
+
+    const itemList = itemsToSend.map(
+        item => `${item.qty}x ${item.item_name}`
+    ).join('\n');
+
+    frappe.confirm(
+        `Kirim item berikut ke dapur?\n\n${itemList}`,
+        () => {
+            frappe.call({
+                method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
+                args: { pos_order_id: frm.doc.name },
+                freeze: true,
+                freeze_message: __('Mengirim ke dapur...'),
+                callback: function (r) {
+                    if (r.message) {
+                        frm.reload_doc();
+                        frappe.show_alert({
+                            message: __(`✅ KOT dibuat: ${r.message}`),
+                            indicator: 'green'
+                        });
+                    }
+                },
+                error: function (r) {
+                    console.error("KOT Error:", r);
+                    frappe.msgprint({
+                        title: __('Error'),
+                        indicator: 'red',
+                        message: __(
+                            'Gagal mengirim ke dapur. Detail:\n' +
+                            (r.exc_message || r._server_messages || r.message || 'Unknown error')
+                        )
+                    });
+                }
+            });
+        }
+    );
 }
