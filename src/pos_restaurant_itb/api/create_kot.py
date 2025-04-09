@@ -19,7 +19,7 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         if pos_order.docstatus != 1:
             frappe.throw(_("POS Order harus disubmit sebelum dikirim ke dapur."))
 
-        # Filter items yang akan dikirim ke dapur
+        # Filter item yang belum dikirim ke dapur
         items_to_send = [
             item for item in pos_order.pos_order_items
             if not item.sent_to_kitchen and not item.cancelled
@@ -61,6 +61,7 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
             frappe.log_error(f"KOT Mandatory Field Error: {str(e)}", "KOT Creation Error")
             frappe.throw(_("KOT creation failed due to missing mandatory field: {0}").format(str(e)))
 
+        # Update status item secara langsung di database
         for item in items_to_send:
             frappe.db.set_value("POS Order Item", item.name, {
                 "sent_to_kitchen": 1,
