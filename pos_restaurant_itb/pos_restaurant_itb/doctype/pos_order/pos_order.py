@@ -5,13 +5,32 @@ from datetime import datetime
 
 class POSOrder(Document):
     def autoname(self):
+        self.validate_branch_for_autoname()
+        self.name = self.generate_order_id()
+
+    def before_save(self):
+        self.validate_branch_is_set()
+        validate_active_kitchen_station(self.branch)
+
+    def validate(self):
+        self.validate_branch_is_set()
+
+        if not self.pos_order_items:
+            self.status = "Draft"
+            self.total_amount = 0
+            frappe.msgprint("📭 Order kosong. Status: Draft, Total: 0")
+            return
+
+        self.calculate_total_and_update_status()
+
+    def validate_branch_for_autoname(self):
         if not self.branch:
             frappe.throw(_("Branch is required to generate Order ID."))
 
-        # Format: POS-YYYYMMDD-BRANCHCODE-#####
+    def generate_order_id(self):
         today = datetime.now().strftime("%Y%m%d")
-
         branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
+
         if not branch_code:
             frappe.throw(_("Branch must have a valid Branch Code."))
 
@@ -26,23 +45,13 @@ class POSOrder(Document):
         )
 
         last_number = int(last[0][0].split("-")[-1]) if last else 0
-        self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
+        return f"{prefix}-{str(last_number + 1).zfill(4)}"
 
-    def before_save(self):
+    def validate_branch_is_set(self):
         if not self.branch:
             frappe.throw(_("Branch harus diisi."))
-        validate_active_kitchen_station(self.branch)
 
-    def validate(self):
-        if not self.branch:
-            frappe.throw(_("Branch harus diisi sebelum menyimpan order."))
-
-        if not self.pos_order_items:
-            self.status = "Draft"
-            self.total_amount = 0
-            frappe.msgprint("📭 Order kosong. Status: Draft, Total: 0")
-            return
-
+    def calculate_total_and_update_status(self):
         total = 0
         item_statuses = []
 
@@ -55,7 +64,7 @@ class POSOrder(Document):
 
         self.total_amount = total
 
-        # Penentuan status berdasarkan item
+        # Tentukan status order
         if all(s == "Ready" for s in item_statuses):
             new_status = "Ready for Billing"
         elif any(s in ["Cooking", "Queued"] for s in item_statuses):
@@ -63,12 +72,17 @@ class POSOrder(Document):
         else:
             new_status = "Draft"
 
+        # Hanya ubah status jika berbeda
         if self.status != new_status:
             self.status = new_status
-            frappe.msgprint(f"🔁 Status updated to: {self.status}")
+            if self.docstatus == 0 and new_status == "Draft":
+                frappe.msgprint("📥 Order masih dalam draft.")
+            elif self.docstatus == 0 and new_status == "In Progress":
+                frappe.msgprint("⏳ Order berubah menjadi 'In Progress', silakan simpan untuk mengirim ke dapur.")
+            else:
+                frappe.msgprint(f"🔁 Status updated to: {self.status}")
 
         frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
-
 
 def validate_active_kitchen_station(branch):
     """Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu."""
