@@ -4,7 +4,7 @@ from frappe.utils import now
 from pos_restaurant_itb.api.kitchen_station import create_kitchen_station_items_from_kot
 
 @frappe.whitelist()
-def create_kot_from_pos_order(pos_order_id):
+def create_kot_from_pos_order(pos_order_id: str) -> str:
     try:
         if not pos_order_id:
             frappe.throw(_("POS Order tidak boleh kosong."))
@@ -76,7 +76,7 @@ def create_kot_from_pos_order(pos_order_id):
         raise
 
 @frappe.whitelist()
-def cancel_pos_order_item(item_name=None, reason=None):
+def cancel_pos_order_item(item_name: str = None, reason: str = None) -> dict:
     if not item_name:
         frappe.throw(_("Item name is required."))
 
@@ -85,7 +85,7 @@ def cancel_pos_order_item(item_name=None, reason=None):
 
     doc = frappe.get_doc("POS Order Item", item_name)
     doc.cancelled = 1
-    doc.cancellation_note = reason or "Cancelled manually"
+    doc.cancellation_note = reason or _("Cancelled manually")
     doc.rate = 0
     doc.amount = 0
     doc.save()
@@ -101,7 +101,7 @@ def cancel_pos_order_item(item_name=None, reason=None):
     }
 
 @frappe.whitelist()
-def mark_all_served(pos_order_id):
+def mark_all_served(pos_order_id: str) -> str:
     doc = frappe.get_doc("POS Order", pos_order_id)
     updated = False
     kot_id = None
@@ -127,11 +127,11 @@ def mark_all_served(pos_order_id):
 
     return "Tidak ada item yang perlu diubah."
 
-def get_waiter_from_user(user_id):
+def get_waiter_from_user(user_id: str) -> str:
     emp = frappe.db.get_value("Employee", {"user_id": user_id}, "name", cache=True)
     return emp or user_id
 
-def log_error(error, pos_order_id):
+def log_error(error: Exception, pos_order_id: str) -> None:
     error_msg = f"""
     Error saat membuat KOT
     ----------------------
