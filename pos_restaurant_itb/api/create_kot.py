@@ -27,15 +27,18 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         if not items_to_send:
             frappe.throw(_("Semua item sudah dikirim ke dapur atau dibatalkan."))
 
+        kot_id = generate_kot_id(pos_order.branch)
+
         kot = frappe.new_doc("KOT")
         kot.update({
+            "kot_id": kot_id,
             "pos_order": pos_order.name,
             "table": pos_order.table,
-            "branch": pos_order.branch,
+                "branch": pos_order.branch,
             "kot_time": now(),
             "status": "New",
             "waiter": get_waiter_from_user(frappe.session.user)
-        })
+            })
 
         for item in items_to_send:
             kot.append("kot_items", {
@@ -54,10 +57,10 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         try:
             kot.insert(ignore_permissions=True)
         except frappe.MandatoryError as e:
-            frappe.throw(_("KOT creation failed due to missing mandatory fields."))
+            frappe.log_error(f"KOT Mandatory Field Error: {str(e)}", "KOT Creation Error")
+            frappe.throw(_("KOT creation failed due to missing mandatory field: {0}").format(str(e)))
 
-        for item in pos_order.pos_order_items:
-            if item in items_to_send:
+        for item in items_to_send:
                 item.sent_to_kitchen = 1
                 item.kot_id = kot.name
 
@@ -77,6 +80,26 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         frappe.db.rollback()
         log_error(e, pos_order_id)
         raise
+
+def generate_kot_id(branch: str) -> str:
+    import datetime
+
+    today = datetime.datetime.now()
+    date_str = today.strftime('%Y%m%d')
+
+    latest_kot = frappe.db.sql("""
+        SELECT kot_id FROM `tabKOT`
+        WHERE kot_id LIKE %s
+        ORDER BY creation DESC LIMIT 1
+    """, f"KOT-{branch}-{date_str}-%")
+
+    if latest_kot:
+        last_id = latest_kot[0][0]
+        seq = int(last_id.split('-')[-1]) + 1
+    else:
+        seq = 1
+
+    return f"KOT-{branch}-{date_str}-{seq:04d}"
 
 @frappe.whitelist()
 def cancel_pos_order_item(item_name: str = None, reason: str = None) -> dict:

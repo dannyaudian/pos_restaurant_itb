@@ -55,7 +55,6 @@ function ensureAddItemButton(frm) {
 
 /**
  * Fungsi untuk menambahkan tombol Kirim ke Dapur ke form
- * Satu tombol yang selalu memeriksa item yang belum dikirim ke dapur
  *
  * @param {Object} frm - Form objek DocType POS Order
  * @param {string} label - Label untuk tombol (Kirim ke Dapur)
@@ -228,7 +227,7 @@ async function sendToKitchen(frm) {
                     await frm.save('Submit');
                 }
                 const r = await frappe.call({
-                    method: 'pos_restaurant_itb.api.sendkitchenandcancel.send_to_kitchen',
+                    method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
                     args: { pos_order_id: frm.doc.name },
                     freeze: true,
                     freeze_message: __('Mengirim ke dapur...')

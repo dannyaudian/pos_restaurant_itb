@@ -1,13 +1,94 @@
+/**
+ * POS Order Form Script
+ *
+ * Script ini menangani logika form untuk DocType POS Order, termasuk:
+ * - Validasi field pada form
+ * - Set queries untuk dropdown fields
+ * - Handler events untuk perubahan field
+ * - Logika perhitungan harga dan total
+ */
+
 frappe.ui.form.on('POS Order', {
-    onload(frm) {
-        // Filter cabang berdasarkan izin pengguna
+    /**
+     * Event handler untuk perubahan field branch
+     * Jika cabang berubah, reset field table agar dipilih ulang
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     */
+    branch: function(frm) {
+        // Jika cabang berubah, maka kosongkan field table agar dipilih ulang
+        if (frm.doc.table) {
+            frm.set_value('table', null);
+                frappe.show_alert({
+                message: __('Meja harus dipilih ulang karena cabang berubah.'),
+                indicator: 'blue'
+                });
+            }
+    },
+
+    /**
+     * Event handler untuk perubahan field table
+     * Mengecek ketersediaan meja dan mengisi branch dan order_id
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     */
+    table: function (frm) {
+        if (!frm.doc.table) return;
+
+        // Dapatkan branch dari meja yang dipilih
+        frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
+            if (r?.branch) {
+                frm.set_value('branch', r.branch);
+
+                // Cek apakah meja masih tersedia via API
+                frappe.call({
+                    method: "pos_restaurant_itb.api.get_available_tables",
+                    args: { branch: r.branch },
+                    callback: function (res) {
+                        const available_tables = res.message || [];
+                        const is_available = available_tables.some(t => t.name === frm.doc.table);
+
+                        if (!is_available) {
+                            frappe.msgprint(`❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.`);
+                            frm.set_value("table", null);
+                            return;
+}
+
+                        // Jika tersedia → generate order ID
+                        frappe.call({
+                            method: "pos_restaurant_itb.api.get_new_order_id",
+                            args: { branch: r.branch },
+                            callback: function (res) {
+                                if (res?.message) {
+                                    frm.set_value("order_id", res.message);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    },
+
+    /**
+     * Event handler untuk onload
+     * Setup awal untuk form seperti filter query dan permission
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     */
+    onload: function (frm) {
+        // Filter cabang sesuai permission user
         frm.set_query("branch", () => {
             if (frappe.user.has_role("System Manager")) return {};
+
             const branches = frappe.user.get_perm("Branch") || [];
             if (!branches.length) {
                 frappe.msgprint(__("⚠️ Anda tidak memiliki akses ke cabang manapun."));
             }
-            return { filters: { name: ["in", branches] } };
+
+            return {
+                filters: { name: ["in", branches] }
+            };
         });
 
         // Filter meja berdasarkan ketersediaan
@@ -25,7 +106,7 @@ frappe.ui.form.on('POS Order', {
             };
         });
 
-        // Hanya filter template barang
+        // Filter item template saja
         frm.fields_dict.pos_order_items.grid.get_field('item_code').get_query = () => ({
             filters: {
                 variant_of: ["is", "not set"],
@@ -35,44 +116,13 @@ frappe.ui.form.on('POS Order', {
         });
     },
 
-    table(frm) {
-        if (!frm.doc.table) return;
-
-        frappe.db.get_value('POS Table', frm.doc.table, 'branch', function (r) {
-            if (r?.branch) {
-                frm.set_value('branch', r.branch);
-
-                // Cek ketersediaan meja via API
-                frappe.call({
-                    method: "pos_restaurant_itb.api.get_available_tables",
-                    args: { branch: r.branch },
-                    callback: function (res) {
-                        const available_tables = res.message || [];
-                        const is_available = available_tables.some(t => t.name === frm.doc.table);
-
-                        if (!is_available) {
-                            frappe.msgprint(`❌ Meja ${frm.doc.table} sedang digunakan. Silakan pilih meja lain.`);
-                            frm.set_value("table", null);
-                            return;
-                        }
-
-                        // Generate order ID jika tersedia
-                        frappe.call({
-                            method: "pos_restaurant_itb.api.get_new_order_id",
-                            args: { branch: r.branch },
-                            callback: function (res) {
-                                if (res?.message) {
-                                    frm.set_value("order_id", res.message);
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    },
-
-    validate(frm) {
+    /**
+     * Event handler untuk validasi form
+     * Memastikan field wajib diisi dengan benar
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     */
+    validate: function (frm) {
         if (!frm.doc.branch) {
             frappe.msgprint("Cabang harus dipilih.");
             frappe.validated = false;
@@ -80,12 +130,23 @@ frappe.ui.form.on('POS Order', {
     }
 });
 
+/**
+ * Event handlers untuk child table POS Order Item
+ */
 frappe.ui.form.on('POS Order Item', {
-    item_code(frm, cdt, cdn) {
-        const row = locals[cdt][cdn];
+    /**
+     * Event handler untuk perubahan field item_code
+     * Memeriksa apakah item memiliki varian dan mengambil harga
+     *
+     * @param {Object} frm - Form objek DocType POS Order
+     * @param {string} cdt - Child DocType name
+     * @param {string} cdn - Child DocName
+     */
+    item_code: function (frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        // Cek apakah barang memiliki varian
+        // Cek apakah item punya varian
         frappe.db.get_value("Item", row.item_code, "has_variants", function (r) {
             if (r?.has_variants) {
                 frappe.call({
@@ -94,6 +155,7 @@ frappe.ui.form.on('POS Order Item', {
                     callback: function (res) {
                         if (!res.message) return;
 
+                        // Buat dialog untuk memilih atribut varian
                         const fields = res.message.map(attr => ({
                             label: attr.attribute,
                             fieldname: attr.attribute,
@@ -110,6 +172,7 @@ frappe.ui.form.on('POS Order Item', {
                                 const item_row = locals[row.doctype][row.name];
                                 item_row.dynamic_attributes = [];
 
+                                // Set nilai atribut ke item
                                 for (const [key, value] of Object.entries(values)) {
                                     item_row.dynamic_attributes.push({
                                         attribute_name: key,
@@ -153,10 +216,18 @@ frappe.ui.form.on('POS Order Item', {
         });
     },
 
+    // Update jumlah saat qty atau rate berubah
     qty: update_item_amount_and_total,
     rate: update_item_amount_and_total
 });
 
+/**
+ * Mencari dan menerapkan varian item berdasarkan atribut yang dipilih
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ * @param {Object} row - Baris item yang sedang diedit
+ * @param {Object} attributes - Atribut yang dipilih untuk item
+ */
 function resolve_variant_after_save(frm, row, attributes) {
     const attr_array = Object.entries(attributes).map(([key, value]) => ({
         attribute_name: key,
@@ -171,6 +242,7 @@ function resolve_variant_after_save(frm, row, attributes) {
         },
         callback: function (r) {
             if (r.message) {
+                // Update item dengan varian yang sesuai
                 frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.item_code);
                 frappe.model.set_value(row.doctype, row.name, 'item_name', r.message.item_name);
                 frappe.model.set_value(row.doctype, row.name, 'rate', r.message.rate);
@@ -184,16 +256,25 @@ function resolve_variant_after_save(frm, row, attributes) {
     });
 }
 
+/**
+ * Menghitung jumlah (amount) item dan total pesanan
+ *
+ * @param {Object} frm - Form objek DocType POS Order
+ * @param {string} cdt - Child DocType name
+ * @param {string} cdn - Child DocName
+ */
 function update_item_amount_and_total(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
     if (!row) return;
 
+    // Hitung amount untuk baris item saat ini
     const qty = row.qty || 0;
     const rate = row.rate || 0;
     const amount = qty * rate;
 
     frappe.model.set_value(cdt, cdn, "amount", amount);
 
+    // Hitung total amount untuk seluruh pesanan
     let total = 0;
     (frm.doc.pos_order_items || []).forEach(item => {
         total += item.amount || 0;
