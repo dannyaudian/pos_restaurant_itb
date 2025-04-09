@@ -11,6 +11,7 @@ fixtures = [
     "Client Script",
     "Server Script",
     "Custom Field",
+    "Workspace"
     "Property Setter",
     "Doctype",
     "Role",
