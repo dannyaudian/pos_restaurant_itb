@@ -5,30 +5,14 @@ from datetime import datetime
 
 class POSOrder(Document):
     def autoname(self):
-        self.validate_branch_for_autoname()
-        self.name = self.generate_order_id()
-
-    def before_save(self):
-        self.validate_branch_is_set()
-        validate_active_kitchen_station(self.branch)
-
-    def validate(self):
-        self.validate_branch_is_set()
-
-        if not self.pos_order_items:
-            self.status = "Draft"
-            self.total_amount = 0
-            frappe.msgprint("📭 Order kosong. Status: Draft, Total: 0")
-            return
-
-        self.calculate_total_and_update_status()
-
-    def validate_branch_for_autoname(self):
+        # Pastikan field branch diisi
         if not self.branch:
             frappe.throw(_("Branch is required to generate Order ID."))
 
-    def generate_order_id(self):
+        # Format tanggal untuk digunakan dalam ID
         today = datetime.now().strftime("%Y%m%d")
+
+        # Ambil kode cabang dari master Branch
         branch_code = frappe.db.get_value("Branch", self.branch, "branch_code")
 
         if not branch_code:
@@ -37,6 +21,7 @@ class POSOrder(Document):
         branch_code = branch_code.strip().upper()
         prefix = f"POS-{today}-{branch_code}"
 
+        # Ambil ID terakhir dengan prefix yang sama untuk increment
         last = frappe.db.sql(
             """SELECT name FROM `tabPOS Order`
                WHERE name LIKE %s
@@ -44,27 +29,47 @@ class POSOrder(Document):
             (prefix + "-%",),
         )
 
+        # Hitung nomor berikutnya dan set sebagai name
         last_number = int(last[0][0].split("-")[-1]) if last else 0
-        return f"{prefix}-{str(last_number + 1).zfill(4)}"
+        self.name = f"{prefix}-{str(last_number + 1).zfill(4)}"
 
-    def validate_branch_is_set(self):
+    def before_save(self):
+        # Validasi branch wajib diisi
         if not self.branch:
             frappe.throw(_("Branch harus diisi."))
 
-    def calculate_total_and_update_status(self):
+        # Validasi kitchen station setup aktif harus tersedia
+        if not frappe.db.exists("Kitchen Station Setup", {"branch": self.branch, "status": "Active"}):
+            frappe.throw(_("\u26a0\ufe0f Tidak ada Kitchen Station aktif untuk cabang ini."))
+
+    def validate(self):
+        # Validasi branch harus diisi juga saat validate
+        if not self.branch:
+            frappe.throw(_("Branch harus diisi."))
+
+        # Jika tidak ada item order, set sebagai draft
+        if not self.pos_order_items:
+            self.status = "Draft"
+            self.total_amount = 0
+            frappe.msgprint("\ud83d\udcec Order kosong. Status: Draft, Total: 0")
+            return
+
         total = 0
         item_statuses = []
 
+        # Iterasi semua item order
         for item in self.pos_order_items:
-            if item.cancelled:
+            # Lewati item yang dibatalkan
+            if getattr(item, "cancelled", 0):
                 continue
+
             item.validate()
-            total += item.amount
-            item_statuses.append(item.kot_status or "Draft")
+            total += getattr(item, "amount", 0)
+            item_statuses.append(getattr(item, "kot_status", "Draft") or "Draft")
 
         self.total_amount = total
 
-        # Tentukan status order
+        # Tentukan status baru berdasarkan status KOT item
         if all(s == "Ready" for s in item_statuses):
             new_status = "Ready for Billing"
         elif any(s in ["Cooking", "Queued"] for s in item_statuses):
@@ -72,22 +77,16 @@ class POSOrder(Document):
         else:
             new_status = "Draft"
 
-        # Hanya ubah status jika berbeda
+        # Jika status berubah, tampilkan notifikasi perubahan
         if self.status != new_status:
             self.status = new_status
+
             if self.docstatus == 0 and new_status == "Draft":
-                frappe.msgprint("📥 Order masih dalam draft.")
+                frappe.msgprint("\ud83d\udcc5 Order masih dalam draft.")
             elif self.docstatus == 0 and new_status == "In Progress":
-                frappe.msgprint("⏳ Order berubah menjadi 'In Progress', silakan simpan untuk mengirim ke dapur.")
+                frappe.msgprint("\u23f3 Order berubah menjadi 'In Progress', silakan simpan untuk mengirim ke dapur.")
             else:
-                frappe.msgprint(f"🔁 Status updated to: {self.status}")
+                frappe.msgprint(f"\ud83d\udd01 Status updated to: {self.status}")
 
-        frappe.msgprint(f"💰 Total Order Amount: {self.total_amount}")
-
-def validate_active_kitchen_station(branch):
-    """Memeriksa apakah ada kitchen station yang aktif untuk cabang tertentu."""
-    found = frappe.db.exists("Kitchen Station Setup", {"branch": branch, "status": "Active"})
-
-    if not found:
-        frappe.logger().warning(f"[DEBUG] Tidak ditemukan Kitchen Station aktif untuk cabang: '{branch}'")
-        frappe.msgprint(_("⚠️ Tidak ada Kitchen Station aktif untuk cabang ini (dev mode)."))
+        # Tampilkan total order
+        frappe.msgprint(f"\ud83d\udcb0 Total Order Amount: {self.total_amount}")

@@ -3,30 +3,35 @@ frappe.ui.form.on('POS Order', {
         const { docstatus, status } = frm.doc;
         const isDraft = docstatus === 0;
 
+        // Tombol Kirim ke Dapur muncul jika status Draft
         if (isDraft && status === "Draft") {
             addKitchenButton(frm, 'Kirim ke Dapur');
         }
 
+        // Tombol Kirim Tambahan muncul jika status In Progress
         if (isDraft && status === "In Progress") {
             addKitchenButton(frm, 'Kirim Tambahan ke Dapur');
         }
 
+        // Tombol cetak KOT dan Receipt
         addPrintButton(frm, 'Print KOT', 'pos_restaurant_itb.api.print_kot');
         addPrintButton(frm, 'Print Receipt', 'pos_restaurant_itb.api.print_receipt');
 
+        // Tombol pembatalan item
         addCancelItemButton(frm);
 
+        // Tombol Mark Served jika status order sedang jalan atau siap tagih
         if (["In Progress", "Ready for Billing"].includes(status)) {
             addMarkServedButtons(frm);
         }
     }
 });
 
-// 🔘 Kirim ke Dapur
 function addKitchenButton(frm, label) {
     const btn = frm.add_custom_button(__(label), async () => {
         const isDraftStatus = frm.doc.docstatus === 0 && frm.doc.status === "Draft";
 
+        // Generate order ID dulu jika belum ada dan masih draft
         if (isDraftStatus && !frm.doc.order_id && frm.doc.branch) {
             const res = await frappe.call({
                 method: "pos_restaurant_itb.api.get_new_order_id",
@@ -40,6 +45,7 @@ function addKitchenButton(frm, label) {
                 return;
             }
 
+            // Tampilkan info simpan sebelum mengirim ke dapur
             frappe.msgprint({
                 title: __("Validasi"),
                 indicator: 'yellow',
@@ -49,23 +55,29 @@ function addKitchenButton(frm, label) {
             await frm.save();
         }
 
+        // Kirim ke dapur
         sendToKitchen(frm);
     }, __("Actions"));
 
-    btn?.addClass?.("btn-primary");
+    // Tambahkan styling tombol
+    if (btn && typeof btn.addClass === 'function') {
+        btn.addClass("btn-primary");
+    }
 }
 
-// 🖨️ Print Button (KOT & Receipt)
 function addPrintButton(frm, label, method) {
     frm.add_custom_button(__(label), () => {
+        // Call API dan buka hasil cetak dalam jendela baru
         frappe.call({
             method,
             args: { name: frm.doc.name },
             callback: (r) => {
                 if (r.message) {
                     const win = window.open('', '_blank');
-                    win?.document.write(r.message);
-                    win?.document.close();
+                    if (win) {
+                        win.document.write(r.message);
+                        win.document.close();
+                    }
                 } else {
                     frappe.msgprint(__('Tidak ada output untuk dicetak.'));
                 }
@@ -74,7 +86,6 @@ function addPrintButton(frm, label, method) {
     }, __("Actions"));
 }
 
-// ❌ Cancel Per Item
 function addCancelItemButton(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
     grid.add_custom_button(__('Cancel Item'), () => {
@@ -86,6 +97,7 @@ function addCancelItemButton(frm) {
         }
 
         const row = selected[0];
+        // Prompt alasan pembatalan
         frappe.prompt([
             {
                 label: 'Alasan Pembatalan',
@@ -111,11 +123,10 @@ function addCancelItemButton(frm) {
     });
 }
 
-// ✅ Mark as Served (per item & semua)
 function addMarkServedButtons(frm) {
     const grid = frm.fields_dict.pos_order_items.grid;
 
-    // Per item
+    // Tombol tandai item yang dipilih
     grid.add_custom_button(__('Mark as Served'), () => {
         const selected = grid.get_selected();
 
@@ -142,7 +153,7 @@ function addMarkServedButtons(frm) {
         });
     });
 
-    // Semua item
+    // Tombol tandai semua item
     frm.add_custom_button(__('✔️ Mark Semua as Served'), () => {
         frappe.confirm("Yakin ingin menandai semua item sebagai 'Served'?", () => {
             frappe.call({
@@ -159,30 +170,34 @@ function addMarkServedButtons(frm) {
     }, __("Actions"));
 }
 
-// 🔄 Kirim ke Dapur
 function sendToKitchen(frm) {
     const items = frm.doc.pos_order_items || [];
 
+    // Validasi jika tidak ada item
     if (!items.length) {
-        return frappe.msgprint({
+        frappe.msgprint({
             title: __("Validasi"),
             indicator: 'red',
             message: __('Tidak ada item untuk dikirim ke dapur.')
         });
+        return;
     }
 
+    // Filter item yang belum dikirim dan tidak dibatalkan
     const itemsToSend = items.filter(item => !item.sent_to_kitchen && !item.cancelled);
 
     if (!itemsToSend.length) {
-        return frappe.msgprint({
+        frappe.msgprint({
             title: __("Informasi"),
             indicator: 'yellow',
             message: __('Semua item sudah dikirim ke dapur atau dibatalkan.')
         });
+        return;
     }
 
     const itemList = itemsToSend.map(item => `${item.qty}x ${item.item_name}`).join('\n');
 
+    // Konfirmasi sebelum kirim ke dapur
     frappe.confirm(
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         () => {
@@ -195,7 +210,7 @@ function sendToKitchen(frm) {
                     if (r.message) {
                         frm.reload_doc();
                         frappe.show_alert({
-                            message: __(`✅ KOT dibuat: ${r.message}`),
+                            message: `✅ KOT dibuat: ${r.message}`,
                             indicator: 'green'
                         });
                     }
@@ -205,10 +220,7 @@ function sendToKitchen(frm) {
                     frappe.msgprint({
                         title: __('Error'),
                         indicator: 'red',
-                        message: __(
-                            'Gagal mengirim ke dapur. Detail:\n' +
-                            (r.exc_message || r._server_messages || r.message || 'Unknown error')
-                        )
+                        message: `Gagal mengirim ke dapur. Detail:\n${r.exc_message || r._server_messages || r.message || 'Unknown error'}`
                     });
                 }
             });
