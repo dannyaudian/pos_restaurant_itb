@@ -21,9 +21,12 @@ def cancel_pos_order_item(item_name=None, reason=None):
     if not item_name:
         frappe.throw(_("Item name is required."))
 
-    # ✅ FIXED: Ganti dari frappe.has_role() ke frappe.get_roles()
-    if "Outlet Manager" not in frappe.get_roles():
-        frappe.throw(_("Hanya Outlet Manager yang boleh membatalkan item."))
+    # ✅ Hanya System Manager dan Outlet Manager yang diizinkan
+    allowed_roles = {"System Manager", "Outlet Manager"}
+    user_roles = set(frappe.get_roles())
+
+    if not user_roles.intersection(allowed_roles):
+        frappe.throw(_("Hanya System Manager atau Outlet Manager yang boleh membatalkan item."))
 
     doc = frappe.get_doc("POS Order Item", item_name)
     doc.cancelled = 1
