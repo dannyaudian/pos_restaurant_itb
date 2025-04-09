@@ -183,6 +183,11 @@ async function sendToKitchen(frm) {
         `Kirim item berikut ke dapur?\n\n${itemList}`,
         async () => {
             try {
+                // Submit jika masih draft
+                if (frm.doc.docstatus === 0) {
+                    await frm.save('Submit');
+                }
+
                 const r = await frappe.call({
                     method: 'pos_restaurant_itb.api.create_kot.create_kot_from_pos_order',
                     args: { pos_order_id: frm.doc.name },

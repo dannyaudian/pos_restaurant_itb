@@ -15,16 +15,17 @@ def send_to_kitchen(pos_order):
 
     return frappe.render_template("templates/kot_print.html", {"kot": kot_doc})
 
+
 @frappe.whitelist()
 def cancel_pos_order_item(item_name=None, reason=None):
     if not item_name:
         frappe.throw(_("Item name is required."))
 
-    if not frappe.has_role("Outlet Manager"):
+    # ✅ FIXED: Ganti dari frappe.has_role() ke frappe.get_roles()
+    if "Outlet Manager" not in frappe.get_roles():
         frappe.throw(_("Hanya Outlet Manager yang boleh membatalkan item."))
 
     doc = frappe.get_doc("POS Order Item", item_name)
-
     doc.cancelled = 1
     doc.cancellation_note = reason or "Cancelled manually"
     doc.rate = 0
@@ -42,6 +43,7 @@ def cancel_pos_order_item(item_name=None, reason=None):
         "status": "success",
         "message": _(f"Item {doc.item_code} dibatalkan.")
     }
+
 
 @frappe.whitelist()
 def mark_all_served(pos_order_id):
