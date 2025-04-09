@@ -16,13 +16,12 @@ def create_kot_from_pos_order(pos_order_id: str) -> str:
         except frappe.DoesNotExistError:
             frappe.throw(_("POS Order {0} tidak ditemukan.").format(pos_order_id))
 
-        async def get_pos_order_doc(order_id):
-            return await frappe.model.get_doc("POS Order", order_id)
-
-        pos_order = get_pos_order_doc(pos_order_id).result
         if pos_order.docstatus != 1:
-            if not item.sent_to_kitchen and not item.cancelled
-        ]
+            frappe.throw(_("POS Order harus disubmit terlebih dahulu."))
+
+        # PERBAIKAN: Hapus fungsi async dan perbaiki list comprehension
+        items_to_send = [item for item in pos_order.pos_order_items 
+                        if not item.sent_to_kitchen and not item.cancelled]
 
         if not items_to_send:
             frappe.throw(_("Semua item sudah dikirim ke dapur atau dibatalkan."))
@@ -169,19 +168,3 @@ def log_error(error: Exception, pos_order_id: str) -> None:
     Traceback: {frappe.get_traceback()}
     """
     frappe.log_error(message=error_msg, title="❌ KOT Creation Error")
-
-
-frappe.ui.form.on('POS Order', {
-    refresh(frm) {
-        frm.add_custom_button(__('Debug - Kirim ke Dapur'), async () => {
-            alert("Tombol Debug Berfungsi!");
-        }, __("Actions")).addClass("btn-warning");
-    }
-})
-frappe.ui.form.on('POS Order', {
-    refresh(frm) {
-        frm.add_custom_button(__('Debug - Kirim ke Dapur'), async () => {
-            alert("Tombol Debug Berfungsi!");
-        }, __("Actions")).addClass("btn-warning");
-    }
-})
