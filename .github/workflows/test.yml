@@ -95,12 +95,8 @@ jobs:
           echo ""
           echo "=== Tests Log ==="
           cat sites/site1.local/logs/tests.log || echo "No tests.log found"
-      
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-logs
-          path: |
-            frappe-bench/sites/site1.local/logs/*.log
-          retention-days: 5
+          
+          # Tampilkan semua log dengan cara alternatif
+          echo "=== All Log Files ==="
+          find sites/site1.local/logs -type f -name "*.log" -exec ls -la {} \;
+          find sites/site1.local/logs -type f -name "*.log" -exec cat {} \;
