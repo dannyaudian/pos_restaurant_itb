@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+  workflow_dispatch:
+    # Allows manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h localhost -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=3
+        
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmariadb-dev libffi-dev libjpeg-dev libfreetype6-dev liblcms2-dev libwebp-dev python3-dev libxml2-dev libxslt1-dev
+
+      - name: Install Python linting tools
+        run: |
+          pip install -U pip
+          pip install flake8 black isort
+          
+      - name: Run linting checks
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          black --check .
+          isort --check-only --profile black .
+          
+      - name: Install Frappe Bench
+        run: |
+          pip install frappe-bench
+          bench --version
+          
+      - name: Initialize Bench
+        run: |
+          bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 frappe-bench
+          cd frappe-bench
+          bench setup requirements --dev
+          
+      - name: Setup ERPNext and current app
+        run: |
+          cd frappe-bench
+          bench get-app --branch version-15 erpnext https://github.com/frappe/erpnext
+          bench get-app pos_restaurant_itb $GITHUB_WORKSPACE
+          
+      - name: Configure Bench for testing
+        run: |
+          cd frappe-bench
+          bench set-config -g db_host localhost
+          bench set-config -g redis_cache redis://localhost:6379/0
+          bench set-config -g redis_queue redis://localhost:6379/1
+          bench set-config -g redis_socketio redis://localhost:6379/2
+          
+          # Ensure procfile uses 0.0.0.0 instead of localhost
+          sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile
+          
+      - name: Create and setup test site
+        run: |
+          cd frappe-bench
+          bench new-site test-site --db-root-password root --admin-password admin
+          bench --site test-site install-app erpnext
+          bench --site test-site install-app pos_restaurant_itb
+          bench --site test-site set-config allow_tests true
+          
+      - name: Run tests
+        run: |
+          cd frappe-bench
+          bench --site test-site run-tests --app pos_restaurant_itb
+          
+      - name: Display logs on failure
+        if: failure()
+        run: |
+          cd frappe-bench
+          echo "=== Frappe Log ==="
+          cat sites/test-site/logs/frappe.log || echo "No frappe.log found"
+          echo ""
+          echo "=== Tests Log ==="
+          cat sites/test-site/logs/tests.log || echo "No tests.log found"
+          
+      - name: Upload logs as artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: |
+            frappe-bench/sites/test-site/logs/*.log
+          retention-days: 5
+
+  docs-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install docs dependencies
+        run: |
+          pip install -U pip
+          pip install sphinx sphinx_rtd_theme myst-parser
+          
+      - name: Build documentation
+        run: |
+          if [ -d "docs" ]; then
+            cd docs
+            make html
+          else
+            echo "No docs directory found, skipping documentation build"
+          fi

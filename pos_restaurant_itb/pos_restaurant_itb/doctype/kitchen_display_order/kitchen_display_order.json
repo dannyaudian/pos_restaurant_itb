@@ -1,0 +1,119 @@
+{
+    "autoname": "field:name",
+    "creation": "2023-04-11 14:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "display_details_section",
+      "kot_id",
+      "table_number",
+      "branch",
+      "column_break_4",
+      "status",
+      "last_updated",
+      "item_list_section",
+      "item_list"
+    ],
+    "fields": [
+      {
+        "fieldname": "display_details_section",
+        "fieldtype": "Section Break",
+        "label": "Display Details"
+      },
+      {
+        "fieldname": "kot_id",
+        "fieldtype": "Link",
+        "label": "KOT",
+        "options": "Kitchen Order Ticket",
+        "reqd": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "table_number",
+        "fieldtype": "Link",
+        "label": "Table",
+        "options": "POS Table",
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "branch",
+        "fieldtype": "Link",
+        "label": "Branch",
+        "options": "Branch",
+        "reqd": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "column_break_4",
+        "fieldtype": "Column Break"
+      },
+      {
+        "fieldname": "status",
+        "fieldtype": "Select",
+        "label": "Status",
+        "options": "New\nIn Progress\nReady\nServed\nCancelled",
+        "default": "New",
+        "reqd": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "last_updated",
+        "fieldtype": "Datetime",
+        "label": "Last Updated",
+        "default": "now",
+        "read_only": 1
+      },
+      {
+        "fieldname": "item_list_section",
+        "fieldtype": "Section Break",
+        "label": "Item List"
+      },
+      {
+        "fieldname": "item_list",
+        "fieldtype": "Table",
+        "label": "Item List",
+        "options": "KOT Item",
+        "reqd": 1
+      }
+    ],
+    "modified": "2023-04-11 14:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "Kitchen Display Order",
+    "name_case": "Title Case",
+    "owner": "Administrator",
+    "permissions": [
+      {
+        "create": 1,
+        "delete": 1,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "System Manager",
+        "share": 1,
+        "write": 1
+      },
+      {
+        "create": 0,
+        "delete": 0,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "Kitchen User",
+        "share": 0,
+        "write": 1
+      }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+  }

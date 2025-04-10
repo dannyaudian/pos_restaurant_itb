@@ -1,176 +1,149 @@
 🍽️ POS Restaurant ITB
-Aplikasi Frappe untuk operasional restoran modern.
-Mendukung pengelolaan meja, transaksi, dapur, dan printer dalam satu sistem terpadu.
+A comprehensive Frappe application designed for modern restaurant management, built on ERPNext v15. Supporting multi-branch operations, dynamic menu customization, and integrated kitchen workflow systems.
 
-🧩 Modul Utama
+🧩 Core Modules
+POS Order Management
+Feature-rich order entry system allowing waiters to create and modify orders with support for item variants and dynamic attributes.
+
 Table Management
-Manajemen status dan alokasi meja.
+Track and allocate tables across multiple restaurant branches with status monitoring and availability checks.
 
-POS Order
-Modul transaksi utama restoran.
+Kitchen Order Ticket (KOT)
+Automated ticket generation system that routes orders from POS to kitchen departments.
 
-Item Attributes
-Atribut tambahan untuk item (contoh: Spice Level, Toppings).
-
-KOT (Kitchen Order Ticket)
-Tiket dapur otomatis dari pesanan pelanggan.
-
-Kitchen Display (KDS)
-Tampilan order per meja, berdasarkan data dari KOT.
+Kitchen Display System (KDS)
+Real-time order tracking display showing active orders by table and processing status.
 
 Kitchen Station
-Menampilkan order berdasarkan item per quantity. Data diambil dari KDS dan dipecah per item sesuai station (berdasarkan item group).
+Specialized displays for specific kitchen departments (grill, fry, etc.) showing only relevant items grouped by item group.
 
-POS Kasir
-Menggunakan modul POS bawaan ERPNext yang dimodifikasi untuk kebutuhan restoran.
+Printer Mapping
+Flexible configuration for routing tickets to the appropriate kitchen or receipt printers.
 
+🌍 Multi-Branch Architecture
+All core documents include branch-based isolation to support multi-location restaurant operations:
+
+Data and configurations are segmented by branch
+Active branch validation throughout workflow
+Branch-specific printer configurations
+User roles and permissions with branch context
 🧾 POS Order
-Fungsi
-Auto-generate Order ID (berbasis cabang + tanggal)
-
-Validasi cabang aktif
-
-Perhitungan total otomatis
-
-Transisi status otomatis
-
-Alur Status
-rust
-Copy
-Edit
+Key Features
+Automatic order_id generation using branch code and sequential numbering
+Smart item selection focused on Item Templates
+Dynamic attribute UI for variant selection
+Structured order status workflow
+Real-time calculation of order totals
+Status Flow
 Draft → In Progress → Ready for Billing → Paid / Cancelled
-🪑 POS Table
-Manajemen meja dalam restoran, termasuk:
+Item Handling
+Items are selected from Item Templates
+For variant items, attributes are presented in a dialog
+Selected attributes generate the correct variant automatically
+Both the variant item_code and selected dynamic_attributes are stored
+🍽️ Dynamic Attributes System
+Implementation
+The system leverages ERPNext's native Item Variant framework with a custom UI layer:
 
-Alokasi meja ke pelanggan
+User selects an Item Template in POS Order
+System detects has_variant = 1 and presents attribute options
+Selected attributes resolve to a specific Item Variant
+Both variant (item_code) and attributes (dynamic_attributes) are stored
+Data Structure
+Dynamic attributes are stored as JSON in this format:
 
-Status aktif/tidak aktif
-
-Hubungan ke cabang restoran
-
-🍳 Kitchen Order Ticket (KOT)
-Fungsi
-Dibuat otomatis saat POS Order disubmit
-
-Menyimpan item yang perlu dimasak
-
-Memicu pembuatan Kitchen Display Order
-
-Alur Status
-sql
-Copy
-Edit
-New → In Progress → Ready → Served / Cancelled
-Integrasi
-Event handler otomatis mengonversi KOT menjadi entri Kitchen Station berdasarkan item yang perlu dimasak.
-
-🧾 KOT Item
-Menyimpan data tiap item makanan yang dikirim ke dapur.
-
-Mewarisi dynamic_attributes dari POS Order.
-
-Menyediakan properti otomatis attribute_summary.
-
-Properti: attribute_summary
-Bukan field database
-
-Dihasilkan otomatis dari field dynamic_attributes
-
-Berupa string deskriptif, misalnya:
-
-yaml
-Copy
-Edit
-Spice Level: Medium | Toppings: Extra Cheese
-🧠 Dynamic Attributes Flow
-1. Pemilihan Atribut di POS Order
-User memilih atribut saat menambahkan item
-
-Disimpan dalam field JSON dynamic_attributes pada POS Order Item
-
-json
-Copy
-Edit
 [
-  { "attribute_name": "Spice Level", "attribute_value": "Medium" },
-  { "attribute_name": "Toppings", "attribute_value": "Extra Cheese" }
+  {"attribute_name": "Spice Level", "attribute_value": "Medium"},
+  {"attribute_name": "Toppings", "attribute_value": "Extra Cheese"}
 ]
-2. Penyalinan ke KOT Item
-Saat KOT dibuat dari POS Order, dynamic_attributes disalin ke tiap item KOT
+Attribute Summary
+A computed property transforms the JSON into a human-readable string:
 
-3. Pembentukan attribute_summary
-Dihitung sebagai properti Python
-
-Tidak disimpan di DB, hanya muncul saat dibutuhkan
-
-📺 Kitchen Display Order
-Menampilkan pesanan ke dapur berdasarkan meja.
-
-Field Utama
-kot
-
-table
-
-branch
-
-items
-
-status
-
-last_updated
-
+Spice Level: Medium, Toppings: Extra Cheese
+🍳 Kitchen Order Ticket (KOT)
+Automation
+Created automatically when items are sent to kitchen
+after_insert
+ hook triggers creation of KDS and Kitchen Station entries
+Dynamic attributes are preserved throughout the workflow
+Status Management
+New → In Progress → Ready → Served / Cancelled
+Structure
+Each KOT references the source POS Order
+Contains KOT Items that track individual dish preparation
+Preserves all dynamic attributes for kitchen reference
+📺 Kitchen Display System (KDS)
+Function
+Aggregates KOTs by table for kitchen overview
+Updates status in real-time based on item preparation progress
+Provides clear view of all active orders
+Implementation
+Created automatically from KOT via hooks
+Bidirectional sync with KOT status
+Branch-isolated to show only relevant orders
 🔪 Kitchen Station
-Mengelompokkan dan menampilkan tiap item makanan yang sedang diproses berdasarkan station.
+Function
+Created per item (one entry per quantity unit)
+Filtered by item group for department-specific views
+Preserves attribute details for accurate preparation
+Configuration
+The Kitchen Station Setup doctype defines:
 
-Field Utama
-kot
+Which item groups route to which stations
+Which printers receive tickets from each station
+Branch-specific configurations and print formats
+🖨️ Printing System
+Print Routing
+Each Kitchen Station can have multiple assigned printers
+Different print formats for different printer types
+Support for network, USB, and Bluetooth printers
+Print Formats
+KOT Print: Detailed ticket for kitchen preparation
+Receipt: Customer-facing bill format
+Custom formats configurable per station
+⚙️ Technical Architecture
+API Structure
+RESTful endpoints in api/ directory
+Function-specific files (e.g., create_kot.py, resolve_variant.py)
+Proper whitelist protections via @frappe.whitelist()
+Hook Integration
+Document event hooks for automated workflows
+Client-side JS customizations for enhanced UI
+Custom permissions handling for role-based access
+Helper Functions
+Common utilities in utils/ directory
+Shared functions for attribute handling
+Reusable components for consistency
+🔄 Complete Workflow
+POS Order Creation
+    ↓
+Item & Attribute Selection
+    ↓
+Send to Kitchen → Generate KOT
+    ↓
+KOT after_insert → Create KDS
+    ↓
+KOT after_insert → Create Kitchen Station Items
+    ↓
+Kitchen Processing → Status Updates
+    ↓
+Ready for Billing → Payment → Finalization
+🧪 Development and Testing
+Branch Isolation
+All operations validate branch context to ensure data security and proper segregation.
 
-item_code
+Error Handling
+Comprehensive try-except patterns with detailed error logging throughout the codebase.
 
-status
+Validation
+Extensive validation at each step ensures data integrity and prevents common operational errors.
 
-last_updated
+🚀 Deployment
+The application is designed for flexible deployment options:
 
-attribute_summary
+Frappe Cloud: One-click deployment with managed infrastructure
+Self-hosted VPS: Complete control with custom server configuration
+Development: Local setup with bench for testing and customization
+CI/CD pipelines via GitHub Actions support automated testing and deployment.
 
-note
-
-cancelled
-
-cancellation_note
-
-⚙️ Kitchen Station Setup
-Pengaturan dapur berdasarkan:
-
-Nama station
-
-Branch terkait
-
-Group item yang ditangani
-
-Format cetakan dan printer
-
-🎛️ POS Dynamic Attribute
-Digunakan untuk mendefinisikan atribut tambahan item (opsional):
-
-attribute_name
-
-attribute_value
-
-mapped_item
-
-pos_order_item
-
-📌 Ringkasan Alur Dinamis Atribut
-mathematica
-Copy
-Edit
-POS Order Item (pilih atribut)
-        ↓
-Submit POS Order
-        ↓
-KOT Item menerima copy dynamic_attributes
-        ↓
-attribute_summary dihitung otomatis dari JSON
-        ↓
-Digunakan untuk KDS, Kitchen Station, dan cetakan
+This application follows Frappe/ERPNext v15 best practices and maintains a modular architecture for enhanced maintainability and extensibility. All components are designed to work together seamlessly while allowing for independent customization as needed.

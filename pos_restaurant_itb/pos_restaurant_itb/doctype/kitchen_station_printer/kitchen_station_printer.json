@@ -1,0 +1,45 @@
+{
+    "autoname": "hash",
+    "creation": "2023-04-12 14:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "printer",
+      "print_format",
+      "is_default"
+    ],
+    "fields": [
+      {
+        "fieldname": "printer",
+        "fieldtype": "Link",
+        "in_list_view": 1,
+        "label": "Printer",
+        "options": "Printer Mapping POS Restaurant",
+        "reqd": 1
+      },
+      {
+        "fieldname": "print_format",
+        "fieldtype": "Link",
+        "in_list_view": 1,
+        "label": "Print Format",
+        "options": "Print Format"
+      },
+      {
+        "fieldname": "is_default",
+        "fieldtype": "Check",
+        "in_list_view": 1,
+        "label": "Is Default",
+        "default": 0
+      }
+    ],
+    "istable": 1,
+    "modified": "2023-04-12 14:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "Kitchen Station Printer",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+  }

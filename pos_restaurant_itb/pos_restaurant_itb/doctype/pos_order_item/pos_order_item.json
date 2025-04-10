@@ -1,0 +1,119 @@
+{
+  "autoname": "hash",
+  "creation": "2023-04-13 10:00:00",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "item_code",
+    "template_item",
+    "item_name",
+    "variant_attributes",
+    "qty",
+    "rate",
+    "amount",
+    "column_break_7",
+    "note",
+    "sent_to_kitchen",
+    "kot_id",
+    "cancelled",
+    "cancellation_note"
+  ],
+  "fields": [
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Item Code",
+      "options": "Item",
+      "reqd": 1
+    },
+    {
+      "fieldname": "template_item",
+      "fieldtype": "Link",
+      "label": "Template Item",
+      "options": "Item",
+      "read_only": 1,
+      "description": "Original template item if this is a variant"
+    },
+    {
+      "fieldname": "item_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Item Name",
+      "fetch_from": "item_code.item_name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "variant_attributes",
+      "fieldtype": "JSON",
+      "label": "Variant Attributes",
+      "description": "Attributes that define this variant"
+    },
+    {
+      "fieldname": "qty",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "Quantity",
+      "reqd": 1,
+      "default": 1
+    },
+    {
+      "fieldname": "rate",
+      "fieldtype": "Currency",
+      "in_list_view": 1,
+      "label": "Rate",
+      "reqd": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "in_list_view": 1,
+      "label": "Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_7",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "note",
+      "fieldtype": "Small Text",
+      "label": "Note"
+    },
+    {
+      "fieldname": "sent_to_kitchen",
+      "fieldtype": "Check",
+      "label": "Sent to Kitchen",
+      "default": 0
+    },
+    {
+      "fieldname": "kot_id",
+      "fieldtype": "Link",
+      "label": "KOT",
+      "options": "Kitchen Order Ticket",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cancelled",
+      "fieldtype": "Check",
+      "label": "Cancelled",
+      "default": 0
+    },
+    {
+      "fieldname": "cancellation_note",
+      "fieldtype": "Small Text",
+      "label": "Cancellation Reason",
+      "depends_on": "eval:doc.cancelled==1"
+    }
+  ],
+  "istable": 1,
+  "modified": "2023-04-13 10:00:00",
+  "modified_by": "Administrator",
+  "module": "POS Restaurant ITB",
+  "name": "POS Order Item",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC"
+}

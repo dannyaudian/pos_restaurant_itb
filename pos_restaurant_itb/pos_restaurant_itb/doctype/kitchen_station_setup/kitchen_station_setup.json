@@ -1,0 +1,195 @@
+{
+    "autoname": "field:station_name",
+    "creation": "2023-04-12 14:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "basic_details_section",
+      "station_name",
+      "branch",
+      "is_active",
+      "column_break_4",
+      "station_display_name",
+      "description",
+      "routing_section",
+      "item_group",
+      "allow_all_item_groups",
+      "column_break_9",
+      "additional_item_groups",
+      "printing_section",
+      "print_format",
+      "default_printer",
+      "assigned_printers",
+      "advanced_settings_section",
+      "auto_print_new_orders",
+      "combine_identical_items",
+      "show_preparation_time"
+    ],
+    "fields": [
+      {
+        "fieldname": "basic_details_section",
+        "fieldtype": "Section Break",
+        "label": "Basic Details"
+      },
+      {
+        "fieldname": "station_name",
+        "fieldtype": "Data",
+        "label": "Station Name",
+        "reqd": 1,
+        "unique": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "branch",
+        "fieldtype": "Link",
+        "label": "Branch",
+        "options": "Branch",
+        "reqd": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "is_active",
+        "fieldtype": "Check",
+        "label": "Is Active",
+        "default": 1,
+        "in_list_view": 1,
+        "in_standard_filter": 1
+      },
+      {
+        "fieldname": "column_break_4",
+        "fieldtype": "Column Break"
+      },
+      {
+        "fieldname": "station_display_name",
+        "fieldtype": "Data",
+        "label": "Display Name",
+        "description": "Name to display on kitchen screens"
+      },
+      {
+        "fieldname": "description",
+        "fieldtype": "Small Text",
+        "label": "Description"
+      },
+      {
+        "fieldname": "routing_section",
+        "fieldtype": "Section Break",
+        "label": "Item Routing"
+      },
+      {
+        "fieldname": "item_group",
+        "fieldtype": "Link",
+        "label": "Primary Item Group",
+        "options": "Item Group",
+        "reqd": 1,
+        "in_standard_filter": 1,
+        "description": "Primary item group this station handles"
+      },
+      {
+        "fieldname": "allow_all_item_groups",
+        "fieldtype": "Check",
+        "label": "Handle All Item Groups",
+        "default": 0,
+        "description": "If checked, this station will receive all items regardless of item group"
+      },
+      {
+        "fieldname": "column_break_9",
+        "fieldtype": "Column Break"
+      },
+      {
+        "fieldname": "additional_item_groups",
+        "fieldtype": "Table MultiSelect",
+        "label": "Additional Item Groups",
+        "options": "Kitchen Station Item Group",
+        "description": "Additional item groups this station can handle"
+      },
+      {
+        "fieldname": "printing_section",
+        "fieldtype": "Section Break",
+        "label": "Printing Configuration"
+      },
+      {
+        "fieldname": "print_format",
+        "fieldtype": "Link",
+        "label": "Print Format",
+        "options": "Print Format",
+        "description": "Default print format for this kitchen station"
+      },
+      {
+        "fieldname": "default_printer",
+        "fieldtype": "Link",
+        "label": "Default Printer",
+        "options": "Printer Mapping POS Restaurant"
+      },
+      {
+        "fieldname": "assigned_printers",
+        "fieldtype": "Table",
+        "label": "Assigned Printers",
+        "options": "Kitchen Station Printer"
+      },
+      {
+        "fieldname": "advanced_settings_section",
+        "fieldtype": "Section Break",
+        "label": "Advanced Settings",
+        "collapsible": 1
+      },
+      {
+        "fieldname": "auto_print_new_orders",
+        "fieldtype": "Check",
+        "label": "Auto Print New Orders",
+        "default": 1,
+        "description": "Automatically print orders when they arrive"
+      },
+      {
+        "fieldname": "combine_identical_items",
+        "fieldtype": "Check",
+        "label": "Combine Identical Items",
+        "default": 1,
+        "description": "Group identical items with the same attributes"
+      },
+      {
+        "fieldname": "show_preparation_time",
+        "fieldtype": "Check",
+        "label": "Show Preparation Time",
+        "default": 1,
+        "description": "Display preparation time for items"
+      }
+    ],
+    "modified": "2023-04-12 14:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "Kitchen Station Setup",
+    "name_case": "Title Case",
+    "owner": "Administrator",
+    "permissions": [
+      {
+        "create": 1,
+        "delete": 1,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "System Manager",
+        "share": 1,
+        "write": 1
+      },
+      {
+        "create": 0,
+        "delete": 0,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "Kitchen User",
+        "share": 0,
+        "write": 0
+      }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+  }

@@ -1,0 +1,163 @@
+{
+    "autoname": "field:order_id",
+    "creation": "2023-04-10 12:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "order_details_section",
+      "order_id",
+      "branch",
+      "table",
+      "order_type",
+      "customer",
+      "column_break_6",
+      "status",
+      "final_billed",
+      "sales_invoice",
+      "items_section",
+      "items",
+      "totals_section",
+      "total_amount",
+      "amended_from"
+    ],
+    "fields": [
+      {
+        "fieldname": "order_details_section",
+        "fieldtype": "Section Break",
+        "label": "Order Details"
+      },
+      {
+        "fieldname": "order_id",
+        "fieldtype": "Data",
+        "label": "Order ID",
+        "reqd": 1,
+        "unique": 1,
+        "read_only": 1
+      },
+      {
+        "fieldname": "branch",
+        "fieldtype": "Link",
+        "label": "Branch",
+        "options": "Branch",
+        "reqd": 1
+      },
+      {
+        "fieldname": "table",
+        "fieldtype": "Link",
+        "label": "Table",
+        "options": "POS Table",
+        "depends_on": "eval:doc.order_type=='Dine In'"
+      },
+      {
+        "fieldname": "order_type",
+        "fieldtype": "Select",
+        "label": "Order Type",
+        "options": "Dine In\nTakeaway\nDelivery",
+        "reqd": 1,
+        "default": "Dine In"
+      },
+      {
+        "fieldname": "customer",
+        "fieldtype": "Link",
+        "label": "Customer",
+        "options": "Customer"
+      },
+      {
+        "fieldname": "column_break_6",
+        "fieldtype": "Column Break"
+      },
+      {
+        "fieldname": "status",
+        "fieldtype": "Select",
+        "label": "Status",
+        "options": "Draft\nIn Progress\nReady for Billing\nPaid\nCancelled",
+        "default": "Draft",
+        "reqd": 1
+      },
+      {
+        "fieldname": "final_billed",
+        "fieldtype": "Check",
+        "label": "Final Billed",
+        "read_only": 1,
+        "depends_on": "eval:doc.status=='Paid'",
+        "default": 0
+      },
+      {
+        "fieldname": "sales_invoice",
+        "fieldtype": "Link",
+        "label": "Sales Invoice",
+        "options": "Sales Invoice",
+        "depends_on": "eval:doc.status=='Paid'",
+        "read_only": 1
+      },
+      {
+        "fieldname": "items_section",
+        "fieldtype": "Section Break",
+        "label": "Items"
+      },
+      {
+        "fieldname": "items",
+        "fieldtype": "Table",
+        "label": "Items",
+        "options": "POS Order Item",
+        "reqd": 1
+      },
+      {
+        "fieldname": "totals_section",
+        "fieldtype": "Section Break",
+        "label": "Totals"
+      },
+      {
+        "fieldname": "total_amount",
+        "fieldtype": "Currency",
+        "label": "Total Amount",
+        "read_only": 1,
+        "default": 0.0
+      },
+      {
+        "fieldname": "amended_from",
+        "fieldtype": "Link",
+        "label": "Amended From",
+        "no_copy": 1,
+        "options": "POS Order",
+        "print_hide": 1,
+        "read_only": 1
+      }
+    ],
+    "is_submittable": 0,
+    "modified": "2023-04-10 12:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "POS Order",
+    "owner": "Administrator",
+    "permissions": [
+      {
+        "create": 1,
+        "delete": 1,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "System Manager",
+        "share": 1,
+        "write": 1
+      },
+      {
+        "create": 1,
+        "delete": 0,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "Sales User",
+        "share": 1,
+        "write": 1
+      }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+  }

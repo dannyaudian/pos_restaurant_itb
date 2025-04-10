@@ -1,0 +1,151 @@
+{
+    "autoname": "field:kot_id",
+    "creation": "2023-04-10 14:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "kot_details_section",
+      "kot_id",
+      "pos_order",
+      "table",
+      "branch",
+      "status",
+      "column_break_6",
+      "kot_time",
+      "waiter",
+      "kot_items_section",
+      "kot_items",
+      "amended_from"
+    ],
+    "fields": [
+      {
+        "fieldname": "kot_details_section",
+        "fieldtype": "Section Break",
+        "label": "KOT Details"
+      },
+      {
+        "fieldname": "kot_id",
+        "fieldtype": "Data",
+        "label": "KOT ID",
+        "reqd": 1,
+        "unique": 1,
+        "read_only": 1
+      },
+      {
+        "fieldname": "pos_order",
+        "fieldtype": "Link",
+        "label": "POS Order",
+        "options": "POS Order",
+        "reqd": 1
+      },
+      {
+        "fieldname": "table",
+        "fieldtype": "Link",
+        "label": "Table",
+        "options": "POS Table",
+        "fetch_from": "pos_order.table"
+      },
+      {
+        "fieldname": "branch",
+        "fieldtype": "Link",
+        "label": "Branch",
+        "options": "Branch",
+        "reqd": 1,
+        "fetch_from": "pos_order.branch"
+      },
+      {
+        "fieldname": "status",
+        "fieldtype": "Select",
+        "label": "Status",
+        "options": "New\nIn Progress\nReady\nServed\nCancelled",
+        "default": "New",
+        "reqd": 1
+      },
+      {
+        "fieldname": "column_break_6",
+        "fieldtype": "Column Break"
+      },
+      {
+        "fieldname": "kot_time",
+        "fieldtype": "Datetime",
+        "label": "KOT Time",
+        "default": "now",
+        "reqd": 1
+      },
+      {
+        "fieldname": "waiter",
+        "fieldtype": "Link",
+        "label": "Waiter",
+        "options": "Employee"
+      },
+      {
+        "fieldname": "kot_items_section",
+        "fieldtype": "Section Break",
+        "label": "KOT Items"
+      },
+      {
+        "fieldname": "kot_items",
+        "fieldtype": "Table",
+        "label": "KOT Items",
+        "options": "KOT Item",
+        "reqd": 1
+      },
+      {
+        "fieldname": "amended_from",
+        "fieldtype": "Link",
+        "label": "Amended From",
+        "no_copy": 1,
+        "options": "Kitchen Order Ticket",
+        "print_hide": 1,
+        "read_only": 1
+      }
+    ],
+    "is_submittable": 0,
+    "modified": "2023-04-10 14:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "Kitchen Order Ticket",
+    "owner": "Administrator",
+    "permissions": [
+      {
+        "create": 1,
+        "delete": 1,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "System Manager",
+        "share": 1,
+        "write": 1
+      },
+      {
+        "create": 1,
+        "delete": 0,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "Sales User",
+        "share": 1,
+        "write": 1
+      },
+      {
+        "create": 0,
+        "delete": 0,
+        "email": 1,
+        "export": 1,
+        "print": 1,
+        "read": 1,
+        "report": 1,
+        "role": "Kitchen User",
+        "share": 0,
+        "write": 1
+      }
+    ],
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+  }

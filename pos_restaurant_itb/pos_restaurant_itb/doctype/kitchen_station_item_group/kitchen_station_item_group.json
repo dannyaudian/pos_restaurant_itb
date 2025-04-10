@@ -1,0 +1,29 @@
+{
+    "autoname": "hash",
+    "creation": "2023-04-12 14:00:00",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+      "item_group"
+    ],
+    "fields": [
+      {
+        "fieldname": "item_group",
+        "fieldtype": "Link",
+        "in_list_view": 1,
+        "label": "Item Group",
+        "options": "Item Group",
+        "reqd": 1
+      }
+    ],
+    "istable": 1,
+    "modified": "2023-04-12 14:00:00",
+    "modified_by": "Administrator",
+    "module": "POS Restaurant ITB",
+    "name": "Kitchen Station Item Group",
+    "owner": "Administrator",
+    "permissions": [],
+    "sort_field": "modified",
+    "sort_order": "DESC"
+  }
