@@ -28,11 +28,6 @@ doc_events = {
     }
 }
 
-# Optional: Auto reload Desk
-app_include_js = [
-    "/assets/pos_restaurant_itb/js/auto_refresh.js"
-]
-
 # Fixtures
 fixtures = [
     "Client Script",
@@ -46,7 +41,7 @@ fixtures = [
 ]
 
 # Whitelisted methods
-whitelisted_methods = {
+whitelist_methods = {
     "pos_restaurant_itb.api.create_kot.create_kot_from_pos_order": True,
     "pos_restaurant_itb.api.get_attributes_for_item.get_attributes_for_item": True,
     "pos_restaurant_itb.api.resolve_variant.resolve_variant": True
@@ -61,5 +56,5 @@ scheduler_events = {
 
 # Permissions hook
 has_permission = {
-    "Kitchen Display Order": "pos_restaurant_itb.permissions.kds_permissions"
+    "Kitchen Display Order": "pos_restaurant_itb.utils.permissions.kds_permissions"
 }
