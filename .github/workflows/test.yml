@@ -54,7 +54,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libmariadb-dev libffi-dev libjpeg-dev libfreetype6-dev liblcms2-dev libwebp-dev python3-dev libxml2-dev libxslt1-dev
+          sudo apt-get install -y libmariadb-dev libffi-dev libjpeg-dev libfreetype6-dev liblcms2-dev libwebp-dev python3-dev libxml2-dev libxslt1-dev redis-server redis-tools
+          
+          # Verify Redis is installed
+          redis-server --version
+          redis-cli --version
       
       - name: Install frappe-bench
         id: install-bench
@@ -64,12 +68,23 @@ jobs:
           pip install frappe-bench
           which bench || echo "BENCH NOT FOUND!"
           
+      - name: Prepare for bench init
+        id: prepare-bench
+        run: |
+          echo "Stopping local Redis server to avoid port conflicts..."
+          sudo systemctl stop redis-server || echo "Redis service not running"
+          sudo systemctl status redis-server || echo "Redis service status check failed"
+          
+          # Make sure Redis from service container is accessible
+          echo "Testing Redis connection..."
+          redis-cli -h localhost -p 6379 ping || echo "Redis ping failed"
+          
       - name: Setup bench
         id: setup-bench
-        if: success()
         run: |
           echo "Setting up bench..."
-          bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 frappe-bench
+          # Use --no-setup-redis to skip Redis setup since we're using container
+          bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 --no-setup-redis frappe-bench
           cd frappe-bench
           echo "Checking bench directory..."
           ls -la
@@ -99,6 +114,8 @@ jobs:
           echo "Setting up site for testing..."
           cd frappe-bench || (echo "frappe-bench directory not found!" && exit 1)
           sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile || echo "Failed to update Procfile"
+          
+          # Configure bench to use Redis service container
           bench set-config -g db_host localhost || echo "Failed to set db_host"
           bench set-config -g redis_cache redis://localhost:6379/0 || echo "Failed to set redis_cache"
           bench set-config -g redis_queue redis://localhost:6379/1 || echo "Failed to set redis_queue" 
@@ -162,6 +179,9 @@ jobs:
               fi
             else
               echo "Logs directory not found"
+              mkdir -p sites/site1.local/logs
+              echo "Created logs directory"
+              
               echo "Contents of sites/site1.local directory:"
               ls -la sites/site1.local/ || echo "sites/site1.local/ directory not found"
             fi
