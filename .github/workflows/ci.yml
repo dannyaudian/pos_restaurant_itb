@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "startover" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main", "startover" ]
+    branches: [ "main", "develop" ]
   workflow_dispatch:
     # Allows manual triggering
 
@@ -93,61 +93,101 @@ jobs:
           bench --site test-site install-app erpnext
           bench --site test-site install-app pos_restaurant_itb
           bench --site test-site set-config allow_tests true
+      
+      - name: Ensure logs directory exists
+        run: |
+          cd frappe-bench
+          mkdir -p sites/test-site/logs
+          touch sites/test-site/logs/frappe.log
+          touch sites/test-site/logs/tests.log
+          echo "Created log files:"
+          ls -la sites/test-site/logs/
           
       - name: Run tests
         run: |
           cd frappe-bench
-          # Create logs directory if it doesn't exist
-          mkdir -p sites/test-site/logs
-          touch sites/test-site/logs/frappe.log
-          touch sites/test-site/logs/tests.log
+          # Run tests and continue even if tests fail
+          bench --site test-site run-tests --app pos_restaurant_itb || echo "Tests completed with non-zero exit code"
           
-          # Run tests
-          bench --site test-site run-tests --app pos_restaurant_itb || echo "Tests failed but continuing"
+      - name: Create log files if they don't exist
+        if: always()
+        run: |
+          cd frappe-bench
+          # Ensure log files exist even if tests didn't create them
+          if [ ! -f "sites/test-site/logs/frappe.log" ]; then
+            echo "Creating empty frappe.log as it doesn't exist"
+            touch sites/test-site/logs/frappe.log
+          fi
+          
+          if [ ! -f "sites/test-site/logs/tests.log" ]; then
+            echo "Creating empty tests.log as it doesn't exist"
+            touch sites/test-site/logs/tests.log
+          fi
+          
+          # Create a custom log file with workflow information
+          echo "Workflow execution timestamp: $(date)" > sites/test-site/logs/workflow.log
+          echo "GitHub run ID: $GITHUB_RUN_ID" >> sites/test-site/logs/workflow.log
+          echo "GitHub repository: $GITHUB_REPOSITORY" >> sites/test-site/logs/workflow.log
           
       - name: Debug logs directory
         if: always()
         run: |
           cd frappe-bench
           echo "Current directory structure:"
+          pwd
           ls -la
           
-          echo "Sites directory:"
-          ls -la sites/
+          echo "Sites directory contents:"
+          ls -la sites/ || echo "Sites directory not found"
           
-          echo "Test site directory:"
+          echo "Test site directory contents:"
           ls -la sites/test-site/ || echo "Test site directory not found"
           
-          echo "Logs directory:"
+          echo "Logs directory contents:"
           ls -la sites/test-site/logs/ || echo "Logs directory not found"
+          
+          # Check file sizes to see if logs are empty
+          echo "Log file sizes:"
+          du -h sites/test-site/logs/* || echo "Error checking log file sizes"
           
       - name: Display logs
         if: always()
         run: |
           cd frappe-bench
           
-          echo "=== Frappe Log ==="
+          echo "=== Frappe Log (last 50 lines) ==="
           if [ -f "sites/test-site/logs/frappe.log" ]; then
-            cat sites/test-site/logs/frappe.log
+            tail -n 50 sites/test-site/logs/frappe.log
           else
             echo "No frappe.log found"
           fi
           
           echo ""
-          echo "=== Tests Log ==="
+          echo "=== Tests Log (last 50 lines) ==="
           if [ -f "sites/test-site/logs/tests.log" ]; then
-            cat sites/test-site/logs/tests.log
+            tail -n 50 sites/test-site/logs/tests.log
           else
             echo "No tests.log found"
           fi
+          
+          echo ""
+          echo "=== Workflow Log ==="
+          if [ -f "sites/test-site/logs/workflow.log" ]; then
+            cat sites/test-site/logs/workflow.log
+          else
+            echo "No workflow.log found"
+          fi
       
-      # Using a more compatible version of upload-artifact
+      # Use explicit file paths for the upload
       - name: Upload logs as artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-logs
-          path: frappe-bench/sites/test-site/logs/
+          path: |
+            frappe-bench/sites/test-site/logs/frappe.log
+            frappe-bench/sites/test-site/logs/tests.log
+            frappe-bench/sites/test-site/logs/workflow.log
           if-no-files-found: warn
 
   docs-test:
