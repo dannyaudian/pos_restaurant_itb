@@ -34,20 +34,20 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout Repo
+      - name: ✅ Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install Bench CLI
+      - name: 🔧 Install Bench CLI
         run: |
           pip install --upgrade pip
           pip install frappe-bench
 
-      - name: Init Bench & Install Frappe
+      - name: 📦 Init Bench & Install Frappe
         run: |
           bench init --skip-assets --skip-redis-config-generation \
             --frappe-path https://github.com/frappe/frappe \
@@ -55,28 +55,37 @@ jobs:
           cd frappe-bench
           bench setup requirements --dev
 
-      - name: Get Apps (ERPNext + Custom App)
+      - name: 📥 Get Apps (ERPNext + Custom App)
         run: |
           cd frappe-bench
           bench get-app --branch version-15 erpnext https://github.com/frappe/erpnext
           bench get-app pos_restaurant_itb $GITHUB_WORKSPACE
 
-      - name: Setup Site
+      - name: 🌐 Setup Site
         run: |
           cd frappe-bench
           bench new-site site1.local --mariadb-root-password root --admin-password admin \
             --install-app erpnext
           bench --site site1.local install-app pos_restaurant_itb
 
-      - name: Run Tests
+      - name: 🧪 Run Tests
         run: |
           cd frappe-bench
           bench --site site1.local set-config allow_tests true
           bench --site site1.local run-tests --app pos_restaurant_itb
 
-      - name: Show Logs on Failure
+      - name: 🧾 Show Logs on Failure
         if: failure()
         run: |
           cd frappe-bench
           cat sites/site1.local/logs/frappe.log || true
           cat sites/site1.local/logs/tests.log || true
+
+      - name: 📤 Upload Logs if Test Fails
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frappe-test-logs
+          path: |
+            frappe-bench/sites/site1.local/logs/frappe.log
+            frappe-bench/sites/site1.local/logs/tests.log
