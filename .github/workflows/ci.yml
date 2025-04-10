@@ -8,6 +8,11 @@ on:
   workflow_dispatch:
     # Allows manual triggering
 
+# Enable debugging for GitHub Actions
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -145,49 +150,21 @@ jobs:
           
           echo "Logs directory contents:"
           ls -la sites/test-site/logs/ || echo "Logs directory not found"
-          
-          # Check file sizes to see if logs are empty
-          echo "Log file sizes:"
-          du -h sites/test-site/logs/* || echo "Error checking log file sizes"
-          
-      - name: Display logs
+      
+      # Clear cache to prevent cached dependency issues
+      - name: Clear GitHub Actions cache
         if: always()
         run: |
-          cd frappe-bench
-          
-          echo "=== Frappe Log (last 50 lines) ==="
-          if [ -f "sites/test-site/logs/frappe.log" ]; then
-            tail -n 50 sites/test-site/logs/frappe.log
-          else
-            echo "No frappe.log found"
-          fi
-          
-          echo ""
-          echo "=== Tests Log (last 50 lines) ==="
-          if [ -f "sites/test-site/logs/tests.log" ]; then
-            tail -n 50 sites/test-site/logs/tests.log
-          else
-            echo "No tests.log found"
-          fi
-          
-          echo ""
-          echo "=== Workflow Log ==="
-          if [ -f "sites/test-site/logs/workflow.log" ]; then
-            cat sites/test-site/logs/workflow.log
-          else
-            echo "No workflow.log found"
-          fi
+          echo "Clearing GitHub Actions cache..."
+          sudo rm -rf /home/runner/.cache || true
       
-      # Use explicit file paths for the upload
+      # Use a more stable version of upload-artifact
       - name: Upload logs as artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: test-logs
-          path: |
-            frappe-bench/sites/test-site/logs/frappe.log
-            frappe-bench/sites/test-site/logs/tests.log
-            frappe-bench/sites/test-site/logs/workflow.log
+          path: frappe-bench/sites/test-site/logs/
           if-no-files-found: warn
 
   docs-test:
