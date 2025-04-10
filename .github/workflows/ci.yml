@@ -2,13 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "startover" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "startover" ]
   workflow_dispatch:
-    # Allows manual triggering
 
-# Enable debugging for GitHub Actions
 env:
   ACTIONS_RUNNER_DEBUG: true
   ACTIONS_STEP_DEBUG: true
@@ -16,7 +14,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       mariadb:
         image: mariadb:10.6
@@ -25,28 +23,28 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping -h localhost -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=3
-        
+
       redis:
         image: redis:alpine
         ports:
           - 6379:6379
         options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           cache: 'pip'
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-          
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -56,30 +54,30 @@ jobs:
         run: |
           pip install -U pip
           pip install flake8 black isort
-          
+
       - name: Run linting checks
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           black --check .
           isort --check-only --profile black .
-          
+
       - name: Install Frappe Bench
         run: |
           pip install frappe-bench
           bench --version
-          
+
       - name: Initialize Bench
         run: |
           bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 frappe-bench
           cd frappe-bench
           bench setup requirements --dev
-          
+
       - name: Setup ERPNext and current app
         run: |
           cd frappe-bench
           bench get-app --branch version-15 erpnext https://github.com/frappe/erpnext
           bench get-app pos_restaurant_itb $GITHUB_WORKSPACE
-          
+
       - name: Configure Bench for testing
         run: |
           cd frappe-bench
@@ -87,10 +85,8 @@ jobs:
           bench set-config -g redis_cache redis://localhost:6379/0
           bench set-config -g redis_queue redis://localhost:6379/1
           bench set-config -g redis_socketio redis://localhost:6379/2
-          
-          # Ensure procfile uses 0.0.0.0 instead of localhost
           sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile
-          
+
       - name: Create and setup test site
         run: |
           cd frappe-bench
@@ -98,67 +94,30 @@ jobs:
           bench --site test-site install-app erpnext
           bench --site test-site install-app pos_restaurant_itb
           bench --site test-site set-config allow_tests true
-      
-      - name: Ensure logs directory exists
+
+      - name: Prepare logs directory
         run: |
           cd frappe-bench
           mkdir -p sites/test-site/logs
           touch sites/test-site/logs/frappe.log
           touch sites/test-site/logs/tests.log
-          echo "Created log files:"
-          ls -la sites/test-site/logs/
-          
+
       - name: Run tests
+        continue-on-error: true
         run: |
           cd frappe-bench
-          # Run tests and continue even if tests fail
-          bench --site test-site run-tests --app pos_restaurant_itb || echo "Tests completed with non-zero exit code"
-          
-      - name: Create log files if they don't exist
+          bench --site test-site run-tests --app pos_restaurant_itb || echo "Tests failed"
+
+      - name: Ensure log files exist
         if: always()
         run: |
           cd frappe-bench
-          # Ensure log files exist even if tests didn't create them
-          if [ ! -f "sites/test-site/logs/frappe.log" ]; then
-            echo "Creating empty frappe.log as it doesn't exist"
-            touch sites/test-site/logs/frappe.log
-          fi
-          
-          if [ ! -f "sites/test-site/logs/tests.log" ]; then
-            echo "Creating empty tests.log as it doesn't exist"
-            touch sites/test-site/logs/tests.log
-          fi
-          
-          # Create a custom log file with workflow information
+          [ -f sites/test-site/logs/frappe.log ] || touch sites/test-site/logs/frappe.log
+          [ -f sites/test-site/logs/tests.log ] || touch sites/test-site/logs/tests.log
           echo "Workflow execution timestamp: $(date)" > sites/test-site/logs/workflow.log
           echo "GitHub run ID: $GITHUB_RUN_ID" >> sites/test-site/logs/workflow.log
           echo "GitHub repository: $GITHUB_REPOSITORY" >> sites/test-site/logs/workflow.log
-          
-      - name: Debug logs directory
-        if: always()
-        run: |
-          cd frappe-bench
-          echo "Current directory structure:"
-          pwd
-          ls -la
-          
-          echo "Sites directory contents:"
-          ls -la sites/ || echo "Sites directory not found"
-          
-          echo "Test site directory contents:"
-          ls -la sites/test-site/ || echo "Test site directory not found"
-          
-          echo "Logs directory contents:"
-          ls -la sites/test-site/logs/ || echo "Logs directory not found"
-      
-      # Clear cache to prevent cached dependency issues
-      - name: Clear GitHub Actions cache
-        if: always()
-        run: |
-          echo "Clearing GitHub Actions cache..."
-          sudo rm -rf /home/runner/.cache || true
-      
-      # Use a more stable version of upload-artifact
+
       - name: Upload logs as artifacts
         if: always()
         uses: actions/upload-artifact@v2
@@ -167,23 +126,35 @@ jobs:
           path: frappe-bench/sites/test-site/logs/
           if-no-files-found: warn
 
+      - name: Debug logs
+        if: always()
+        run: |
+          cd frappe-bench
+          ls -la sites/test-site/logs/
+
+      - name: Clear GitHub Actions cache
+        if: always()
+        run: |
+          echo "Clearing cache..."
+          sudo rm -rf /home/runner/.cache || true
+
   docs-test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-          
+
       - name: Install docs dependencies
         run: |
           pip install -U pip
           pip install sphinx sphinx_rtd_theme myst-parser
-          
+
       - name: Build documentation
         run: |
           if [ -d "docs" ]; then
