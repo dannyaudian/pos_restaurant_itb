@@ -1,5 +1,11 @@
 # File: pos_restaurant_itb/api/kitchen_station.py
 
+import frappe
+from frappe.model.document import Document
+
+class KitchenStation(Document):
+    pass
+
 @frappe.whitelist()
 def create_kitchen_station_items_from_kot(kot_id):
     """
