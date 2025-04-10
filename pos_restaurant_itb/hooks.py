@@ -1,9 +1,9 @@
 # pos_restaurant_itb/hooks.py
 
 app_name = "pos_restaurant_itb"
-app_title = "POS Restaurant"
+app_title = "POS Restaurant ITB"
 app_publisher = "PT. Innovasi Terbaik Bangsa"
-app_description = "Restaurant POS Module"
+app_description = "Modern restaurant POS based on ERPNext."
 app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 
