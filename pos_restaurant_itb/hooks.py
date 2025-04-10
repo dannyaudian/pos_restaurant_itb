@@ -11,7 +11,7 @@ fixtures = [
     "Client Script",
     "Server Script",
     "Custom Field",
-    "Workspace"
+    "Workspace",  # Fixed missing comma
     "Property Setter",
     "Doctype",
     "Role",
@@ -88,3 +88,8 @@ scheduler_events = {
         "pos_restaurant_itb.utils.cleanup.clear_old_kitchen_sessions"
     ]
 }
+
+# Define commands to add to bench CLI
+commands = [
+    "pos_restaurant_itb.commands.sync_kitchen_display"
+]

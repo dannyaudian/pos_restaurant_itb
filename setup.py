@@ -10,4 +10,9 @@ setup(
     zip_safe=False,
     include_package_data=True,
     install_requires=[],
+    entry_points={
+        'console_scripts': [
+            'sync-kitchen-display=pos_restaurant_itb.commands.sync_kitchen_display:sync_kitchen_display'
+        ]
+    }
 )
