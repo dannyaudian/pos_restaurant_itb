@@ -40,17 +40,6 @@ jobs:
         with:
           node-version: '16'
           
-      - name: Debug environment
-        run: |
-          pwd
-          ls -la
-          echo "Current directory: $(pwd)"
-          echo "GitHub workspace: $GITHUB_WORKSPACE"
-          python --version
-          pip --version
-          node --version
-          npm --version
-          
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -66,28 +55,39 @@ jobs:
           echo "Installing frappe-bench..."
           pip install -U pip
           pip install frappe-bench
-          which bench || echo "BENCH NOT FOUND!"
-          
-      - name: Prepare for bench init
-        id: prepare-bench
-        run: |
-          echo "Stopping local Redis server to avoid port conflicts..."
-          sudo systemctl stop redis-server || echo "Redis service not running"
-          sudo systemctl status redis-server || echo "Redis service status check failed"
-          
-          # Make sure Redis from service container is accessible
-          echo "Testing Redis connection..."
-          redis-cli -h localhost -p 6379 ping || echo "Redis ping failed"
+          which bench
           
       - name: Setup bench
         id: setup-bench
         run: |
           echo "Setting up bench..."
-          # Use --no-setup-redis to skip Redis setup since we're using container
-          bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 --no-setup-redis frappe-bench
+          # Create a bench.conf file with redis configuration
+          mkdir -p ~/bench-conf
+          cat > ~/bench-conf/bench.conf << EOL
+          [redis]
+          host = localhost
+          port = 6379
+          EOL
+          
+          # Initialize bench with custom bench.conf
+          bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 frappe-bench
+          
+          # Copy our custom bench.conf to the bench directory
+          cp ~/bench-conf/bench.conf frappe-bench/config/bench.conf
+          
           cd frappe-bench
           echo "Checking bench directory..."
           ls -la
+          
+          # Replace default Redis configuration
+          echo "Configuring Redis..."
+          sed -i 's/redis_cache = redis://localhost:11000/redis_cache = redis://localhost:6379\/0/g' sites/common_site_config.json || echo "Failed to replace redis_cache"
+          sed -i 's/redis_queue = redis://localhost:11000/redis_queue = redis://localhost:6379\/1/g' sites/common_site_config.json || echo "Failed to replace redis_queue"
+          sed -i 's/redis_socketio = redis://localhost:12000/redis_socketio = redis://localhost:6379\/2/g' sites/common_site_config.json || echo "Failed to replace redis_socketio"
+          
+          # Check the modified configuration
+          cat sites/common_site_config.json
+          
           echo "Setting up requirements..."
           bench setup requirements --dev
           cd ..
@@ -113,13 +113,9 @@ jobs:
         run: |
           echo "Setting up site for testing..."
           cd frappe-bench || (echo "frappe-bench directory not found!" && exit 1)
-          sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile || echo "Failed to update Procfile"
           
-          # Configure bench to use Redis service container
-          bench set-config -g db_host localhost || echo "Failed to set db_host"
-          bench set-config -g redis_cache redis://localhost:6379/0 || echo "Failed to set redis_cache"
-          bench set-config -g redis_queue redis://localhost:6379/1 || echo "Failed to set redis_queue" 
-          bench set-config -g redis_socketio redis://localhost:6379/2 || echo "Failed to set redis_socketio"
+          # Update Procfile to listen on all interfaces
+          sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile || echo "Failed to update Procfile"
           
           # Create and setup site
           echo "Creating new site..."
@@ -159,6 +155,15 @@ jobs:
             cd frappe-bench
             echo "frappe-bench directory exists, checking logs..."
             
+            echo "Content of sites directory:"
+            ls -la sites/
+            
+            echo "Content of config directory:"
+            ls -la config/
+            
+            echo "Common site config:"
+            cat sites/common_site_config.json || echo "No common_site_config.json found"
+            
             if [ -d "sites/site1.local/logs" ]; then
               echo "Logs directory exists"
               ls -la sites/site1.local/logs/
@@ -179,9 +184,6 @@ jobs:
               fi
             else
               echo "Logs directory not found"
-              mkdir -p sites/site1.local/logs
-              echo "Created logs directory"
-              
               echo "Contents of sites/site1.local directory:"
               ls -la sites/site1.local/ || echo "sites/site1.local/ directory not found"
             fi
