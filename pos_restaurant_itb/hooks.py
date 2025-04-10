@@ -37,7 +37,7 @@ fixtures = [
     "Property Setter",
     "Role",
     "Module Def",
-    {"dt": "DocType", "filters": [["module", "=", "pos_restaurant_itb"]]},  # Fixed syntax
+    {"dt": "DocType", "filters": [["module", "=", "POS Restaurant ITB"]]},  # Fixed syntax
     "Custom DocPerm"
 ]
 
