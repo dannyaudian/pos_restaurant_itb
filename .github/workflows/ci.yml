@@ -120,7 +120,7 @@ jobs:
 
       - name: Upload logs as artifacts
         if: always()
-        uses: actions/upload-artifact@b6a1796b93e6b684f4a5f63c505b96ec7a0b0b48
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: test-logs
           path: frappe-bench/sites/test-site/logs/
