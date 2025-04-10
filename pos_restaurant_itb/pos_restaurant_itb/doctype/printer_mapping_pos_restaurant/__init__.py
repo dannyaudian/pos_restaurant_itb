@@ -1,1 +1,0 @@
-from .printer_mapping_pos_restaurant import PrinterMappingPOSRestaurant
