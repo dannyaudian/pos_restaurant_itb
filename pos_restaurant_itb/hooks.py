@@ -35,7 +35,6 @@ fixtures = [
     "Custom Field",
     "Workspace",
     "Property Setter",
-    "Doctype",
     "Role",
     "Custom DocPerm"
 ]
