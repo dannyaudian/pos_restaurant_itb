@@ -134,7 +134,7 @@
     ],
     "modified": "2023-04-12 10:00:00",
     "modified_by": "Administrator",
-    "module": "POS Restaurant ITB",
+    "module": "pos_restaurant_itb",
     "name": "Kitchen Station",
     "owner": "Administrator",
     "permissions": [

@@ -104,7 +104,7 @@
     "is_submittable": 0,
     "modified": "2023-04-10 14:00:00",
     "modified_by": "Administrator",
-    "module": "POS Restaurant ITB",
+    "module": "pos_restaurant_itb",
     "name": "Kitchen Order Ticket",
     "owner": "Administrator",
     "permissions": [

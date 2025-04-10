@@ -83,7 +83,7 @@
     ],
     "modified": "2023-04-11 14:00:00",
     "modified_by": "Administrator",
-    "module": "POS Restaurant ITB",
+    "module": "pos_restaurant_itb",
     "name": "Kitchen Display Order",
     "name_case": "Title Case",
     "owner": "Administrator",
