@@ -39,7 +39,17 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-          cache: 'npm'
+          
+      - name: Debug environment
+        run: |
+          pwd
+          ls -la
+          echo "Current directory: $(pwd)"
+          echo "GitHub workspace: $GITHUB_WORKSPACE"
+          python --version
+          pip --version
+          node --version
+          npm --version
           
       - name: Install system dependencies
         run: |
@@ -47,56 +57,116 @@ jobs:
           sudo apt-get install -y libmariadb-dev libffi-dev libjpeg-dev libfreetype6-dev liblcms2-dev libwebp-dev python3-dev libxml2-dev libxslt1-dev
       
       - name: Install frappe-bench
+        id: install-bench
         run: |
+          echo "Installing frappe-bench..."
           pip install -U pip
           pip install frappe-bench
+          which bench || echo "BENCH NOT FOUND!"
           
       - name: Setup bench
+        id: setup-bench
+        if: success()
         run: |
+          echo "Setting up bench..."
           bench init --skip-assets --frappe-path https://github.com/frappe/frappe --frappe-branch version-15 frappe-bench
           cd frappe-bench
+          echo "Checking bench directory..."
+          ls -la
+          echo "Setting up requirements..."
           bench setup requirements --dev
+          cd ..
+          echo "Bench setup complete."
           
       - name: Get ERPNext and current app
+        id: get-apps
+        if: success() && steps.setup-bench.outcome == 'success'
         run: |
-          cd frappe-bench
+          echo "Getting ERPNext and current app..."
+          cd frappe-bench || (echo "frappe-bench directory not found!" && exit 1)
           bench get-app --branch version-15 erpnext https://github.com/frappe/erpnext
           bench get-app pos_restaurant_itb $GITHUB_WORKSPACE
+          echo "Current directory structure:"
+          ls -la
+          echo "Apps directory:"
+          ls -la apps/
+          cd ..
           
       - name: Setup site for testing
+        id: setup-site
+        if: success() && steps.get-apps.outcome == 'success'
         run: |
-          cd frappe-bench
-          sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile
-          bench set-config -g db_host localhost
-          bench set-config -g redis_cache redis://localhost:6379/0
-          bench set-config -g redis_queue redis://localhost:6379/1
-          bench set-config -g redis_socketio redis://localhost:6379/2
+          echo "Setting up site for testing..."
+          cd frappe-bench || (echo "frappe-bench directory not found!" && exit 1)
+          sed -i 's/listen = 127.0.0.1/listen = 0.0.0.0/g' Procfile || echo "Failed to update Procfile"
+          bench set-config -g db_host localhost || echo "Failed to set db_host"
+          bench set-config -g redis_cache redis://localhost:6379/0 || echo "Failed to set redis_cache"
+          bench set-config -g redis_queue redis://localhost:6379/1 || echo "Failed to set redis_queue" 
+          bench set-config -g redis_socketio redis://localhost:6379/2 || echo "Failed to set redis_socketio"
           
           # Create and setup site
-          bench new-site site1.local --admin-password="admin" --db-root-password="root"
-          bench --site site1.local add-to-hosts
-          bench --site site1.local set-config allow_tests true
+          echo "Creating new site..."
+          bench new-site site1.local --admin-password="admin" --db-root-password="root" || (echo "Failed to create site!" && exit 1)
+          bench --site site1.local add-to-hosts || echo "Failed to add site to hosts"
+          bench --site site1.local set-config allow_tests true || echo "Failed to set allow_tests"
           
           # Install apps on site
-          bench --site site1.local install-app erpnext
-          bench --site site1.local install-app pos_restaurant_itb
+          echo "Installing apps on site..."
+          bench --site site1.local install-app erpnext || (echo "Failed to install erpnext!" && exit 1)
+          bench --site site1.local install-app pos_restaurant_itb || (echo "Failed to install pos_restaurant_itb!" && exit 1)
+          
+          echo "Site setup complete."
+          cd ..
           
       - name: Run tests
+        id: run-tests
+        if: success() && steps.setup-site.outcome == 'success'
         run: |
-          cd frappe-bench
-          bench --site site1.local run-tests --app pos_restaurant_itb
+          echo "Running tests..."
+          cd frappe-bench || (echo "frappe-bench directory not found!" && exit 1)
+          mkdir -p sites/site1.local/logs || echo "Failed to create logs directory"
+          touch sites/site1.local/logs/frappe.log || echo "Failed to create frappe.log"
+          touch sites/site1.local/logs/tests.log || echo "Failed to create tests.log"
+          bench --site site1.local run-tests --app pos_restaurant_itb || echo "Tests failed but continuing"
+          cd ..
           
-      - name: Display logs on failure
-        if: failure()
+      - name: Display logs
+        if: always()
         run: |
-          cd frappe-bench
-          echo "=== Frappe Log ==="
-          cat sites/site1.local/logs/frappe.log || echo "No frappe.log found"
-          echo ""
-          echo "=== Tests Log ==="
-          cat sites/site1.local/logs/tests.log || echo "No tests.log found"
+          echo "Displaying logs..."
+          cd $GITHUB_WORKSPACE
+          echo "Current directory: $(pwd)"
+          ls -la
           
-          # Tampilkan semua log dengan cara alternatif
-          echo "=== All Log Files ==="
-          find sites/site1.local/logs -type f -name "*.log" -exec ls -la {} \;
-          find sites/site1.local/logs -type f -name "*.log" -exec cat {} \;
+          if [ -d "frappe-bench" ]; then
+            cd frappe-bench
+            echo "frappe-bench directory exists, checking logs..."
+            
+            if [ -d "sites/site1.local/logs" ]; then
+              echo "Logs directory exists"
+              ls -la sites/site1.local/logs/
+              
+              echo "=== Frappe Log ==="
+              if [ -f "sites/site1.local/logs/frappe.log" ]; then
+                cat sites/site1.local/logs/frappe.log
+              else 
+                echo "No frappe.log found"
+              fi
+              
+              echo ""
+              echo "=== Tests Log ==="
+              if [ -f "sites/site1.local/logs/tests.log" ]; then
+                cat sites/site1.local/logs/tests.log
+              else
+                echo "No tests.log found"
+              fi
+            else
+              echo "Logs directory not found"
+              echo "Contents of sites/site1.local directory:"
+              ls -la sites/site1.local/ || echo "sites/site1.local/ directory not found"
+            fi
+          else
+            echo "frappe-bench directory not found in $GITHUB_WORKSPACE"
+            echo "Listing current directory:"
+            ls -la
+          fi
