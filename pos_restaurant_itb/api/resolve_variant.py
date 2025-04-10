@@ -16,7 +16,7 @@ def resolve_variant(template, attributes):
     Returns:
         Item code of the matching variant, or None if no match found
     """
-    from pos_restaurant_itb.pos_restaurant_itb.doctype.pos_order_item.pos_order_item import POSOrderItem
+    from pos_restaurant_itb.doctype.pos_order_item.pos_order_item import POSOrderItem
     
     try:
         if isinstance(attributes, str):
