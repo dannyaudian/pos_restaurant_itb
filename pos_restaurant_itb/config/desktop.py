@@ -5,7 +5,7 @@ from frappe import _
 def get_data():
     return [
         {
-            "module_name": "POS Restaurant",
+            "module_name": "POS Restaurant ITB",
             "color": "blue",
             "icon": "octicon octicon-file-directory",
             "type": "module",
