@@ -7,6 +7,11 @@ app_description = "Modern restaurant POS based on ERPNext."
 app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 
+# Global JS files that will be included on all pages
+app_include_js = [
+    "public/js/auto_refresh.js"
+]
+
 # Include JS per Doctype
 doctype_js = {
     "POS Order": [
@@ -37,7 +42,7 @@ fixtures = [
     "Property Setter",
     "Role",
     "Module Def",
-    {"dt": "DocType", "filters": [["module", "=", "POS Restaurant ITB"]]},  # Fixed syntax
+    {"dt": "DocType", "filters": [["module", "=", "POS Restaurant ITB"]]},
     "Custom DocPerm"
 ]
 
