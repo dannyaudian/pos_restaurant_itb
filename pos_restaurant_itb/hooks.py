@@ -8,9 +8,9 @@ app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 
 # Global JS files that will be included on all pages
-app_include_js = [
-    "/assets/pos_restaurant_itb/js/pos_restaurant_itb.min.js"
-]
+# app_include_js = [
+#    "/assets/pos_restaurant_itb/js/pos_restaurant_itb.min.js"
+# ]
 
 # Include JS per Doctype
 doctype_js = {
