@@ -60,3 +60,6 @@ scheduler_events = {
 has_permission = {
     "Kitchen Display Order": "pos_restaurant_itb.utils.permissions.kds_permissions"
 }
+
+print("== ASSET DEBUG ==")
+print("doctype_js:", doctype_js)
