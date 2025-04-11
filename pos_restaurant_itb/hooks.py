@@ -9,7 +9,7 @@ app_license = "MIT"
 
 # Global JS files that will be included on all pages
 app_include_js = [
-    "public/js/auto_refresh.js"
+    "/assets/pos_restaurant_itb/js/pos_restaurant_itb.min.js"
 ]
 
 # Include JS per Doctype
