@@ -8,13 +8,6 @@ app_email = "info@inovasiterbaik.co.id"
 app_license = "MIT"
 
 
-# Include JS per Doctype
-doctype_js = {
-    "POS Order": [
-        "pos_order/pos_order.js"
-    ]
-}
-
 # Document Events
 doc_events = {
     "POS Order": {
