@@ -11,7 +11,7 @@ app_license = "MIT"
 # Include JS per Doctype
 doctype_js = {
     "POS Order": [
-        "custom/pos_order/pos_order.js"
+        "pos_order/pos_order.js"
     ]
 }
 
